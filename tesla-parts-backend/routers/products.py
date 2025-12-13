@@ -168,13 +168,9 @@ def update_product(
     if files:
         for file in files:
             if file.filename:
-                file_location = f"static/images/{file.filename}"
-                # Ensure directory exists
-                os.makedirs("static/images", exist_ok=True)
-                with open(file_location, "wb+") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-                url = f"http://127.0.0.1:8000/{file_location}"
-                new_image_urls.append(url)
+                url = await image_uploader.upload_image(file, folder="tesla-parts/products")
+                if url:
+                    new_image_urls.append(url)
 
     session.add(product)
     session.commit()

@@ -53,7 +53,7 @@ def get_categories(session: Session = Depends(get_session)):
     return result
 
 @router.post("/", response_model=CategoryRead)
-def create_category(
+async def create_category(
     name: str = Form(...),
     image: str = Form(None),
     file: UploadFile = File(None),
@@ -61,15 +61,8 @@ def create_category(
 ):
     # Handle file upload
     image_url = image
-    if file:
-        import shutil
-        import os
-        file_location = f"static/images/{file.filename}"
-        # Ensure directory exists
-        os.makedirs("static/images", exist_ok=True)
-        with open(file_location, "wb+") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        image_url = f"http://127.0.0.1:8000/{file_location}"
+    if file and file.filename:
+        image_url = await image_uploader.upload_image(file, folder="tesla-parts/categories")
 
     db_category = Category(name=name, image=image_url)
     session.add(db_category)
@@ -78,7 +71,7 @@ def create_category(
     return db_category
 
 @router.post("/{category_id}/subcategories/", response_model=SubcategoryRead)
-def create_subcategory(
+async def create_subcategory(
     category_id: int,
     name: str = Form(...),
     code: str = Form(None),
@@ -89,15 +82,8 @@ def create_subcategory(
 ):
     # Handle file upload
     image_url = image
-    if file:
-        import shutil
-        import os
-        file_location = f"static/images/{file.filename}"
-        # Ensure directory exists
-        os.makedirs("static/images", exist_ok=True)
-        with open(file_location, "wb+") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        image_url = f"http://127.0.0.1:8000/{file_location}"
+    if file and file.filename:
+        image_url = await image_uploader.upload_image(file, folder="tesla-parts/subcategories")
 
     db_subcategory = Subcategory(
         name=name,
@@ -112,7 +98,7 @@ def create_subcategory(
     return db_subcategory
 
 @router.put("/{category_id}", response_model=CategoryRead)
-def update_category(
+async def update_category(
     category_id: int,
     name: str = Form(...),
     image: str = Form(None),
@@ -125,14 +111,11 @@ def update_category(
     
     category.name = name
     
-    if file:
-        import shutil
-        import os
-        file_location = f"static/images/{file.filename}"
-        os.makedirs("static/images", exist_ok=True)
-        with open(file_location, "wb+") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        category.image = f"http://127.0.0.1:8000/{file_location}"
+    # Handle file upload
+    if file and file.filename:
+        image_url = await image_uploader.upload_image(file, folder="tesla-parts/categories")
+        if image_url:
+            category.image = image_url
     elif image:
         category.image = image
         
@@ -142,7 +125,7 @@ def update_category(
     return category
 
 @router.put("/subcategories/{subcategory_id}", response_model=SubcategoryRead)
-def update_subcategory(
+async def update_subcategory(
     subcategory_id: int,
     name: str = Form(...),
     code: str = Form(None),
@@ -165,14 +148,10 @@ def update_subcategory(
         subcategory.parent_id = parent_id
         
     # Handle file upload
-    if file:
-        import shutil
-        import os
-        file_location = f"static/images/{file.filename}"
-        os.makedirs("static/images", exist_ok=True)
-        with open(file_location, "wb+") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        subcategory.image = f"http://127.0.0.1:8000/{file_location}"
+    if file and file.filename:
+        image_url = await image_uploader.upload_image(file, folder="tesla-parts/subcategories")
+        if image_url:
+            subcategory.image = image_url
     elif image:
         subcategory.image = image
         
