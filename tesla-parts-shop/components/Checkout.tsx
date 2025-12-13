@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { City, NovaPostBranch, PaymentMethod, CartItem, Currency, OrderData } from '../types';
-import { api } from '../services/mockApi';
+import { api } from '../services/api';
 import { EXCHANGE_RATES } from '../constants';
 import { CheckCircle, Truck, CreditCard, Building, Wallet } from 'lucide-react';
 
@@ -31,8 +31,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
         const data = await api.getCities();
         setCities(data);
         if (data.length > 0) {
-           // Don't auto select to force user choice, or select first
-           // setSelectedCityId(data[0].id);
+          // Don't auto select to force user choice, or select first
+          // setSelectedCityId(data[0].id);
         }
       } catch (err) {
         console.error("Failed to fetch cities", err);
@@ -75,10 +75,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
     };
 
     try {
-      const result = await api.saveOrder(order);
-      if (result.success) {
-        onSuccess();
-      }
+      await api.createOrder(order);
+      onSuccess();
     } catch (err) {
       console.error("Order failed", err);
       alert("Виникла помилка при оформленні. Спробуйте ще раз.");
@@ -90,9 +88,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
   const getPrice = (priceUAH: number) => {
     const rate = EXCHANGE_RATES[currency] || 1;
     const price = priceUAH * (currency === Currency.UAH ? 1 : rate);
-    return new Intl.NumberFormat('uk-UA', { 
-      style: 'currency', 
-      currency: currency 
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: currency
     }).format(price);
   };
 
@@ -103,12 +101,12 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8 text-tesla-dark">Оформлення замовлення</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
+
         {/* Left Column: Form */}
         <div className="md:col-span-2 space-y-8">
-          
+
           <form id="checkout-form" onSubmit={handleSubmit} className="space-y-8">
             {/* Contact Info */}
             <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -136,7 +134,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
             <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600">2</div>
-                Доставка <span className="text-red-500 font-bold ml-2 text-sm flex items-center gap-1"><Truck size={14}/> Nova Post</span>
+                Доставка <span className="text-red-500 font-bold ml-2 text-sm flex items-center gap-1"><Truck size={14} /> Nova Post</span>
               </h2>
               <div className="space-y-4">
                 {loading ? (
@@ -145,9 +143,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Місто</label>
-                      <select 
-                        required 
-                        value={selectedCityId} 
+                      <select
+                        required
+                        value={selectedCityId}
                         onChange={e => setSelectedCityId(e.target.value)}
                         className="w-full border rounded-md p-2 bg-white focus:ring-2 focus:ring-tesla-red outline-none"
                       >
@@ -157,9 +155,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Відділення / Поштомат</label>
-                      <select 
-                        required 
-                        value={selectedBranchId} 
+                      <select
+                        required
+                        value={selectedBranchId}
                         onChange={e => setSelectedBranchId(e.target.value)}
                         disabled={!selectedCityId}
                         className="w-full border rounded-md p-2 bg-white focus:ring-2 focus:ring-tesla-red outline-none disabled:bg-gray-50 disabled:text-gray-400"
@@ -183,18 +181,18 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
                 <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition ${paymentMethod === PaymentMethod.CARD ? 'border-tesla-red bg-red-50' : 'hover:bg-gray-50'}`}>
                   <input type="radio" name="payment" value={PaymentMethod.CARD} checked={paymentMethod === PaymentMethod.CARD} onChange={() => setPaymentMethod(PaymentMethod.CARD)} className="text-tesla-red focus:ring-tesla-red" />
                   <div className="ml-3 flex items-center gap-3">
-                    <CreditCard className="text-gray-600"/>
+                    <CreditCard className="text-gray-600" />
                     <div>
                       <div className="font-medium text-gray-900">Оплата карткою (Visa/Mastercard)</div>
                       <div className="text-xs text-gray-500">Миттєва оплата без комісії</div>
                     </div>
                   </div>
                 </label>
-                
+
                 <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition ${paymentMethod === PaymentMethod.IBAN ? 'border-tesla-red bg-red-50' : 'hover:bg-gray-50'}`}>
                   <input type="radio" name="payment" value={PaymentMethod.IBAN} checked={paymentMethod === PaymentMethod.IBAN} onChange={() => setPaymentMethod(PaymentMethod.IBAN)} className="text-tesla-red focus:ring-tesla-red" />
                   <div className="ml-3 flex items-center gap-3">
-                    <Building className="text-gray-600"/>
+                    <Building className="text-gray-600" />
                     <div>
                       <div className="font-medium text-gray-900">Оплата на рахунок IBAN</div>
                       <div className="text-xs text-gray-500">Менеджер зв'яжеться для надання реквізитів</div>
@@ -205,7 +203,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
                 <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition ${paymentMethod === PaymentMethod.COD ? 'border-tesla-red bg-red-50' : 'hover:bg-gray-50'}`}>
                   <input type="radio" name="payment" value={PaymentMethod.COD} checked={paymentMethod === PaymentMethod.COD} onChange={() => setPaymentMethod(PaymentMethod.COD)} className="text-tesla-red focus:ring-tesla-red" />
                   <div className="ml-3 flex items-center gap-3">
-                    <Wallet className="text-gray-600"/>
+                    <Wallet className="text-gray-600" />
                     <div>
                       <div className="font-medium text-gray-900">Накладений платіж</div>
                       <div className="text-xs text-gray-500">Оплата при отриманні на пошті (+ комісія перевізника)</div>
@@ -235,7 +233,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
                 </div>
               ))}
             </div>
-            
+
             <div className="border-t pt-4 space-y-2 mb-6">
               <div className="flex justify-between text-gray-600">
                 <span>Сума товарів</span>
@@ -251,7 +249,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
               </div>
             </div>
 
-            <button 
+            <button
               form="checkout-form"
               disabled={processing}
               type="submit"

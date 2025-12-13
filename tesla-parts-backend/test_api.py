@@ -38,12 +38,12 @@ def test_create_product(session: Session):
         "id": "test-001",
         "name": "Test Product",
         "category": "Test",
-        "priceUAH": 100.0,
+        "priceUAH": "100.0",
         "image": "http://example.com/image.png",
         "description": "Test Description",
-        "inStock": True
+        "inStock": "True"
     }
-    response = client.post("/products/", json=product_data, headers={"x-admin-secret": "secret"})
+    response = client.post("/products/", data=product_data, headers={"x-admin-secret": "secret"})
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Test Product"
@@ -55,12 +55,12 @@ def test_create_order(session: Session):
         "id": "test-001",
         "name": "Test Product",
         "category": "Test",
-        "priceUAH": 100.0,
+        "priceUAH": "100.0",
         "image": "http://example.com/image.png",
         "description": "Test Description",
-        "inStock": True
+        "inStock": "True"
     }
-    client.post("/products/", json=product_data, headers={"x-admin-secret": "secret"})
+    client.post("/products/", data=product_data, headers={"x-admin-secret": "secret"})
 
     order_data = {
         "items": [{"id": "test-001", "name": "Test Product", "category": "Test", "priceUAH": 100.0, "image": "...", "description": "...", "inStock": True, "quantity": 2}],
@@ -74,3 +74,31 @@ def test_create_order(session: Session):
     data = response.json()
     assert data["status"] == "created"
     assert "id" in data
+
+def test_create_product_with_image(session: Session):
+    # Create a dummy image file
+    file_content = b"fake image content"
+    files = {"file": ("test_image.jpg", file_content, "image/jpeg")}
+    data = {
+        "name": "Product with Image",
+        "category": "Model 3",
+        "priceUAH": "500.0",
+        "description": "Test description",
+        "inStock": "True"
+    }
+    
+    response = client.post(
+        "/products/",
+        data=data,
+        files=files,
+        headers={"x-admin-secret": "secret"}
+    )
+    assert response.status_code == 200
+    product = response.json()
+    assert product["name"] == "Product with Image"
+    assert "static/images/test_image.jpg" in product["image"]
+    
+    # Clean up
+    import os
+    if os.path.exists("static/images/test_image.jpg"):
+        os.remove("static/images/test_image.jpg")

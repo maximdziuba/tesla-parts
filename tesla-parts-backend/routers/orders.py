@@ -1,8 +1,10 @@
+from typing import List
 from fastapi import APIRouter, Depends, BackgroundTasks
-from sqlmodel import Session
+from sqlmodel import Session, select
+from sqlalchemy.orm import selectinload
 from database import get_session
 from models import Order, OrderItem
-from schemas import OrderCreate
+from schemas import OrderCreate, OrderRead
 from services.telegram import send_telegram_notification
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -37,3 +39,8 @@ def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, ses
     background_tasks.add_task(send_telegram_notification, order)
     
     return {"id": order.id, "status": "created"}
+
+@router.get("/", response_model=List[OrderRead])
+def get_orders(session: Session = Depends(get_session)):
+    orders = session.exec(select(Order).options(selectinload(Order.items))).all()
+    return orders

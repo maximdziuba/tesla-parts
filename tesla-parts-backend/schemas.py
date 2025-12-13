@@ -34,3 +34,37 @@ class OrderCreate(BaseModel):
     customer: Customer
     delivery: Delivery
     paymentMethod: str
+
+class OrderItemRead(BaseModel):
+    product_id: str
+    quantity: int
+    price_at_purchase: float
+
+class OrderRead(BaseModel):
+    id: int
+    status: str
+    totalUAH: float
+    customer_first_name: str
+    customer_last_name: str
+    customer_phone: str
+    delivery_city: str
+    delivery_branch: str
+    payment_method: str
+    items: List[OrderItemRead]
+
+class OrderItemRead(BaseModel):
+    product_id: str
+    quantity: int
+    price_at_purchase: float
+
+class OrderRead(BaseModel):
+    id: int
+    status: str
+    totalUAH: float
+    customer_first_name: str
+    customer_last_name: str
+    customer_phone: str
+    delivery_city: str
+    delivery_branch: str
+    payment_method: str
+    items: List[OrderItemRead]

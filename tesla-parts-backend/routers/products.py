@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File, Form
 from sqlmodel import Session, select
-from typing import List
+from typing import List, Optional
+import shutil
+import os
 from database import get_session
 from models import Product
 from schemas import ProductCreate, ProductRead
@@ -27,12 +29,42 @@ def read_labels(session: Session = Depends(get_session)):
     return categories
 
 @router.post("/", response_model=ProductRead, dependencies=[Depends(verify_admin)])
-def create_product(product: ProductCreate, session: Session = Depends(get_session)):
-    db_product = Product.model_validate(product)
-    session.add(db_product)
+def create_product(
+    id: Optional[str] = Form(None),
+    name: str = Form(...),
+    category: str = Form(...),
+    priceUAH: float = Form(...),
+    description: str = Form(...),
+    inStock: bool = Form(...),
+    image: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    session: Session = Depends(get_session)
+):
+    image_url = image
+    if file:
+        file_location = f"static/images/{file.filename}"
+        with open(file_location, "wb+") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        # Assuming localhost for now, in prod this should be configured
+        image_url = f"http://127.0.0.1:8000/{file_location}"
+    
+    if not image_url:
+        image_url = "https://via.placeholder.com/300"
+
+    product_data = Product(
+        id=id or f"prod-{os.urandom(4).hex()}",
+        name=name,
+        category=category,
+        priceUAH=priceUAH,
+        description=description,
+        inStock=inStock,
+        image=image_url
+    )
+    
+    session.add(product_data)
     session.commit()
-    session.refresh(db_product)
-    return db_product
+    session.refresh(product_data)
+    return product_data
 
 @router.delete("/{product_id}", dependencies=[Depends(verify_admin)])
 def delete_product(product_id: str, session: Session = Depends(get_session)):

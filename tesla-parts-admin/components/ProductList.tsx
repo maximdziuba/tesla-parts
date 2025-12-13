@@ -1,0 +1,151 @@
+import React, { useState, useEffect } from 'react';
+import { ApiService } from '../services/api';
+import { Product } from '../types';
+import { Search, Plus, Filter, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+export const ProductList: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('Всі');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const data = await ApiService.getProducts();
+      setProducts(data);
+      setFilteredProducts(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let result = products;
+    if (categoryFilter !== 'Всі') {
+      result = result.filter(p => p.category === categoryFilter);
+    }
+    if (searchTerm) {
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    setFilteredProducts(result);
+  }, [searchTerm, categoryFilter, products]);
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Ви впевнені, що хочете видалити цей товар?')) {
+      await ApiService.deleteProduct(id);
+      fetchProducts();
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center">Завантаження...</div>;
+
+  const categories = ['Всі', ...Array.from(new Set(products.map(p => p.category)))];
+
+  return (
+    <div className="space-y-6">
+      {/* Controls */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Пошук за назвою..."
+            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="flex gap-2 w-full md:w-auto">
+          <div className="relative">
+            <select
+              className="appearance-none pl-10 pr-8 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+          </div>
+
+          <Link to="/products/new" className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+            <Plus size={20} />
+            <span>Додати Товар</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+              <tr>
+                <th className="px-6 py-4">Товар</th>
+                <th className="px-6 py-4">Категорія</th>
+                <th className="px-6 py-4">Наявність</th>
+                <th className="px-6 py-4">Ціна</th>
+                <th className="px-6 py-4 text-right">Дії</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredProducts.map((product) => (
+                <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded bg-gray-100 overflow-hidden">
+                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{product.name}</div>
+                        <div className="text-xs text-gray-400 truncate max-w-[200px]">{product.description}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                      {product.category}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`${product.inStock ? 'text-green-600' : 'text-red-600 font-bold'}`}>
+                      {product.inStock ? 'В наявності' : 'Немає'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 font-medium">{product.priceUAH} ₴</td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => handleDelete(product.id)}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {filteredProducts.length === 0 && (
+          <div className="p-8 text-center text-gray-500">
+            Товарів не знайдено.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

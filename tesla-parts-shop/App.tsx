@@ -5,14 +5,14 @@ import ProductList from './components/ProductList';
 import CartDrawer from './components/CartDrawer';
 import Checkout from './components/Checkout';
 import { Product, Currency, CartItem } from './types';
-import { api } from './services/mockApi';
+import { api } from './services/api';
 import { CheckCircle } from 'lucide-react';
 
 const App: React.FC = () => {
   // Navigation State
   const [currentView, setCurrentView] = useState('home'); // home, checkout, success, or category name
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Data State
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,8 +91,8 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-tesla-dark bg-[#f8fafc]">
-      <Header 
-        cartCount={cartCount} 
+      <Header
+        cartCount={cartCount}
         cartTotal={cartTotal}
         currency={currency}
         setCurrency={setCurrency}
@@ -102,7 +102,7 @@ const App: React.FC = () => {
       />
 
       <main className="flex-grow container mx-auto px-4 py-8">
-        
+
         {/* VIEW: SUCCESS */}
         {currentView === 'success' && (
           <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
@@ -113,7 +113,7 @@ const App: React.FC = () => {
             <p className="text-gray-600 mb-8 text-center max-w-md">
               Дякуємо за покупку. Наш менеджер зв'яжеться з вами найближчим часом для підтвердження деталей.
             </p>
-            <button 
+            <button
               onClick={() => handleNavigate('home')}
               className="bg-tesla-dark text-white px-8 py-3 rounded-md hover:bg-gray-800 transition"
             >
@@ -124,9 +124,9 @@ const App: React.FC = () => {
 
         {/* VIEW: CHECKOUT */}
         {currentView === 'checkout' && (
-          <Checkout 
-            cartItems={cart} 
-            currency={currency} 
+          <Checkout
+            cartItems={cart}
+            currency={currency}
             totalUAH={cartTotal}
             onSuccess={() => {
               clearCart();
@@ -141,24 +141,24 @@ const App: React.FC = () => {
             {currentView === 'home' && !searchQuery && (
               <Hero onSelectCategory={handleNavigate} />
             )}
-            
+
             <div className="mt-8">
               {currentView === 'search' && (
                 <div className="mb-6">
                   <h1 className="text-2xl font-bold">Результати пошуку: "{searchQuery}"</h1>
                 </div>
               )}
-              
+
               {loading ? (
                 <div className="flex justify-center py-20">
                   <div className="w-8 h-8 border-4 border-tesla-red border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : (
-                <ProductList 
+                <ProductList
                   title={currentView === 'home' ? 'Популярні товари' : undefined}
-                  products={filteredProducts} 
-                  currency={currency} 
-                  onAddToCart={addToCart} 
+                  products={filteredProducts}
+                  currency={currency}
+                  onAddToCart={addToCart}
                 />
               )}
             </div>
@@ -171,7 +171,7 @@ const App: React.FC = () => {
             <h1 className="text-3xl font-bold mb-6 capitalize">{currentView.replace('-', ' ')}</h1>
             <p className="text-gray-600 leading-relaxed">
               Ця сторінка знаходиться в розробці. Тут буде розміщено інформацію про {currentView}.
-              <br/><br/>
+              <br /><br />
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
             <button onClick={() => handleNavigate('home')} className="mt-8 text-tesla-red font-medium hover:underline">
@@ -186,7 +186,7 @@ const App: React.FC = () => {
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="text-white text-xl font-bold mb-4 flex items-center gap-2">
-               <span className="text-tesla-red">TESLA</span> PARTS
+              <span className="text-tesla-red">TESLA</span> PARTS
             </div>
             <p className="text-sm">Ваш надійний партнер у світі запчастин для електромобілів.</p>
           </div>
@@ -221,9 +221,9 @@ const App: React.FC = () => {
         </div>
       </footer>
 
-      <CartDrawer 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
         items={cart}
         currency={currency}
         onUpdateQuantity={updateQuantity}

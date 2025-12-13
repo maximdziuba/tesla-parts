@@ -1,0 +1,5 @@
+{
+  "name": "Tesla Parts Admin",
+  "description": "Administrative dashboard for managing Tesla Parts inventory, orders, and sales data.",
+  "requestFramePermissions": []
+}
