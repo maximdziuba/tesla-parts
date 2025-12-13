@@ -52,7 +52,7 @@ def read_labels(session: Session = Depends(get_session)):
     return categories
 
 @router.post("/", response_model=ProductRead, dependencies=[Depends(verify_admin)])
-def create_product(
+async def create_product(
     id: Optional[str] = Form(None),
     name: str = Form(...),
     category: str = Form(...),
@@ -69,14 +69,13 @@ def create_product(
     product_id = id or f"prod-{os.urandom(4).hex()}"
     image_urls = []
     
-    # Handle multiple file uploads
+    # Handle multiple file uploads using the image uploader service
     if files:
         for file in files:
-            if file.filename: # check if filename is present
-                file_location = f"static/images/{file.filename}"
-                with open(file_location, "wb+") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-                image_urls.append(f"http://127.0.0.1:8000/{file_location}")
+            if file.filename:
+                url = await image_uploader.upload_image(file, folder="tesla-parts/products")
+                if url:
+                    image_urls.append(url)
     
     # Determine main image
     main_image = image
