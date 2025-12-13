@@ -119,7 +119,7 @@ async def create_product(
     return ProductRead(**response_data)
 
 @router.put("/{product_id}", response_model=ProductRead, dependencies=[Depends(verify_admin)])
-def update_product(
+async def update_product(
     product_id: str,
     name: str = Form(...),
     category: str = Form(...),
