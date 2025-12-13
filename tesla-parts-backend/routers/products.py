@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from database import get_session
 from models import Product, ProductImage
 from schemas import ProductCreate, ProductRead
+from services.image_uploader import image_uploader
 
 router = APIRouter(prefix="/products", tags=["products"])
 
