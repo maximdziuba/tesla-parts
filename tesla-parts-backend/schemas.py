@@ -9,12 +9,8 @@ class ProductBase(BaseModel):
     image: str
     description: str
     inStock: bool
+    detail_number: str | None = None
 
-class ProductCreate(ProductBase):
-    pass
-
-class ProductRead(ProductBase):
-    pass
 
 class CartItem(ProductBase):
     quantity: int
@@ -28,29 +24,44 @@ class Delivery(BaseModel):
     city: str
     branch: str
 
+class ProductCreate(ProductBase):
+    subcategory_id: int | None = None
+
+class ProductRead(ProductBase):
+    subcategory_id: int | None = None
+    images: List[str] = []
+
+class SubcategoryRead(BaseModel):
+    id: int
+    name: str
+    code: str | None = None
+    image: str | None = None
+    products: List[ProductRead] = []
+    subcategories: List["SubcategoryRead"] = []
+
+class CategoryRead(BaseModel):
+    id: int
+    name: str
+    image: str | None = None
+    subcategories: List[SubcategoryRead] = []
+
+class CategoryCreate(BaseModel):
+    name: str
+    image: str | None = None
+
+class SubcategoryCreate(BaseModel):
+    name: str
+    code: str | None = None
+    image: str | None = None
+    category_id: int
+    parent_id: int | None = None
+
 class OrderCreate(BaseModel):
     items: List[CartItem]
     totalUAH: float
     customer: Customer
     delivery: Delivery
     paymentMethod: str
-
-class OrderItemRead(BaseModel):
-    product_id: str
-    quantity: int
-    price_at_purchase: float
-
-class OrderRead(BaseModel):
-    id: int
-    status: str
-    totalUAH: float
-    customer_first_name: str
-    customer_last_name: str
-    customer_phone: str
-    delivery_city: str
-    delivery_branch: str
-    payment_method: str
-    items: List[OrderItemRead]
 
 class OrderItemRead(BaseModel):
     product_id: str

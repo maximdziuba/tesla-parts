@@ -1,0 +1,137 @@
+import React, { useState } from 'react';
+import { Product, Currency } from '../types';
+import { ShoppingCart, ArrowLeft, Check } from 'lucide-react';
+
+interface ProductPageProps {
+    product: Product;
+    currency: Currency;
+    onAddToCart: (product: Product) => void;
+    onBack: () => void;
+}
+
+const ProductPage: React.FC<ProductPageProps> = ({ product, currency, onAddToCart, onBack }) => {
+    // Combine main image with additional images and remove duplicates
+    const allImages = Array.from(new Set([product.image, ...(product.images || [])].filter(Boolean)));
+    const [selectedImage, setSelectedImage] = useState(allImages[0]);
+    const [added, setAdded] = useState(false);
+
+    const handleAddToCart = () => {
+        onAddToCart(product);
+        setAdded(true);
+        setTimeout(() => setAdded(false), 2000);
+    };
+
+    return (
+        <div className="max-w-6xl mx-auto animate-fade-in">
+            <button
+                onClick={onBack}
+                className="flex items-center text-gray-600 hover:text-tesla-dark mb-6 transition-colors"
+            >
+                <ArrowLeft size={20} className="mr-2" />
+                Назад
+            </button>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="flex flex-col md:flex-row">
+                    {/* Image Gallery */}
+                    <div className="md:w-1/2 p-6 bg-gray-50">
+                        <div className="aspect-square rounded-xl overflow-hidden bg-white mb-4 shadow-sm">
+                            <img
+                                src={selectedImage}
+                                alt={product.name}
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+
+                        {allImages.length > 1 && (
+                            <div className="flex gap-2 overflow-x-auto pb-2">
+                                {allImages.map((img, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setSelectedImage(img)}
+                                        className={`w-20 h-20 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all ${selectedImage === img ? 'border-tesla-red' : 'border-transparent hover:border-gray-300'
+                                            }`}
+                                    >
+                                        <img src={img} alt="" className="w-full h-full object-cover" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Product Details */}
+                    <div className="md:w-1/2 p-8 md:p-12 flex flex-col">
+                        <div className="mb-auto">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                        {product.category}
+                                    </span>
+                                    {product.detail_number && (
+                                        <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                            Part #: {product.detail_number}
+                                        </span>
+                                    )}
+                                </div>
+                                {product.inStock ? (
+                                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                                        В наявності
+                                    </span>
+                                ) : (
+                                    <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                                        Немає в наявності
+                                    </span>
+                                )}
+                            </div>
+
+                            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
+
+                            <div className="mb-8">
+                                <div className="text-3xl font-bold text-tesla-dark">
+                                    {product.priceUAH.toLocaleString()} {currency}
+                                </div>
+                                {product.priceUSD && (
+                                    <div className="text-xl text-gray-500 mt-1">
+                                        ${product.priceUSD.toFixed(2)}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="prose prose-sm text-gray-600 mb-8">
+                                <h3 className="text-gray-900 font-semibold mb-2">Опис</h3>
+                                <p className="whitespace-pre-line">{product.description}</p>
+                            </div>
+                        </div>
+
+                        <div className="pt-8 border-t border-gray-100">
+                            <button
+                                onClick={handleAddToCart}
+                                disabled={!product.inStock}
+                                className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all transform active:scale-[0.98] ${added
+                                    ? 'bg-green-600 text-white'
+                                    : product.inStock
+                                        ? 'bg-tesla-red text-white hover:bg-red-700 shadow-lg hover:shadow-xl'
+                                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                    }`}
+                            >
+                                {added ? (
+                                    <>
+                                        <Check size={24} />
+                                        Додано в кошик
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShoppingCart size={24} />
+                                        {product.inStock ? 'Купити' : 'Немає в наявності'}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default ProductPage;

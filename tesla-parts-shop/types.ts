@@ -4,14 +4,33 @@ export enum Currency {
   EUR = 'EUR'
 }
 
+export interface Subcategory {
+  id: number;
+  name: string;
+  code?: string;
+  image?: string;
+  subcategories?: Subcategory[];
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  image?: string;
+  subcategories: Subcategory[];
+}
+
 export interface Product {
   id: string;
   name: string;
   category: string; // 'Model 3' | 'Model S' | 'Model X'
+  subcategory_id?: number;
   priceUAH: number;
+  priceUSD?: number;
   image: string;
+  images?: string[];
   description: string;
   inStock: boolean;
+  detail_number?: string;
 }
 
 export interface CartItem extends Product {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
 import { Product } from '../types';
-import { Search, Plus, Filter, Trash2 } from 'lucide-react';
+import { Search, Plus, Filter, Trash2, Pencil } from 'lucide-react';
+
 import { Link } from 'react-router-dom';
 
 export const ProductList: React.FC = () => {
@@ -127,6 +128,12 @@ export const ProductList: React.FC = () => {
                   <td className="px-6 py-4 font-medium">{product.priceUAH} ₴</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
+                      <Link
+                        to={`/products/edit/${product.id}`}
+                        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"
+                      >
+                        <Pencil size={16} />
+                      </Link>
                       <button
                         onClick={() => handleDelete(product.id)}
                         className="p-1.5 text-red-500 hover:bg-red-50 rounded"

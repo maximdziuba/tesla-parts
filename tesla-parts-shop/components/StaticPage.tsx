@@ -1,0 +1,80 @@
+import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
+
+interface StaticPageProps {
+    slug: string;
+    onBack: () => void;
+}
+
+// Map of slugs to Ukrainian titles for fallback
+const PAGE_TITLES: { [key: string]: string } = {
+    about: 'Про нас',
+    delivery: 'Доставка та оплата',
+    returns: 'Повернення',
+    faq: 'Часті питання',
+    contacts: 'Контакти'
+};
+
+const StaticPage: React.FC<StaticPageProps> = ({ slug, onBack }) => {
+    const [page, setPage] = useState<{ title: string; content: string } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadPage = async () => {
+            setLoading(true);
+            try {
+                const data = await api.getPage(slug);
+                if (data && data.is_published) {
+                    setPage({ title: data.title, content: data.content });
+                } else {
+                    // Fallback if page not found or not published
+                    setPage(null);
+                }
+            } catch (e) {
+                console.error('Failed to load page', e);
+                setPage(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadPage();
+    }, [slug]);
+
+    if (loading) {
+        return (
+            <div className="py-12 max-w-2xl mx-auto">
+                <div className="flex justify-center py-20">
+                    <div className="w-8 h-8 border-4 border-tesla-red border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="py-12 max-w-2xl mx-auto">
+            <h1 className="text-3xl font-bold mb-6">
+                {page?.title || PAGE_TITLES[slug] || slug}
+            </h1>
+
+            {page ? (
+                <div
+                    className="text-gray-600 leading-relaxed prose prose-lg max-w-none"
+                    dangerouslySetInnerHTML={{ __html: page.content.replace(/\n/g, '<br />') }}
+                />
+            ) : (
+                <p className="text-gray-600 leading-relaxed">
+                    Ця сторінка знаходиться в розробці.
+                </p>
+            )}
+
+            <button
+                onClick={onBack}
+                className="mt-8 text-tesla-red font-medium hover:underline"
+            >
+                ← Повернутись на головну
+            </button>
+        </div>
+    );
+};
+
+export default StaticPage;

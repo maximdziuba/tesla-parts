@@ -7,7 +7,9 @@ import {
   Settings,
   Menu,
   LogOut,
-  Car
+  Car,
+  Layers,
+  FileText
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -18,8 +20,8 @@ const SidebarItem = ({ to, icon: Icon, label, active }: { to: string, icon: any,
   <Link
     to={to}
     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${active
-        ? 'bg-red-600 text-white'
-        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+      ? 'bg-red-600 text-white'
+      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
       }`}
   >
     <Icon size={20} />
@@ -42,7 +44,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       case '/': return 'Огляд';
       case '/products': return 'Товари';
       case '/orders': return 'Замовлення';
+      case '/categories': return 'Категорії';
       case '/settings': return 'Налаштування';
+      case '/cms': return 'Контент';
       default: return 'Адмін Панель';
     }
   };
@@ -81,10 +85,22 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             active={location.pathname === '/orders'}
           />
           <SidebarItem
+            to="/categories"
+            icon={Layers}
+            label="Категорії"
+            active={location.pathname === '/categories'}
+          />
+          <SidebarItem
             to="/settings"
             icon={Settings}
             label="Налаштування"
             active={location.pathname === '/settings'}
+          />
+          <SidebarItem
+            to="/cms"
+            icon={FileText}
+            label="Контент"
+            active={location.pathname === '/cms'}
           />
         </nav>
 

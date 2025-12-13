@@ -4,7 +4,10 @@ import Hero from './components/Hero';
 import ProductList from './components/ProductList';
 import CartDrawer from './components/CartDrawer';
 import Checkout from './components/Checkout';
-import { Product, Currency, CartItem } from './types';
+import SubcategoryCard from './components/SubcategoryCard';
+import ProductPage from './components/ProductPage';
+import StaticPage from './components/StaticPage';
+import { Product, Currency, CartItem, Category, Subcategory } from './types';
 import { api } from './services/api';
 import { CheckCircle } from 'lucide-react';
 
@@ -12,9 +15,12 @@ const App: React.FC = () => {
   // Navigation State
   const [currentView, setCurrentView] = useState('home'); // home, checkout, success, or category name
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Data State
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Cart & Settings
@@ -25,10 +31,14 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await api.getProducts();
-        setProducts(data);
+        const [productsData, categoriesData] = await Promise.all([
+          api.getProducts(),
+          api.getCategories()
+        ]);
+        setProducts(productsData);
+        setCategories(categoriesData);
       } catch (e) {
-        console.error("Failed to load products", e);
+        console.error("Failed to load data", e);
       } finally {
         setLoading(false);
       }
@@ -70,24 +80,76 @@ const App: React.FC = () => {
   const handleNavigate = (view: string) => {
     setCurrentView(view);
     setSearchQuery('');
+    setSelectedSubcategory(null); // Reset subcategory when changing view
+    setSelectedProduct(null);
+    window.scrollTo(0, 0);
+  };
+
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product);
+    setCurrentView('product-detail');
     window.scrollTo(0, 0);
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     setCurrentView('search');
+    setSelectedSubcategory(null);
     window.scrollTo(0, 0);
   };
 
   // Filter Products
   const filteredProducts = useMemo(() => {
-    if (currentView === 'home') return products;
-    if (currentView === 'search') {
-      return products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    let filtered = products;
+
+    if (currentView === 'home') {
+      // Show all or popular
+    } else if (currentView === 'search') {
+      const lowerQuery = searchQuery.toLowerCase();
+
+      // Helper to find all subcategory IDs that match the query code (or whose parent matches)
+      const matchingSubcategoryIds = new Set<number>();
+
+      const traverseAndCollect = (subs: Subcategory[], collect: boolean) => {
+        for (const sub of subs) {
+          const matches = sub.code?.toLowerCase().includes(lowerQuery);
+          const shouldCollect = collect || matches;
+
+          if (shouldCollect) {
+            matchingSubcategoryIds.add(sub.id);
+          }
+
+          if (sub.subcategories) {
+            traverseAndCollect(sub.subcategories, shouldCollect || false);
+          }
+        }
+      };
+
+      // Traverse all categories to find matching subcategories
+      categories.forEach(cat => {
+        if (cat.subcategories) {
+          traverseAndCollect(cat.subcategories, false);
+        }
+      });
+
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(lowerQuery) ||
+        (p.detail_number && p.detail_number.toLowerCase().includes(lowerQuery)) ||
+        (p.subcategory_id && matchingSubcategoryIds.has(p.subcategory_id))
+      );
+    } else {
+      // Category View
+      filtered = filtered.filter(p => p.category === currentView);
     }
-    // Categories
-    return products.filter(p => p.category === currentView);
-  }, [products, currentView, searchQuery]);
+
+    if (selectedSubcategory) {
+      filtered = filtered.filter(p => p.subcategory_id === selectedSubcategory);
+    }
+
+    return filtered;
+  }, [products, currentView, searchQuery, selectedSubcategory, categories]);
+
+  const currentCategory = categories.find(c => c.name === currentView);
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-tesla-dark bg-[#f8fafc]">
@@ -135,8 +197,25 @@ const App: React.FC = () => {
           />
         )}
 
+        {/* VIEW: PRODUCT DETAIL */}
+        {currentView === 'product-detail' && selectedProduct && (
+          <ProductPage
+            product={selectedProduct}
+            currency={currency}
+            onAddToCart={addToCart}
+            onBack={() => {
+              // Go back to category if product has one, else home
+              if (selectedProduct.category) {
+                handleNavigate(selectedProduct.category);
+              } else {
+                handleNavigate('home');
+              }
+            }}
+          />
+        )}
+
         {/* VIEW: CONTENT (Home, Search, Category) */}
-        {['home', 'search', 'Model 3', 'Model S', 'Model X'].includes(currentView) && (
+        {!['success', 'checkout', 'about', 'delivery', 'returns', 'faq', 'contacts', 'product-detail'].includes(currentView) && (
           <>
             {currentView === 'home' && !searchQuery && (
               <Hero onSelectCategory={handleNavigate} />
@@ -149,35 +228,146 @@ const App: React.FC = () => {
                 </div>
               )}
 
+              {/* Category Header & Subcategories */}
+              {currentCategory && (
+                <div className="mb-8">
+                  <div className="flex items-center gap-4 mb-6">
+                    {selectedSubcategory && (
+                      <button
+                        onClick={() => {
+                          // Find parent of current subcategory or go back to root
+                          const findParent = (subs: Subcategory[], targetId: number, parentId: number | null = null): number | null => {
+                            for (const sub of subs) {
+                              if (sub.id === targetId) return parentId;
+                              if (sub.subcategories) {
+                                const found = findParent(sub.subcategories, targetId, sub.id);
+                                if (found !== undefined) return found;
+                              }
+                            }
+                            return undefined as any;
+                          };
+
+                          let parentId: number | null = null;
+                          const traverse = (subs: Subcategory[], target: number, currentParent: number | null) => {
+                            for (const s of subs) {
+                              if (s.id === target) {
+                                parentId = currentParent;
+                                return;
+                              }
+                              if (s.subcategories) traverse(s.subcategories, target, s.id);
+                            }
+                          };
+                          traverse(currentCategory.subcategories, selectedSubcategory, null);
+                          setSelectedSubcategory(parentId);
+                        }}
+                        className="text-gray-500 hover:text-tesla-red transition"
+                      >
+                        ← Назад
+                      </button>
+                    )}
+                    <h1 className="text-3xl font-bold">
+                      {selectedSubcategory
+                        ? (() => {
+                          // Find name of selected subcategory
+                          let name = '';
+                          const findName = (subs: Subcategory[]) => {
+                            for (const s of subs) {
+                              if (s.id === selectedSubcategory) { name = s.name; return; }
+                              if (s.subcategories) findName(s.subcategories);
+                            }
+                          };
+                          findName(currentCategory.subcategories);
+                          return name;
+                        })()
+                        : currentCategory.name
+                      }
+                    </h1>
+                  </div>
+
+                  {/* Determine what to show: Subcategories or Products */}
+                  {(() => {
+                    // Find current subcategory object
+                    let currentSub: Subcategory | null = null;
+                    if (selectedSubcategory) {
+                      const findSub = (subs: Subcategory[]) => {
+                        for (const s of subs) {
+                          if (s.id === selectedSubcategory) { currentSub = s; return; }
+                          if (s.subcategories) findSub(s.subcategories);
+                        }
+                      };
+                      findSub(currentCategory.subcategories);
+                    }
+
+                    // If no subcategory selected, show root subcategories
+                    // If subcategory selected and has children, show children
+                    // If subcategory selected and NO children, show products
+
+                    const subcategoriesToShow = selectedSubcategory
+                      ? (currentSub?.subcategories || [])
+                      : currentCategory.subcategories;
+
+                    const showProducts = selectedSubcategory && (!currentSub?.subcategories || currentSub.subcategories.length === 0);
+
+                    if (showProducts) {
+                      return (
+                        <ProductList
+                          products={filteredProducts}
+                          currency={currency}
+                          onAddToCart={addToCart}
+                          onProductClick={handleProductClick}
+                        />
+                      );
+                    } else {
+                      return (
+                        <>
+                          {/* Subcategory Cards Grid */}
+                          <div className="grid grid-cols-1 gap-4">
+                            {subcategoriesToShow.map(sub => (
+                              <SubcategoryCard
+                                key={sub.id}
+                                subcategory={sub}
+                                onClick={() => setSelectedSubcategory(sub.id)}
+                              />
+                            ))}
+                          </div>
+                          {subcategoriesToShow.length === 0 && (
+                            <p className="text-gray-500 italic">В цій категорії поки немає підкатегорій.</p>
+                          )}
+                        </>
+                      );
+                    }
+                  })()}
+                </div>
+              )}
+
               {loading ? (
                 <div className="flex justify-center py-20">
                   <div className="w-8 h-8 border-4 border-tesla-red border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : (
-                <ProductList
-                  title={currentView === 'home' ? 'Популярні товари' : undefined}
-                  products={filteredProducts}
-                  currency={currency}
-                  onAddToCart={addToCart}
-                />
+                <>
+                  {/* Show ProductList only for Home or Search */}
+                  {(currentView === 'home' || currentView === 'search') && (
+                    <ProductList
+                      title={currentView === 'home' ? 'Популярні товари' : undefined}
+                      products={filteredProducts}
+                      currency={currency}
+                      onAddToCart={addToCart}
+                      onProductClick={handleProductClick}
+                    />
+                  )}
+                </>
               )}
             </div>
           </>
         )}
 
-        {/* Static Pages Placeholders */}
+        {/* Static Pages */}
         {['about', 'delivery', 'returns', 'faq', 'contacts'].includes(currentView) && (
-          <div className="py-12 max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6 capitalize">{currentView.replace('-', ' ')}</h1>
-            <p className="text-gray-600 leading-relaxed">
-              Ця сторінка знаходиться в розробці. Тут буде розміщено інформацію про {currentView}.
-              <br /><br />
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-            </p>
-            <button onClick={() => handleNavigate('home')} className="mt-8 text-tesla-red font-medium hover:underline">
-              ← Повернутись на головну
-            </button>
-          </div>
+          <StaticPage
+            slug={currentView}
+            onBack={() => handleNavigate('home')}
+          />
         )}
 
       </main>
@@ -193,9 +383,9 @@ const App: React.FC = () => {
           <div>
             <h3 className="text-white font-bold mb-4">Навігація</h3>
             <ul className="space-y-2 text-sm">
-              <li><button onClick={() => handleNavigate('Model 3')} className="hover:text-white">Model 3</button></li>
-              <li><button onClick={() => handleNavigate('Model S')} className="hover:text-white">Model S</button></li>
-              <li><button onClick={() => handleNavigate('Model X')} className="hover:text-white">Model X</button></li>
+              {categories.slice(0, 4).map(cat => (
+                <li key={cat.id}><button onClick={() => handleNavigate(cat.name)} className="hover:text-white">{cat.name}</button></li>
+              ))}
             </ul>
           </div>
           <div>

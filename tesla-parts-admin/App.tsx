@@ -6,6 +6,9 @@ import { ProductList } from './components/ProductList';
 import { ProductForm } from './components/ProductForm';
 import { OrderList } from './components/OrderList';
 import { Login } from './components/Login';
+import CategoryList from './components/CategoryList';
+import { SettingsPage } from './pages/SettingsPage';
+import { CMSPage } from './pages/CMSPage';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = !!localStorage.getItem('adminSecret');
@@ -35,8 +38,11 @@ const App: React.FC = () => {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/products" element={<ProductList />} />
                   <Route path="/products/new" element={<ProductForm />} />
+                  <Route path="/products/edit/:id" element={<ProductForm />} />
                   <Route path="/orders" element={<OrderList />} />
-                  <Route path="/settings" element={<SettingsPlaceholder />} />
+                  <Route path="/categories" element={<CategoryList />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/cms" element={<CMSPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>
