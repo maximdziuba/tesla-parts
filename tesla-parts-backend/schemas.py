@@ -36,6 +36,8 @@ class SubcategoryRead(BaseModel):
     name: str
     code: str | None = None
     image: str | None = None
+    category_id: int
+    parent_id: int | None = None
     products: List[ProductRead] = []
     subcategories: List["SubcategoryRead"] = []
 
@@ -55,6 +57,11 @@ class SubcategoryCreate(BaseModel):
     image: str | None = None
     category_id: int
     parent_id: int | None = None
+
+
+class SubcategoryTransferRequest(BaseModel):
+    target_category_id: int
+    target_parent_id: int | None = None
 
 class OrderCreate(BaseModel):
     items: List[CartItem]

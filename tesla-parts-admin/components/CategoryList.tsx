@@ -1,21 +1,78 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ApiService } from '../services/api';
 import { Category, Subcategory } from '../types';
-import { Plus, Trash2, ChevronDown, ChevronRight, FolderPlus, Folder, Image as ImageIcon, CornerDownRight, Pencil, Check, X } from 'lucide-react';
+import {
+    Plus,
+    Trash2,
+    ChevronDown,
+    ChevronRight,
+    FolderPlus,
+    Folder,
+    Image as ImageIcon,
+    CornerDownRight,
+    Pencil,
+    Check,
+    X,
+    ArrowLeftRight,
+} from 'lucide-react';
 
 interface SubcategoryItemProps {
     subcategory: Subcategory;
     categoryId: number;
+    categories: Category[];
     level?: number;
     onDelete: (id: number) => void;
     onCreate: (categoryId: number, name: string, image: string, code: string, parentId: number, file?: File) => void;
     onEdit: (id: number, name: string, image: string, code: string, parentId?: number, file?: File) => void;
+    onTransfer: (id: number, targetCategoryId: number, targetParentId: number | undefined, mode: 'move' | 'copy') => Promise<void>;
 }
 
-const SubcategoryItem: React.FC<SubcategoryItemProps> = ({ subcategory, categoryId, level = 0, onDelete, onCreate, onEdit }) => {
+const collectDescendantIds = (sub: Subcategory): number[] => {
+    if (!sub.subcategories || sub.subcategories.length === 0) return [];
+    const ids: number[] = [];
+    sub.subcategories.forEach(child => {
+        ids.push(child.id, ...collectDescendantIds(child));
+    });
+    return ids;
+};
+
+const flattenSubcategoriesForSelect = (
+    subs: Subcategory[] | undefined,
+    excludeIds: Set<number>,
+    depth = 0
+): { id: number; label: string }[] => {
+    if (!subs) return [];
+    const result: { id: number; label: string }[] = [];
+    subs.forEach(item => {
+        if (excludeIds.has(item.id)) {
+            return;
+        }
+        const prefix = depth > 0 ? `${'--'.repeat(depth)} ` : '';
+        result.push({ id: item.id, label: `${prefix}${item.name}` });
+        if (item.subcategories && item.subcategories.length > 0) {
+            result.push(...flattenSubcategoriesForSelect(item.subcategories, excludeIds, depth + 1));
+        }
+    });
+    return result;
+};
+
+const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
+    subcategory,
+    categoryId,
+    categories,
+    level = 0,
+    onDelete,
+    onCreate,
+    onEdit,
+    onTransfer,
+}) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAddingChild, setIsAddingChild] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [showTransfer, setShowTransfer] = useState(false);
+    const [transferCategoryId, setTransferCategoryId] = useState<number>(categoryId);
+    const [transferParentId, setTransferParentId] = useState<number | ''>(subcategory.parent_id ?? '');
+    const [isTransferring, setIsTransferring] = useState(false);
 
     // New Child State
     const [newName, setNewName] = useState('');
@@ -28,6 +85,22 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({ subcategory, category
     const [editCode, setEditCode] = useState(subcategory.code || '');
     const [editImage, setEditImage] = useState(subcategory.image || '');
     const [editFile, setEditFile] = useState<File | null>(null);
+
+    useEffect(() => {
+        setTransferCategoryId(categoryId);
+    }, [categoryId]);
+
+    useEffect(() => {
+        setTransferParentId(subcategory.parent_id ?? '');
+    }, [subcategory.parent_id]);
+
+    const descendantIds = useMemo(() => new Set([subcategory.id, ...collectDescendantIds(subcategory)]), [subcategory]);
+
+    const parentOptions = useMemo(() => {
+        const targetCategory = categories.find(cat => cat.id === transferCategoryId);
+        if (!targetCategory) return [];
+        return flattenSubcategoriesForSelect(targetCategory.subcategories, descendantIds);
+    }, [categories, transferCategoryId, descendantIds]);
 
     const handleAddChild = () => {
         if (!newName.trim()) return;
@@ -44,6 +117,20 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({ subcategory, category
         if (!editName.trim()) return;
         onEdit(subcategory.id, editName, editImage, editCode, subcategory.parent_id, editFile || undefined);
         setIsEditing(false);
+    };
+
+    const handleTransferAction = async (mode: 'move' | 'copy') => {
+        if (!transferCategoryId) return;
+        const parentIdValue = transferParentId === '' ? undefined : Number(transferParentId);
+        try {
+            setIsTransferring(true);
+            await onTransfer(subcategory.id, transferCategoryId, parentIdValue, mode);
+            setShowTransfer(false);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsTransferring(false);
+        }
     };
 
     const hasChildren = subcategory.subcategories && subcategory.subcategories.length > 0;
@@ -118,6 +205,13 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({ subcategory, category
                             <Plus size={16} />
                         </button>
                         <button
+                            onClick={() => setShowTransfer(!showTransfer)}
+                            className="text-gray-400 hover:text-red-500 p-1"
+                            title="Перемістити / копіювати"
+                        >
+                            <ArrowLeftRight size={16} />
+                        </button>
+                        <button
                             onClick={() => onDelete(subcategory.id)}
                             className="text-gray-400 hover:text-red-500 p-1"
                             title="Видалити"
@@ -178,6 +272,66 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({ subcategory, category
                 </div>
             )}
 
+            {/* Transfer Form */}
+            {showTransfer && (
+                <div className="ml-8 mt-2 mb-2 p-3 bg-indigo-50 rounded border border-indigo-200 space-y-2">
+                    <div className="flex flex-col gap-2 md:flex-row">
+                        <select
+                            value={transferCategoryId}
+                            onChange={e => {
+                                const value = Number(e.target.value);
+                                setTransferCategoryId(value);
+                                setTransferParentId('');
+                            }}
+                            className="flex-1 border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red"
+                        >
+                            {categories.map(cat => (
+                                <option key={cat.id} value={cat.id}>
+                                    {cat.name}
+                                </option>
+                            ))}
+                        </select>
+                        <select
+                            value={transferParentId}
+                            onChange={e => {
+                                const value = e.target.value;
+                                setTransferParentId(value === '' ? '' : Number(value));
+                            }}
+                            className="flex-1 border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red"
+                        >
+                            <option value="">Корінь категорії</option>
+                            {parentOptions.map(option => (
+                                <option key={option.id} value={option.id}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                            onClick={() => handleTransferAction('move')}
+                            disabled={isTransferring}
+                            className="bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700 disabled:opacity-50"
+                        >
+                            Перемістити
+                        </button>
+                        <button
+                            onClick={() => handleTransferAction('copy')}
+                            disabled={isTransferring}
+                            className="bg-white text-red-700 border border-red-600 px-3 py-1.5 rounded text-sm hover:bg-red-50 disabled:opacity-50"
+                        >
+                            Копіювати
+                        </button>
+                        <button
+                            onClick={() => setShowTransfer(false)}
+                            className="text-gray-600 text-sm hover:underline"
+                        >
+                            Скасувати
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Children */}
             {isExpanded && hasChildren && (
                 <div className="ml-2">
@@ -186,10 +340,12 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({ subcategory, category
                             key={child.id}
                             subcategory={child}
                             categoryId={categoryId}
+                            categories={categories}
                             level={level + 1}
                             onDelete={onDelete}
                             onCreate={onCreate}
                             onEdit={onEdit}
+                            onTransfer={onTransfer}
                         />
                     ))}
                 </div>
@@ -316,6 +472,25 @@ const CategoryList: React.FC = () => {
             loadCategories();
         } catch (e) {
             alert("Failed to delete subcategory");
+        }
+    };
+
+    const handleTransferSubcategory = async (
+        id: number,
+        targetCategoryId: number,
+        targetParentId: number | undefined,
+        mode: 'move' | 'copy'
+    ) => {
+        try {
+            if (mode === 'move') {
+                await ApiService.moveSubcategory(id, targetCategoryId, targetParentId);
+            } else {
+                await ApiService.copySubcategory(id, targetCategoryId, targetParentId);
+            }
+            loadCategories();
+        } catch (error) {
+            alert(mode === 'move' ? "Failed to move subcategory" : "Failed to copy subcategory");
+            throw error;
         }
     };
 
@@ -458,9 +633,11 @@ const CategoryList: React.FC = () => {
                                             key={sub.id}
                                             subcategory={sub}
                                             categoryId={category.id}
+                                            categories={categories}
                                             onDelete={handleDeleteSubcategory}
                                             onCreate={handleCreateSubcategory}
                                             onEdit={handleUpdateSubcategory}
+                                            onTransfer={handleTransferSubcategory}
                                         />
                                     ))}
                                     {category.subcategories.length === 0 && (

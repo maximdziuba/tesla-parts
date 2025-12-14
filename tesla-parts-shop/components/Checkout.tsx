@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { City, NovaPostBranch, PaymentMethod, CartItem, Currency, OrderData } from '../types';
+import React, { useState } from 'react';
+import { PaymentMethod, CartItem, Currency, OrderData } from '../types';
 import { api } from '../services/api';
 import { EXCHANGE_RATES } from '../constants';
-import { CheckCircle, Truck, CreditCard, Building, Wallet } from 'lucide-react';
+import { Truck, CreditCard, Building, Wallet } from 'lucide-react';
+import NovaPostWidget from '../components/NovaPostWidget'; // Ensure this path is correct
 
 interface CheckoutProps {
   cartItems: CartItem[];
@@ -12,66 +13,56 @@ interface CheckoutProps {
 }
 
 const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, totalUAH }) => {
-  const [cities, setCities] = useState<City[]>([]);
-  const [selectedCityId, setSelectedCityId] = useState<string>('');
-  const [branches, setBranches] = useState<NovaPostBranch[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
-
-  // Form State
+  // --- Form State ---
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
-  const [selectedBranchId, setSelectedBranchId] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CARD);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.IBAN);
+  
+  // --- Delivery State (Simplified) ---
+  // We no longer need arrays for cities/warehouses. We just store the final result.
+  const [deliveryData, setDeliveryData] = useState<{ 
+    city: string; 
+    branch: string; 
+    ref: string;
+    address: string;
+  } | null>(null);
 
-  useEffect(() => {
-    const fetchCities = async () => {
-      try {
-        const data = await api.getCities();
-        setCities(data);
-        if (data.length > 0) {
-          // Don't auto select to force user choice, or select first
-          // setSelectedCityId(data[0].id);
-        }
-      } catch (err) {
-        console.error("Failed to fetch cities", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCities();
-  }, []);
+  const [processing, setProcessing] = useState(false);
 
-  useEffect(() => {
-    if (selectedCityId) {
-      const city = cities.find(c => c.id === selectedCityId);
-      setBranches(city ? city.branches : []);
-      setSelectedBranchId(''); // Reset branch on city change
-    } else {
-      setBranches([]);
-    }
-  }, [selectedCityId, cities]);
+  // --- Handlers ---
+
+  const handleNovaPostSelect = (data: { ref: string; description: string; city: string; address: string }) => {
+    setDeliveryData({
+      city: data.city,
+      branch: data.description, // e.g., "Department No 1"
+      address: data.address,    // e.g., "Kyiv, Khreshchatyk str..."
+      ref: data.ref             // UUID for backend
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCityId || !selectedBranchId) {
-      alert("Будь ласка, оберіть місто та відділення доставки");
+
+    if (!deliveryData) {
+      alert("Будь ласка, оберіть відділення доставки на мапі");
       return;
     }
 
     setProcessing(true);
 
-    const city = cities.find(c => c.id === selectedCityId)?.name || '';
-    const branch = branches.find(b => b.id === selectedBranchId)?.description || '';
-
     const order: OrderData = {
       items: cartItems,
       totalUAH,
       customer: { firstName, lastName, phone },
-      delivery: { city, branch },
+      delivery: { 
+        city: deliveryData.city, 
+        branch: `${deliveryData.branch} (${deliveryData.address})` // Save full info
+      },
       paymentMethod,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      // Optional: You can add deliveryRef to your OrderData type if you want to store the UUID
+      // deliveryRef: deliveryData.ref 
     };
 
     try {
@@ -108,7 +99,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
         <div className="md:col-span-2 space-y-8">
 
           <form id="checkout-form" onSubmit={handleSubmit} className="space-y-8">
-            {/* Contact Info */}
+            
+            {/* 1. Contact Info */}
             <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600">1</div>
@@ -117,84 +109,59 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Ім'я</label>
-                  <input required type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-tesla-red focus:border-transparent outline-none" />
+                  <input required type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-tesla-red outline-none" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Прізвище</label>
-                  <input required type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-tesla-red focus:border-transparent outline-none" />
+                  <input required type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-tesla-red outline-none" />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
-                  <input required type="tel" placeholder="+380..." value={phone} onChange={e => setPhone(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-tesla-red focus:border-transparent outline-none" />
+                  <input required type="tel" placeholder="+380..." value={phone} onChange={e => setPhone(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-tesla-red outline-none" />
                 </div>
               </div>
             </section>
 
-            {/* Delivery */}
+            {/* 2. Delivery (Using NovaPostWidget) */}
             <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600">2</div>
                 Доставка <span className="text-red-500 font-bold ml-2 text-sm flex items-center gap-1"><Truck size={14} /> Nova Post</span>
               </h2>
+              
               <div className="space-y-4">
-                {loading ? (
-                  <p className="text-sm text-gray-500">Завантаження міст...</p>
+                {/* The Map Widget */}
+                <NovaPostWidget onSelect={handleNovaPostSelect} />
+
+                {/* Validation / Selection Message */}
+                {deliveryData ? (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800 flex flex-col">
+                    <span className="font-bold">✓ Вибрано:</span>
+                    <span>{deliveryData.city}</span>
+                    <span>{deliveryData.branch}</span>
+                    <span className="text-xs text-gray-500 mt-1">{deliveryData.address}</span>
+                  </div>
                 ) : (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Місто</label>
-                      <select
-                        required
-                        value={selectedCityId}
-                        onChange={e => setSelectedCityId(e.target.value)}
-                        className="w-full border rounded-md p-2 bg-white focus:ring-2 focus:ring-tesla-red outline-none"
-                      >
-                        <option value="">Оберіть місто</option>
-                        {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Відділення / Поштомат</label>
-                      <select
-                        required
-                        value={selectedBranchId}
-                        onChange={e => setSelectedBranchId(e.target.value)}
-                        disabled={!selectedCityId}
-                        className="w-full border rounded-md p-2 bg-white focus:ring-2 focus:ring-tesla-red outline-none disabled:bg-gray-50 disabled:text-gray-400"
-                      >
-                        <option value="">Оберіть відділення</option>
-                        {branches.map(b => <option key={b.id} value={b.id}>{b.description}</option>)}
-                      </select>
-                    </div>
-                  </>
+                  <div className="text-sm text-gray-500 italic pl-1">
+                    * Оберіть відділення або поштомат на карті вище
+                  </div>
                 )}
               </div>
             </section>
 
-            {/* Payment */}
+            {/* 3. Payment */}
             <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600">3</div>
                 Оплата
               </h2>
               <div className="space-y-3">
-                <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition ${paymentMethod === PaymentMethod.CARD ? 'border-tesla-red bg-red-50' : 'hover:bg-gray-50'}`}>
-                  <input type="radio" name="payment" value={PaymentMethod.CARD} checked={paymentMethod === PaymentMethod.CARD} onChange={() => setPaymentMethod(PaymentMethod.CARD)} className="text-tesla-red focus:ring-tesla-red" />
-                  <div className="ml-3 flex items-center gap-3">
-                    <CreditCard className="text-gray-600" />
-                    <div>
-                      <div className="font-medium text-gray-900">Оплата карткою (Visa/Mastercard)</div>
-                      <div className="text-xs text-gray-500">Миттєва оплата без комісії</div>
-                    </div>
-                  </div>
-                </label>
-
                 <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition ${paymentMethod === PaymentMethod.IBAN ? 'border-tesla-red bg-red-50' : 'hover:bg-gray-50'}`}>
                   <input type="radio" name="payment" value={PaymentMethod.IBAN} checked={paymentMethod === PaymentMethod.IBAN} onChange={() => setPaymentMethod(PaymentMethod.IBAN)} className="text-tesla-red focus:ring-tesla-red" />
                   <div className="ml-3 flex items-center gap-3">
                     <Building className="text-gray-600" />
                     <div>
-                      <div className="font-medium text-gray-900">Оплата на рахунок IBAN</div>
+                      <div className="font-medium text-gray-900">Оплата на рахунок ФОП</div>
                       <div className="text-xs text-gray-500">Менеджер зв'яжеться для надання реквізитів</div>
                     </div>
                   </div>
@@ -224,7 +191,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
               {cartItems.map((item) => (
                 <div key={item.id} className="flex gap-3 text-sm">
                   <div className="w-12 h-12 bg-gray-100 rounded flex-shrink-0">
-                    <img src={item.image} className="w-full h-full object-cover rounded" alt="" />
+                    <img src={item.image} className="w-full h-full object-cover rounded" alt={item.name} />
                   </div>
                   <div className="flex-1">
                     <div className="font-medium line-clamp-2">{item.name}</div>

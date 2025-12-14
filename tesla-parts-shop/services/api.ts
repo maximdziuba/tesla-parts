@@ -64,26 +64,6 @@ export const api = {
         return res.json();
     },
 
-    getCities: async (): Promise<any[]> => {
-        // Mock cities for now as backend doesn't have this endpoint
-        return [
-            {
-                id: '1',
-                name: 'Kyiv',
-                branches: [
-                    { id: '1', description: 'Branch #1' },
-                    { id: '2', description: 'Branch #2' }
-                ]
-            },
-            {
-                id: '2',
-                name: 'Lviv',
-                branches: [
-                    { id: '3', description: 'Branch #1' }
-                ]
-            }
-        ];
-    },
 
     getPage: async (slug: string): Promise<{ id: number; slug: string; title: string; content: string; is_published: boolean; location: string } | null> => {
         try {

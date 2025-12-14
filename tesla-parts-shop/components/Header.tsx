@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Search, Menu, X, Instagram, Send, Phone, Info, Truck, RefreshCw, HelpCircle } from 'lucide-react';
 import { Currency } from '../types';
+import teslaLogo from '../static/tesla-logo.png';
+import TeslaPartsCenterLogo from './ShopLogo';
 
 interface HeaderProps {
   cartCount: number;
@@ -74,12 +76,7 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between gap-4">
           
           {/* Logo */}
-          <div 
-            onClick={() => onNavigate('home')} 
-            className="text-2xl font-bold tracking-tighter cursor-pointer flex items-center gap-2 text-tesla-dark"
-          >
-            <span className="text-tesla-red">TESLA</span> PARTS
-          </div>
+          <TeslaPartsCenterLogo onNavigate={onNavigate} />
 
           {/* Desktop Search & Menu */}
           <div className="hidden md:flex items-center flex-1 max-w-2xl px-8 gap-6">

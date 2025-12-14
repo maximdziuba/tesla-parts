@@ -1,7 +1,6 @@
 export enum Currency {
   UAH = 'UAH',
-  USD = 'USD',
-  EUR = 'EUR'
+  USD = 'USD'
 }
 
 export interface Subcategory {
@@ -49,9 +48,8 @@ export interface City {
 }
 
 export enum PaymentMethod {
-  CARD = 'card',
-  IBAN = 'iban',
-  COD = 'cod' // Cash on Delivery
+  IBAN = 'Оплата на рахунок ФОП',
+  COD = 'Накладений платіж' // Cash on Delivery
 }
 
 export interface OrderData {

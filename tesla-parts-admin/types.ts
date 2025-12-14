@@ -3,6 +3,8 @@ export interface Subcategory {
   name: string;
   code?: string;
   image?: string;
+  category_id: number;
+  parent_id?: number | null;
   subcategories?: Subcategory[];
 }
 

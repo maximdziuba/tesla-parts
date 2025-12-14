@@ -66,6 +66,7 @@ class OrderItem(SQLModel, table=True):
     price_at_purchase: float
     
     order: Optional[Order] = Relationship(back_populates="items")
+    product: Optional["Product"] = Relationship()
 
 class Settings(SQLModel, table=True):
     key: str = Field(primary_key=True)

@@ -194,6 +194,32 @@ export const ApiService = {
     return res.json();
   },
 
+  moveSubcategory: async (id: number, targetCategoryId: number, targetParentId?: number | null): Promise<Subcategory> => {
+    const res = await fetch(`${API_URL}/categories/subcategories/${id}/move`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        target_category_id: targetCategoryId,
+        target_parent_id: targetParentId ?? null,
+      }),
+    });
+    if (!res.ok) throw new Error('Failed to move subcategory');
+    return res.json();
+  },
+
+  copySubcategory: async (id: number, targetCategoryId: number, targetParentId?: number | null): Promise<Subcategory> => {
+    const res = await fetch(`${API_URL}/categories/subcategories/${id}/copy`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        target_category_id: targetCategoryId,
+        target_parent_id: targetParentId ?? null,
+      }),
+    });
+    if (!res.ok) throw new Error('Failed to copy subcategory');
+    return res.json();
+  },
+
   deleteCategory: async (id: number): Promise<boolean> => {
     const res = await fetch(`${API_URL}/categories/${id}`, {
       method: 'DELETE',

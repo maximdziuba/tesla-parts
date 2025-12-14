@@ -10,6 +10,7 @@ import StaticPage from './components/StaticPage';
 import { Product, Currency, CartItem, Category, Subcategory } from './types';
 import { api } from './services/api';
 import { CheckCircle } from 'lucide-react';
+import TeslaPartsCenterLogo from './components/ShopLogo';
 
 const App: React.FC = () => {
   // Navigation State
@@ -376,7 +377,7 @@ const App: React.FC = () => {
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="text-white text-xl font-bold mb-4 flex items-center gap-2">
-              <span className="text-tesla-red">TESLA</span> PARTS
+            <TeslaPartsCenterLogo onNavigate={handleNavigate} />
             </div>
             <p className="text-sm">Ваш надійний партнер у світі запчастин для електромобілів.</p>
           </div>
@@ -407,7 +408,7 @@ const App: React.FC = () => {
           </div>
         </div>
         <div className="container mx-auto px-4 mt-8 pt-8 border-t border-gray-800 text-center text-xs">
-          © 2024 Tesla Parts Shop. Всі права захищені.
+          © 2024 Tesla Parts Center. Всі права захищені.
         </div>
       </footer>
 
