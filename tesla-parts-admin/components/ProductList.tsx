@@ -16,6 +16,7 @@ export const ProductList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('Всі');
   const [loading, setLoading] = useState(true);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
   useEffect(() => {
     fetchProducts();
@@ -49,7 +50,44 @@ export const ProductList: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (confirm('Ви впевнені, що хочете видалити цей товар?')) {
       await ApiService.deleteProduct(id);
+      setSelectedProducts(prev => prev.filter(pid => pid !== id));
       fetchProducts();
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedProducts(prev =>
+      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+    );
+  };
+
+  useEffect(() => {
+    setSelectedProducts(prev =>
+      prev.filter(pid => products.some(product => product.id === pid))
+    );
+  }, [products]);
+
+  const allVisibleIds = filteredProducts.map(p => p.id);
+  const isAllSelected =
+    allVisibleIds.length > 0 && allVisibleIds.every(id => selectedProducts.includes(id));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedProducts(prev => prev.filter(id => !allVisibleIds.includes(id)));
+    } else {
+      setSelectedProducts(prev => Array.from(new Set([...prev, ...allVisibleIds])));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) return;
+    if (!confirm(`Видалити ${selectedProducts.length} товар(и)?`)) return;
+    try {
+      await ApiService.bulkDeleteProducts(selectedProducts);
+      setSelectedProducts([]);
+      fetchProducts();
+    } catch (error) {
+      alert('Не вдалося видалити вибрані товари');
     }
   };
 
@@ -73,6 +111,23 @@ export const ProductList: React.FC = () => {
         </div>
 
         <div className="flex gap-2 w-full md:w-auto">
+          <button
+            onClick={handleBulkDelete}
+            disabled={selectedProducts.length === 0}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
+              selectedProducts.length === 0
+                ? 'text-gray-300 border-gray-200 cursor-not-allowed'
+                : 'text-red-600 border-red-200 hover:bg-red-50'
+            }`}
+          >
+            <Trash2 size={16} />
+            <span>Видалити вибрані</span>
+            {selectedProducts.length > 0 && (
+              <span className="text-xs font-semibold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                {selectedProducts.length}
+              </span>
+            )}
+          </button>
           <div className="relative">
             <select
               className="appearance-none pl-10 pr-8 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -99,6 +154,14 @@ export const ProductList: React.FC = () => {
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
               <tr>
+                <th className="px-4 py-4 w-10">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-red-600 border-gray-300 rounded"
+                  />
+                </th>
                 <th className="px-6 py-4">Товар</th>
                 <th className="px-6 py-4">Категорія</th>
                 <th className="px-6 py-4">Наявність</th>
@@ -109,6 +172,14 @@ export const ProductList: React.FC = () => {
             <tbody className="divide-y divide-gray-100">
               {filteredProducts.map((product) => (
                 <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.includes(product.id)}
+                      onChange={() => toggleSelect(product.id)}
+                      className="w-4 h-4 text-red-600 border-gray-300 rounded"
+                    />
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded bg-gray-100 overflow-hidden">

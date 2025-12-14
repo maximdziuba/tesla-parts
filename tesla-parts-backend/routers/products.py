@@ -6,7 +6,7 @@ import os
 from sqlalchemy.orm import selectinload
 from database import get_session
 from models import Product, ProductImage, ProductSubcategoryLink
-from schemas import ProductCreate, ProductRead
+from schemas import ProductCreate, ProductRead, ProductBulkDeleteRequest
 from services.image_uploader import image_uploader
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -228,3 +228,28 @@ def delete_product(product_id: str, session: Session = Depends(get_session)):
     session.delete(product)
     session.commit()
     return {"ok": True}
+
+
+@router.post("/bulk-delete", dependencies=[Depends(verify_admin)])
+def bulk_delete_products(
+    request: ProductBulkDeleteRequest,
+    session: Session = Depends(get_session),
+):
+    if not request.product_ids:
+        return {"deleted": 0}
+
+    session.exec(
+        delete(ProductSubcategoryLink).where(
+            ProductSubcategoryLink.product_id.in_(request.product_ids)
+        )
+    )
+
+    products = session.exec(
+        select(Product).where(Product.id.in_(request.product_ids))
+    ).all()
+
+    for product in products:
+        session.delete(product)
+
+    session.commit()
+    return {"deleted": len(products)}

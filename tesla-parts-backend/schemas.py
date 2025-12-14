@@ -29,6 +29,7 @@ class ProductCreate(ProductBase):
 
 class ProductRead(ProductBase):
     subcategory_id: int | None = None
+    subcategory_ids: List[int] = []
     images: List[str] = []
     subcategory_ids: List[int] = []
 
@@ -87,3 +88,7 @@ class OrderRead(BaseModel):
     delivery_branch: str
     payment_method: str
     items: List[OrderItemRead]
+
+
+class ProductBulkDeleteRequest(BaseModel):
+    product_ids: List[str]

@@ -109,6 +109,19 @@ export const ApiService = {
     return res.ok;
   },
 
+  bulkDeleteProducts: async (ids: string[]): Promise<{ deleted: number }> => {
+    const res = await fetch(`${API_URL}/products/bulk-delete`, {
+      method: 'POST',
+      headers: {
+        ...getHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ product_ids: ids }),
+    });
+    if (!res.ok) throw new Error('Failed to delete products');
+    return res.json();
+  },
+
   getOrders: async (): Promise<Order[]> => {
     const res = await fetch(`${API_URL}/orders/`, { headers: getHeaders() });
     if (!res.ok) throw new Error('Failed to fetch orders');
