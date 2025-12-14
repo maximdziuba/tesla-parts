@@ -1,10 +1,9 @@
 from typing import List, Optional
-from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from sqlmodel import Session, select
+from sqlmodel import Session, select, delete
 from sqlalchemy.orm import selectinload
 from database import get_session
-from models import Category, Subcategory, Product, ProductImage
+from models import Category, Subcategory, Product, ProductSubcategoryLink
 from schemas import (
     CategoryRead,
     CategoryCreate,
@@ -16,27 +15,129 @@ from services.image_uploader import image_uploader
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
+
+def _split_categories(value: Optional[str]) -> List[str]:
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _join_categories(categories: List[str]) -> str:
+    unique: List[str] = []
+    for category in categories:
+        if category not in unique:
+            unique.append(category)
+    return ", ".join(unique)
+
+
+def _ensure_category_present(
+    product: Product,
+    category_name: str,
+    session: Session,
+):
+    categories = _split_categories(product.category)
+    if category_name not in categories:
+        categories.append(category_name)
+        product.category = _join_categories(categories)
+        session.add(product)
+
+
+def _replace_category(
+    product: Product,
+    old_category_name: Optional[str],
+    new_category_name: str,
+    session: Session,
+):
+    categories = _split_categories(product.category)
+    if old_category_name:
+        categories = [c for c in categories if c != old_category_name]
+    if new_category_name not in categories:
+        categories.append(new_category_name)
+    if not categories:
+        categories = [new_category_name]
+    product.category = _join_categories(categories)
+    session.add(product)
+
+
+def _ensure_product_link(
+    session: Session,
+    product_id: str,
+    subcategory_id: int,
+):
+    existing = session.get(ProductSubcategoryLink, (product_id, subcategory_id))
+    if not existing:
+        session.add(
+            ProductSubcategoryLink(
+                product_id=product_id,
+                subcategory_id=subcategory_id,
+            )
+        )
+
+
+def _get_products_for_subcategory(
+    session: Session,
+    subcategory_id: int,
+) -> List[Product]:
+    direct_products = session.exec(
+        select(Product)
+        .where(Product.subcategory_id == subcategory_id)
+        .options(
+            selectinload(Product.images),
+            selectinload(Product.linked_subcategories),
+        )
+    ).all()
+
+    linked_products = session.exec(
+        select(Product)
+        .join(
+            ProductSubcategoryLink,
+            ProductSubcategoryLink.product_id == Product.id,
+        )
+        .where(ProductSubcategoryLink.subcategory_id == subcategory_id)
+        .options(
+            selectinload(Product.images),
+            selectinload(Product.linked_subcategories),
+        )
+    ).all()
+
+    merged: dict[str, Product] = {product.id: product for product in direct_products}
+    for product in linked_products:
+        merged.setdefault(product.id, product)
+
+    return list(merged.values())
+
+
+def _collect_subcategory_ids(product: Product) -> List[int]:
+    ids: List[int] = []
+    if product.subcategory_id:
+        ids.append(product.subcategory_id)
+    if product.linked_subcategories:
+        for sub in product.linked_subcategories:
+            if sub.id and sub.id not in ids:
+                ids.append(sub.id)
+    return ids
+
+
+def _serialize_product(product: Product) -> dict:
+    prod_data = product.model_dump()
+    prod_data["images"] = [img.url for img in product.images]
+    prod_data["subcategory_ids"] = _collect_subcategory_ids(product)
+    return prod_data
+
 @router.get("/", response_model=List[CategoryRead])
 def get_categories(session: Session = Depends(get_session)):
     categories = session.exec(
         select(Category)
         .options(
             selectinload(Category.subcategories)
-            .selectinload(Subcategory.products)
-            .selectinload(Product.images)
         )
     ).all()
     
     def build_subcategory_tree(sub: Subcategory, all_subs: List[Subcategory]) -> SubcategoryRead:
         sub_data = sub.model_dump()
-        
-        # Handle products
-        products_data = []
-        for prod in sub.products:
-            prod_data = prod.model_dump()
-            prod_data["images"] = [img.url for img in prod.images]
-            products_data.append(prod_data)
-        sub_data["products"] = products_data
+
+        products = _get_products_for_subcategory(session, sub.id)
+        sub_data["products"] = [_serialize_product(prod) for prod in products]
         
         # Handle children subcategories
         children = [s for s in all_subs if s.parent_id == sub.id]
@@ -100,22 +201,26 @@ def _update_subtree_category(
     subcategory: Subcategory,
     new_category_id: int,
     new_category_name: str,
+    old_category_name: Optional[str] = None,
 ):
     subcategory.category_id = new_category_id
     session.add(subcategory)
 
-    products = session.exec(
-        select(Product).where(Product.subcategory_id == subcategory.id)
-    ).all()
+    products = _get_products_for_subcategory(session, subcategory.id)
     for product in products:
-        product.category = new_category_name
-        session.add(product)
+        _replace_category(product, old_category_name, new_category_name, session)
 
     children = session.exec(
         select(Subcategory).where(Subcategory.parent_id == subcategory.id)
     ).all()
     for child in children:
-        _update_subtree_category(session, child, new_category_id, new_category_name)
+        _update_subtree_category(
+            session,
+            child,
+            new_category_id,
+            new_category_name,
+            old_category_name,
+        )
 
 
 def _clone_subcategory_tree(
@@ -135,31 +240,10 @@ def _clone_subcategory_tree(
     session.add(new_subcategory)
     session.flush()  # Get ID for children
 
-    products = session.exec(
-        select(Product).where(Product.subcategory_id == source_subcategory.id)
-    ).all()
+    products = _get_products_for_subcategory(session, source_subcategory.id)
     for product in products:
-        new_product_id = f"{product.id}-copy-{uuid4().hex[:6]}"
-        new_product = Product(
-            id=new_product_id,
-            name=product.name,
-            category=target_category_name,
-            subcategory_id=new_subcategory.id,
-            priceUAH=product.priceUAH,
-            priceUSD=product.priceUSD,
-            description=product.description,
-            inStock=product.inStock,
-            detail_number=product.detail_number,
-            image=product.image,
-        )
-        session.add(new_product)
-        session.flush()
-
-        images = session.exec(
-            select(ProductImage).where(ProductImage.product_id == product.id)
-        ).all()
-        for image in images:
-            session.add(ProductImage(product_id=new_product_id, url=image.url))
+        _ensure_category_present(product, target_category_name, session)
+        _ensure_product_link(session, product.id, new_subcategory.id)
 
     children = session.exec(
         select(Subcategory).where(Subcategory.parent_id == source_subcategory.id)
@@ -182,26 +266,20 @@ def _load_subcategories_for_category(
     return session.exec(
         select(Subcategory)
         .where(Subcategory.category_id == category_id)
-        .options(
-            selectinload(Subcategory.products).selectinload(Product.images),
-        )
+        .options(selectinload(Subcategory.products))
     ).all()
 
 
 def _serialize_subcategory_tree(
-    root: Subcategory, all_subs: List[Subcategory]
+    root: Subcategory, all_subs: List[Subcategory], session: Session
 ) -> SubcategoryRead:
     sub_data = root.model_dump()
-    products_data = []
-    for product in root.products:
-        prod_data = product.model_dump()
-        prod_data["images"] = [img.url for img in product.images]
-        products_data.append(prod_data)
-    sub_data["products"] = products_data
+    products = _get_products_for_subcategory(session, root.id)
+    sub_data["products"] = [_serialize_product(product) for product in products]
 
     children = [sub for sub in all_subs if sub.parent_id == root.id]
     sub_data["subcategories"] = [
-        _serialize_subcategory_tree(child, all_subs) for child in children
+        _serialize_subcategory_tree(child, all_subs, session) for child in children
     ]
     return SubcategoryRead(**sub_data)
 
@@ -212,12 +290,10 @@ def _build_subcategory_response(
     subcategory = session.exec(
         select(Subcategory)
         .where(Subcategory.id == subcategory_id)
-        .options(
-            selectinload(Subcategory.products).selectinload(Product.images),
-        )
+        .options(selectinload(Subcategory.products))
     ).one()
     all_subs = _load_subcategories_for_category(session, subcategory.category_id)
-    return _serialize_subcategory_tree(subcategory, all_subs)
+    return _serialize_subcategory_tree(subcategory, all_subs, session)
 
 
 @router.post("/", response_model=CategoryRead)
@@ -339,6 +415,8 @@ def move_subcategory(
     target_category = session.get(Category, transfer.target_category_id)
     if not target_category:
         raise HTTPException(status_code=404, detail="Target category not found")
+    source_category = session.get(Category, subcategory.category_id)
+    old_category_name = source_category.name if source_category else None
 
     _validate_target_parent(
         session,
@@ -348,7 +426,11 @@ def move_subcategory(
     )
 
     _update_subtree_category(
-        session, subcategory, transfer.target_category_id, target_category.name
+        session,
+        subcategory,
+        transfer.target_category_id,
+        target_category.name,
+        old_category_name,
     )
     subcategory.parent_id = transfer.target_parent_id
 
@@ -394,6 +476,15 @@ def delete_category(category_id: int, session: Session = Depends(get_session)):
     category = session.get(Category, category_id)
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
+    subcategory_ids = session.exec(
+        select(Subcategory.id).where(Subcategory.category_id == category_id)
+    ).all()
+    if subcategory_ids:
+        session.exec(
+            delete(ProductSubcategoryLink).where(
+                ProductSubcategoryLink.subcategory_id.in_(subcategory_ids)
+            )
+        )
     session.delete(category)
     session.commit()
     return {"ok": True}
@@ -403,6 +494,11 @@ def delete_subcategory(subcategory_id: int, session: Session = Depends(get_sessi
     subcategory = session.get(Subcategory, subcategory_id)
     if not subcategory:
         raise HTTPException(status_code=404, detail="Subcategory not found")
+    session.exec(
+        delete(ProductSubcategoryLink).where(
+            ProductSubcategoryLink.subcategory_id == subcategory_id
+        )
+    )
     session.delete(subcategory)
     session.commit()
     return {"ok": True}

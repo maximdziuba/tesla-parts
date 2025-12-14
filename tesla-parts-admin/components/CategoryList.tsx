@@ -374,6 +374,7 @@ const CategoryList: React.FC = () => {
     const [newSubcategoryNames, setNewSubcategoryNames] = useState<{ [key: number]: string }>({});
     const [newSubcategoryCodes, setNewSubcategoryCodes] = useState<{ [key: number]: string }>({});
     const [newSubcategoryImages, setNewSubcategoryImages] = useState<{ [key: number]: string }>({});
+    const [newSubcategoryFiles, setNewSubcategoryFiles] = useState<{ [key: number]: File | null }>({});
 
     useEffect(() => {
         loadCategories();
@@ -448,12 +449,23 @@ const CategoryList: React.FC = () => {
                 setNewSubcategoryNames(prev => ({ ...prev, [categoryId]: '' }));
                 setNewSubcategoryCodes(prev => ({ ...prev, [categoryId]: '' }));
                 setNewSubcategoryImages(prev => ({ ...prev, [categoryId]: '' }));
-                // Reset file state if I had it for top level... I don't have it yet.
+                setNewSubcategoryFiles(prev => ({ ...prev, [categoryId]: null }));
             }
             loadCategories();
         } catch (e) {
             alert("Failed to create subcategory");
         }
+    };
+
+    const triggerRootSubcategoryCreate = (category: Category) => {
+        handleCreateSubcategory(
+            category.id,
+            newSubcategoryNames[category.id],
+            newSubcategoryImages[category.id],
+            newSubcategoryCodes[category.id],
+            undefined,
+            newSubcategoryFiles[category.id] || undefined
+        );
     };
 
     const handleUpdateSubcategory = async (id: number, name: string, image: string, code: string, parentId?: number, file?: File) => {
@@ -655,7 +667,7 @@ const CategoryList: React.FC = () => {
                                             className="flex-1 border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-tesla-red outline-none"
                                             placeholder="Нова коренева підкатегорія..."
                                             onKeyDown={e => {
-                                                if (e.key === 'Enter') handleCreateSubcategory(category.id, newSubcategoryNames[category.id], newSubcategoryImages[category.id], newSubcategoryCodes[category.id]);
+                                                if (e.key === 'Enter') triggerRootSubcategoryCreate(category);
                                             }}
                                         />
                                         <input
@@ -665,22 +677,38 @@ const CategoryList: React.FC = () => {
                                             className="w-24 border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-tesla-red outline-none"
                                             placeholder="Код (11)"
                                             onKeyDown={e => {
-                                                if (e.key === 'Enter') handleCreateSubcategory(category.id, newSubcategoryNames[category.id], newSubcategoryImages[category.id], newSubcategoryCodes[category.id]);
+                                                if (e.key === 'Enter') triggerRootSubcategoryCreate(category);
                                             }}
                                         />
-                                        <input
-                                            type="text"
-                                            value={newSubcategoryImages[category.id] || ''}
-                                            onChange={e => setNewSubcategoryImages(prev => ({ ...prev, [category.id]: e.target.value }))}
-                                            className="flex-1 border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-tesla-red outline-none"
-                                            placeholder="URL зображення..."
-                                            onKeyDown={e => {
-                                                if (e.key === 'Enter') handleCreateSubcategory(category.id, newSubcategoryNames[category.id], newSubcategoryImages[category.id], newSubcategoryCodes[category.id]);
-                                            }}
-                                        />
+                                        <div className="flex items-center gap-2 flex-1">
+                                            <input
+                                                type="text"
+                                                value={newSubcategoryImages[category.id] || ''}
+                                                onChange={e => setNewSubcategoryImages(prev => ({ ...prev, [category.id]: e.target.value }))}
+                                                className="flex-1 border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-tesla-red outline-none"
+                                                placeholder="URL зображення..."
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') triggerRootSubcategoryCreate(category);
+                                                }}
+                                            />
+                                            <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md flex items-center gap-1 border border-gray-300">
+                                                <ImageIcon size={16} />
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    onChange={e => {
+                                                        const file = e.target.files?.[0] || null;
+                                                        setNewSubcategoryFiles(prev => ({ ...prev, [category.id]: file }));
+                                                        if (file) {
+                                                            setNewSubcategoryImages(prev => ({ ...prev, [category.id]: file.name }));
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
                                     </div>
                                     <button
-                                        onClick={() => handleCreateSubcategory(category.id, newSubcategoryNames[category.id], newSubcategoryImages[category.id], newSubcategoryCodes[category.id])}
+                                        onClick={() => triggerRootSubcategoryCreate(category)}
                                         className="bg-gray-100 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition text-sm font-medium"
                                     >
                                         Додати

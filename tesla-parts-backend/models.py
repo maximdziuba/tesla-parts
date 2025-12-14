@@ -9,6 +9,11 @@ class Category(SQLModel, table=True):
     
     subcategories: List["Subcategory"] = Relationship(back_populates="category")
 
+class ProductSubcategoryLink(SQLModel, table=True):
+    product_id: str = Field(foreign_key="product.id", primary_key=True)
+    subcategory_id: int = Field(foreign_key="subcategory.id", primary_key=True)
+
+
 class Subcategory(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
@@ -21,6 +26,10 @@ class Subcategory(SQLModel, table=True):
     parent: Optional["Subcategory"] = Relationship(back_populates="children", sa_relationship_kwargs={"remote_side": "Subcategory.id"})
     children: List["Subcategory"] = Relationship(back_populates="parent")
     products: List["Product"] = Relationship(back_populates="subcategory")
+    linked_products: List["Product"] = Relationship(
+        back_populates="linked_subcategories",
+        link_model=ProductSubcategoryLink,
+    )
 
 class Product(SQLModel, table=True):
     id: str = Field(primary_key=True)
@@ -35,6 +44,10 @@ class Product(SQLModel, table=True):
     detail_number: Optional[str] = None
     
     subcategory: Optional[Subcategory] = Relationship(back_populates="products")
+    linked_subcategories: List[Subcategory] = Relationship(
+        back_populates="linked_products",
+        link_model=ProductSubcategoryLink,
+    )
     images: List["ProductImage"] = Relationship(back_populates="product", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class ProductImage(SQLModel, table=True):

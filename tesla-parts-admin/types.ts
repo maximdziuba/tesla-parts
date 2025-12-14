@@ -20,6 +20,7 @@ export interface Product {
   name: string;
   category: string;
   subcategory_id?: number;
+  subcategory_ids?: number[];
   priceUAH: number;
   image: string;
   images?: string[];

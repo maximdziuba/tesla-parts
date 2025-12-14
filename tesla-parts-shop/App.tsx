@@ -12,6 +12,28 @@ import { api } from './services/api';
 import { CheckCircle } from 'lucide-react';
 import TeslaPartsCenterLogo from './components/ShopLogo';
 
+const parseProductCategories = (value?: string | null) => {
+  if (!value) return [];
+  return value.split(',').map(item => item.trim()).filter(Boolean);
+};
+
+const productMatchesCategory = (product: Product, categoryName: string) => {
+  if (!categoryName) return false;
+  return parseProductCategories(product.category).includes(categoryName);
+};
+
+const getPrimaryCategory = (value?: string | null) => {
+  const categories = parseProductCategories(value);
+  return categories.length > 0 ? categories[0] : '';
+};
+
+const getProductSubcategoryIds = (product: Product): number[] => {
+  if (product.subcategory_ids && product.subcategory_ids.length > 0) {
+    return product.subcategory_ids;
+  }
+  return product.subcategory_id ? [product.subcategory_id] : [];
+};
+
 const App: React.FC = () => {
   // Navigation State
   const [currentView, setCurrentView] = useState('home'); // home, checkout, success, or category name
@@ -133,18 +155,21 @@ const App: React.FC = () => {
         }
       });
 
-      filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(lowerQuery) ||
-        (p.detail_number && p.detail_number.toLowerCase().includes(lowerQuery)) ||
-        (p.subcategory_id && matchingSubcategoryIds.has(p.subcategory_id))
-      );
+      filtered = filtered.filter(p => {
+        const productSubIds = getProductSubcategoryIds(p);
+        return (
+          p.name.toLowerCase().includes(lowerQuery) ||
+          (p.detail_number && p.detail_number.toLowerCase().includes(lowerQuery)) ||
+          productSubIds.some(id => matchingSubcategoryIds.has(id))
+        );
+      });
     } else {
       // Category View
-      filtered = filtered.filter(p => p.category === currentView);
+      filtered = filtered.filter(p => productMatchesCategory(p, currentView));
     }
 
     if (selectedSubcategory) {
-      filtered = filtered.filter(p => p.subcategory_id === selectedSubcategory);
+      filtered = filtered.filter(p => getProductSubcategoryIds(p).includes(selectedSubcategory));
     }
 
     return filtered;
@@ -206,11 +231,8 @@ const App: React.FC = () => {
             onAddToCart={addToCart}
             onBack={() => {
               // Go back to category if product has one, else home
-              if (selectedProduct.category) {
-                handleNavigate(selectedProduct.category);
-              } else {
-                handleNavigate('home');
-              }
+              const primaryCategory = getPrimaryCategory(selectedProduct.category);
+              handleNavigate(primaryCategory || 'home');
             }}
           />
         )}

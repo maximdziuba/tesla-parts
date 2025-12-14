@@ -21,8 +21,9 @@ export interface Category {
 export interface Product {
   id: string;
   name: string;
-  category: string; // 'Model 3' | 'Model S' | 'Model X'
+  category: string; // Comma-separated list of categories (e.g., "Model 3, Model Y")
   subcategory_id?: number;
+  subcategory_ids?: number[];
   priceUAH: number;
   priceUSD?: number;
   image: string;

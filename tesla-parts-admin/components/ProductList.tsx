@@ -5,6 +5,11 @@ import { Search, Plus, Filter, Trash2, Pencil } from 'lucide-react';
 
 import { Link } from 'react-router-dom';
 
+const extractCategories = (value?: string) => {
+  if (!value) return [];
+  return value.split(',').map(cat => cat.trim()).filter(Boolean);
+};
+
 export const ProductList: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -31,7 +36,7 @@ export const ProductList: React.FC = () => {
   useEffect(() => {
     let result = products;
     if (categoryFilter !== 'Всі') {
-      result = result.filter(p => p.category === categoryFilter);
+      result = result.filter(p => extractCategories(p.category).includes(categoryFilter));
     }
     if (searchTerm) {
       result = result.filter(p =>
@@ -50,7 +55,7 @@ export const ProductList: React.FC = () => {
 
   if (loading) return <div className="p-8 text-center">Завантаження...</div>;
 
-  const categories = ['Всі', ...Array.from(new Set(products.map(p => p.category)))];
+  const categories = ['Всі', ...Array.from(new Set(products.flatMap(p => extractCategories(p.category))))];
 
   return (
     <div className="space-y-6">

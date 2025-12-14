@@ -30,6 +30,7 @@ class ProductCreate(ProductBase):
 class ProductRead(ProductBase):
     subcategory_id: int | None = None
     images: List[str] = []
+    subcategory_ids: List[int] = []
 
 class SubcategoryRead(BaseModel):
     id: int

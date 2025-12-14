@@ -1,15 +1,26 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File, Form
-from sqlmodel import Session, select
+from sqlmodel import Session, select, delete
 from typing import List, Optional
 import shutil
 import os
 from sqlalchemy.orm import selectinload
 from database import get_session
-from models import Product, ProductImage
+from models import Product, ProductImage, ProductSubcategoryLink
 from schemas import ProductCreate, ProductRead
 from services.image_uploader import image_uploader
 
 router = APIRouter(prefix="/products", tags=["products"])
+
+
+def _collect_subcategory_ids(product: Product) -> List[int]:
+    ids: List[int] = []
+    if product.subcategory_id:
+        ids.append(product.subcategory_id)
+    if product.linked_subcategories:
+        for sub in product.linked_subcategories:
+            if sub.id and sub.id not in ids:
+                ids.append(sub.id)
+    return ids
 
 def verify_admin(x_admin_secret: str = Header(None)):
     import os
@@ -19,7 +30,10 @@ def verify_admin(x_admin_secret: str = Header(None)):
 
 @router.get("/", response_model=List[ProductRead])
 def read_products(category: str = None, subcategory_id: int = None, session: Session = Depends(get_session)):
-    query = select(Product).options(selectinload(Product.images))
+    query = select(Product).options(
+        selectinload(Product.images),
+        selectinload(Product.linked_subcategories),
+    )
     if category:
         query = query.where(Product.category == category)
     if subcategory_id:
@@ -32,18 +46,27 @@ def read_products(category: str = None, subcategory_id: int = None, session: Ses
     for p in products:
         p_data = p.model_dump()
         p_data["images"] = [img.url for img in p.images]
+        p_data["subcategory_ids"] = _collect_subcategory_ids(p)
         result.append(ProductRead(**p_data))
         
     return result
 
 @router.get("/{product_id}", response_model=ProductRead)
 def read_product(product_id: str, session: Session = Depends(get_session)):
-    product = session.get(Product, product_id)
+    product = session.exec(
+        select(Product)
+        .where(Product.id == product_id)
+        .options(
+            selectinload(Product.images),
+            selectinload(Product.linked_subcategories),
+        )
+    ).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
     p_data = product.model_dump()
     p_data["images"] = [img.url for img in product.images]
+    p_data["subcategory_ids"] = _collect_subcategory_ids(product)
     return ProductRead(**p_data)
 
 @router.get("/labels", tags=["labels"])
@@ -116,6 +139,7 @@ async def create_product(
     # Construct response manually to avoid modifying the SQLModel relationship with strings
     response_data = product_data.model_dump()
     response_data["images"] = [img.url for img in product_data.images]
+    response_data["subcategory_ids"] = _collect_subcategory_ids(product_data)
     
     return ProductRead(**response_data)
 
@@ -188,6 +212,7 @@ async def update_product(
     # Re-fetch images to get updated list
     updated_images = session.exec(select(ProductImage).where(ProductImage.product_id == product_id)).all()
     response_data["images"] = [img.url for img in updated_images]
+    response_data["subcategory_ids"] = _collect_subcategory_ids(product)
     return ProductRead(**response_data)
 
 @router.delete("/{product_id}", dependencies=[Depends(verify_admin)])
@@ -195,6 +220,11 @@ def delete_product(product_id: str, session: Session = Depends(get_session)):
     product = session.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    session.exec(
+        delete(ProductSubcategoryLink).where(
+            ProductSubcategoryLink.product_id == product_id
+        )
+    )
     session.delete(product)
     session.commit()
     return {"ok": True}

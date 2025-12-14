@@ -15,6 +15,11 @@ import {
 } from 'recharts';
 import { DollarSign, ShoppingBag, Package, AlertTriangle } from 'lucide-react';
 
+const getProductCategories = (value?: string) => {
+  if (!value) return [];
+  return value.split(',').map(item => item.trim()).filter(Boolean);
+};
+
 const StatCard = ({ title, value, icon: Icon, color, subtext }: any) => (
   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
     <div className="flex items-center justify-between">
@@ -76,7 +81,9 @@ export const Dashboard: React.FC = () => {
 
   // Calculate Sales by Model
   const salesByModel = ['Model 3', 'Model S', 'Model X', 'Model Y'].map(model => {
-    const modelProducts = products.filter(p => p.category === model).map(p => p.id);
+    const modelProducts = products
+      .filter(p => getProductCategories(p.category).includes(model))
+      .map(p => p.id);
     const count = orders.reduce((acc, order) => {
       const modelItems = order.items.filter(item => modelProducts.includes(item.product_id));
       return acc + modelItems.reduce((sum, item) => sum + item.quantity, 0);
