@@ -179,7 +179,12 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                     ) : (
                         <>
                             {subcategory.image ? (
-                                <img src={subcategory.image} alt="" className="w-6 h-6 rounded object-cover" />
+                                /* FIX 1: Use h-6 and w-auto object-contain to prevent cropping */
+                                <img 
+                                    src={subcategory.image} 
+                                    alt="" 
+                                    className="h-6 w-auto max-w-[4rem] rounded object-contain bg-white" 
+                                />
                             ) : (
                                 <Folder size={16} className="text-gray-400" />
                             )}
@@ -635,7 +640,14 @@ const CategoryList: React.FC = () => {
                             ) : (
                                 <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => toggleExpand(category.id)}>
                                     {expandedCategories.includes(category.id) ? <ChevronDown size={20} className="text-gray-500" /> : <ChevronRight size={20} className="text-gray-500" />}
-                                    {category.image && <img src={category.image} alt="" className="w-8 h-8 rounded object-cover" />}
+                                    {category.image && (
+                                        /* FIX 2: Use h-8 and w-auto object-contain for main category images */
+                                        <img 
+                                            src={category.image} 
+                                            alt="" 
+                                            className="h-8 w-auto max-w-[6rem] rounded object-contain bg-gray-50" 
+                                        />
+                                    )}
                                     <span className="font-semibold text-lg">{category.name}</span>
                                     <span className="text-xs text-gray-400">#{category.sort_order ?? 0}</span>
                                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">{category.subcategories.length} підкатегорій</span>
