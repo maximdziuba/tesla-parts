@@ -8,6 +8,7 @@ from database import get_session
 from models import Product, ProductImage, ProductSubcategoryLink
 from schemas import ProductCreate, ProductRead, ProductBulkDeleteRequest
 from services.image_uploader import image_uploader
+from services.pricing import get_exchange_rate, compute_price_fields
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -21,6 +22,51 @@ def _collect_subcategory_ids(product: Product) -> List[int]:
             if sub.id and sub.id not in ids:
                 ids.append(sub.id)
     return ids
+
+
+def _build_product_response(product: Product, rate: float) -> ProductRead:
+    price_usd, price_uah = compute_price_fields(product, rate)
+    p_data = product.model_dump()
+    p_data["priceUSD"] = price_usd
+    p_data["priceUAH"] = price_uah
+    p_data["images"] = [img.url for img in product.images]
+    p_data["subcategory_ids"] = _collect_subcategory_ids(product)
+    return ProductRead(**p_data)
+
+
+def _normalize_subcategory_selection(
+    primary_subcategory_id: Optional[int],
+    extra_subcategory_ids: Optional[List[int]],
+) -> List[int]:
+    normalized: List[int] = []
+
+    if primary_subcategory_id:
+        normalized.append(primary_subcategory_id)
+
+    if extra_subcategory_ids:
+        for sub_id in extra_subcategory_ids:
+            if sub_id and sub_id not in normalized:
+                normalized.append(sub_id)
+
+    return normalized
+
+
+def _sync_linked_subcategories(
+    session: Session, product_id: str, link_ids: List[int]
+):
+    session.exec(
+        delete(ProductSubcategoryLink).where(
+            ProductSubcategoryLink.product_id == product_id
+        )
+    )
+    for sub_id in link_ids:
+        session.add(
+            ProductSubcategoryLink(
+                product_id=product_id,
+                subcategory_id=sub_id,
+            )
+        )
+    session.commit()
 
 def verify_admin(x_admin_secret: str = Header(None)):
     import os
@@ -40,16 +86,8 @@ def read_products(category: str = None, subcategory_id: int = None, session: Ses
         query = query.where(Product.subcategory_id == subcategory_id)
     
     products = session.exec(query).all()
-    
-    # Convert to Pydantic models with images list
-    result = []
-    for p in products:
-        p_data = p.model_dump()
-        p_data["images"] = [img.url for img in p.images]
-        p_data["subcategory_ids"] = _collect_subcategory_ids(p)
-        result.append(ProductRead(**p_data))
-        
-    return result
+    rate = get_exchange_rate(session)
+    return [_build_product_response(p, rate) for p in products]
 
 @router.get("/{product_id}", response_model=ProductRead)
 def read_product(product_id: str, session: Session = Depends(get_session)):
@@ -64,10 +102,8 @@ def read_product(product_id: str, session: Session = Depends(get_session)):
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    p_data = product.model_dump()
-    p_data["images"] = [img.url for img in product.images]
-    p_data["subcategory_ids"] = _collect_subcategory_ids(product)
-    return ProductRead(**p_data)
+    rate = get_exchange_rate(session)
+    return _build_product_response(product, rate)
 
 @router.get("/labels", tags=["labels"])
 def read_labels(session: Session = Depends(get_session)):
@@ -81,6 +117,7 @@ async def create_product(
     name: str = Form(...),
     category: str = Form(...),
     subcategory_id: Optional[int] = Form(None),
+    subcategory_ids: List[int] = Form(None),
     priceUAH: float = Form(...),
     priceUSD: float = Form(...),
     description: str = Form(...),
@@ -108,11 +145,21 @@ async def create_product(
     if not main_image:
         main_image = "https://via.placeholder.com/300"
 
+    normalized_subcategories = _normalize_subcategory_selection(
+        subcategory_id,
+        subcategory_ids,
+    )
+    primary_subcategory_id = (
+        normalized_subcategories[0] if normalized_subcategories else None
+    )
+
+    rate = get_exchange_rate(session)
+
     product_data = Product(
         id=product_id,
         name=name,
         category=category,
-        subcategory_id=subcategory_id,
+        subcategory_id=primary_subcategory_id,
         priceUAH=priceUAH,
         priceUSD=priceUSD,
         description=description,
@@ -120,10 +167,18 @@ async def create_product(
         detail_number=detail_number,
         image=main_image
     )
-    
+    if priceUSD:
+        product_data.priceUAH = round(priceUSD * rate, 2)
+
     session.add(product_data)
     session.commit()
     session.refresh(product_data)
+
+    _sync_linked_subcategories(
+        session,
+        product_id,
+        normalized_subcategories[1:] if normalized_subcategories else [],
+    )
     
     # Save additional images to ProductImage table
     for url in image_urls:
@@ -137,11 +192,7 @@ async def create_product(
     session.refresh(product_data) # Refresh to get relationships
     
     # Construct response manually to avoid modifying the SQLModel relationship with strings
-    response_data = product_data.model_dump()
-    response_data["images"] = [img.url for img in product_data.images]
-    response_data["subcategory_ids"] = _collect_subcategory_ids(product_data)
-    
-    return ProductRead(**response_data)
+    return _build_product_response(product_data, rate)
 
 @router.put("/{product_id}", response_model=ProductRead, dependencies=[Depends(verify_admin)])
 async def update_product(
@@ -149,6 +200,7 @@ async def update_product(
     name: str = Form(...),
     category: str = Form(...),
     subcategory_id: Optional[int] = Form(None),
+    subcategory_ids: List[int] = Form(None),
     priceUAH: float = Form(...),
     priceUSD: float = Form(...),
     description: str = Form(...),
@@ -166,7 +218,6 @@ async def update_product(
     # Update basic fields
     product.name = name
     product.category = category
-    product.subcategory_id = subcategory_id
     product.priceUAH = priceUAH
     product.priceUSD = priceUSD
     product.description = description
@@ -197,8 +248,26 @@ async def update_product(
                 if url:
                     new_image_urls.append(url)
 
+    normalized_subcategories = _normalize_subcategory_selection(
+        subcategory_id,
+        subcategory_ids,
+    )
+    product.subcategory_id = (
+        normalized_subcategories[0] if normalized_subcategories else None
+    )
+
+    rate = get_exchange_rate(session)
+    if priceUSD:
+        product.priceUAH = round(priceUSD * rate, 2)
+
     session.add(product)
     session.commit()
+
+    _sync_linked_subcategories(
+        session,
+        product_id,
+        normalized_subcategories[1:] if normalized_subcategories else [],
+    )
     
     # Add new images to gallery
     for url in new_image_urls:
@@ -208,12 +277,9 @@ async def update_product(
     session.commit()
     session.refresh(product)
     
-    response_data = product.model_dump()
-    # Re-fetch images to get updated list
     updated_images = session.exec(select(ProductImage).where(ProductImage.product_id == product_id)).all()
-    response_data["images"] = [img.url for img in updated_images]
-    response_data["subcategory_ids"] = _collect_subcategory_ids(product)
-    return ProductRead(**response_data)
+    product.images = updated_images
+    return _build_product_response(product, rate)
 
 @router.delete("/{product_id}", dependencies=[Depends(verify_admin)])
 def delete_product(product_id: str, session: Session = Depends(get_session)):

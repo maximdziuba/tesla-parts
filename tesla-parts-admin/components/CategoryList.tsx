@@ -363,12 +363,14 @@ const CategoryList: React.FC = () => {
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryImage, setNewCategoryImage] = useState('');
     const [newCategoryFile, setNewCategoryFile] = useState<File | null>(null);
+    const [newCategorySortOrder, setNewCategorySortOrder] = useState('');
 
     // Edit Category State
     const [editingCategory, setEditingCategory] = useState<number | null>(null);
     const [editCategoryName, setEditCategoryName] = useState('');
     const [editCategoryImage, setEditCategoryImage] = useState('');
     const [editCategoryFile, setEditCategoryFile] = useState<File | null>(null);
+    const [editCategorySortOrder, setEditCategorySortOrder] = useState<number | ''>(0);
 
     // New Subcategory State (Top Level)
     const [newSubcategoryNames, setNewSubcategoryNames] = useState<{ [key: number]: string }>({});
@@ -402,10 +404,12 @@ const CategoryList: React.FC = () => {
         if (!newCategoryName.trim()) return;
 
         try {
-            await ApiService.createCategory(newCategoryName, newCategoryImage, newCategoryFile || undefined);
+            const sortValue = newCategorySortOrder !== '' ? Number(newCategorySortOrder) : undefined;
+            await ApiService.createCategory(newCategoryName, newCategoryImage, newCategoryFile || undefined, sortValue);
             setNewCategoryName('');
             setNewCategoryImage('');
             setNewCategoryFile(null);
+            setNewCategorySortOrder('');
             loadCategories();
         } catch (e) {
             alert("Failed to create category");
@@ -427,12 +431,14 @@ const CategoryList: React.FC = () => {
         setEditCategoryName(category.name);
         setEditCategoryImage(category.image || '');
         setEditCategoryFile(null);
+        setEditCategorySortOrder(category.sort_order ?? 0);
     };
 
     const handleUpdateCategory = async () => {
         if (!editingCategory || !editCategoryName.trim()) return;
         try {
-            await ApiService.updateCategory(editingCategory, editCategoryName, editCategoryImage, editCategoryFile || undefined);
+            const sortValue = editCategorySortOrder === '' ? undefined : Number(editCategorySortOrder);
+            await ApiService.updateCategory(editingCategory, editCategoryName, editCategoryImage, editCategoryFile || undefined, sortValue);
             setEditingCategory(null);
             loadCategories();
         } catch (e) {
@@ -508,6 +514,8 @@ const CategoryList: React.FC = () => {
 
     if (loading) return <div className="p-8 text-center">Loading...</div>;
 
+    const sortedCategories = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
     return (
         <div className="max-w-4xl mx-auto">
             <h1 className="text-2xl font-bold mb-6 text-gray-800">Керування категоріями</h1>
@@ -528,6 +536,16 @@ const CategoryList: React.FC = () => {
                             className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
                             placeholder="Наприклад: Model 3"
                             required
+                        />
+                    </div>
+                    <div className="w-32">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Порядок</label>
+                        <input
+                            type="number"
+                            value={newCategorySortOrder}
+                            onChange={e => setNewCategorySortOrder(e.target.value)}
+                            className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
+                            placeholder="0"
                         />
                     </div>
                     <div className="flex-1">
@@ -566,19 +584,26 @@ const CategoryList: React.FC = () => {
 
             {/* Categories List */}
             <div className="space-y-4">
-                {categories.map(category => (
+                {sortedCategories.map(category => (
                     <div key={category.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-100">
                             {editingCategory === category.id ? (
-                                <div className="flex items-center gap-4 flex-1">
-                                    <input
-                                        type="text"
-                                        value={editCategoryName}
-                                        onChange={e => setEditCategoryName(e.target.value)}
-                                        className="border rounded px-2 py-1 text-lg font-semibold outline-none focus:border-tesla-red"
-                                        autoFocus
-                                    />
-                                    <div className="flex items-center gap-2 flex-1">
+                                    <div className="flex items-center gap-4 flex-1">
+                                        <input
+                                            type="text"
+                                            value={editCategoryName}
+                                            onChange={e => setEditCategoryName(e.target.value)}
+                                            className="border rounded px-2 py-1 text-lg font-semibold outline-none focus:border-tesla-red"
+                                            autoFocus
+                                        />
+                                        <input
+                                            type="number"
+                                            value={editCategorySortOrder}
+                                            onChange={e => setEditCategorySortOrder(e.target.value)}
+                                            className="w-24 border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red"
+                                            placeholder="Порядок"
+                                        />
+                                        <div className="flex items-center gap-2 flex-1">
                                         <input
                                             type="text"
                                             value={editCategoryImage}
@@ -612,6 +637,7 @@ const CategoryList: React.FC = () => {
                                     {expandedCategories.includes(category.id) ? <ChevronDown size={20} className="text-gray-500" /> : <ChevronRight size={20} className="text-gray-500" />}
                                     {category.image && <img src={category.image} alt="" className="w-8 h-8 rounded object-cover" />}
                                     <span className="font-semibold text-lg">{category.name}</span>
+                                    <span className="text-xs text-gray-400">#{category.sort_order ?? 0}</span>
                                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">{category.subcategories.length} підкатегорій</span>
                                 </div>
                             )}

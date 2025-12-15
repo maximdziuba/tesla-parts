@@ -43,6 +43,11 @@ export const ApiService = {
     if (product.subcategory_id) {
       formData.append('subcategory_id', product.subcategory_id.toString());
     }
+    if (product.subcategory_ids && product.subcategory_ids.length > 0) {
+      Array.from(new Set(product.subcategory_ids)).forEach((id: number) => {
+        formData.append('subcategory_ids', id.toString());
+      });
+    }
 
     if (product.detail_number) {
       formData.append('detail_number', product.detail_number);
@@ -78,6 +83,11 @@ export const ApiService = {
 
     if (product.subcategory_id) {
       formData.append('subcategory_id', product.subcategory_id.toString());
+    }
+    if (product.subcategory_ids && product.subcategory_ids.length > 0) {
+      Array.from(new Set(product.subcategory_ids)).forEach((id: number) => {
+        formData.append('subcategory_ids', id.toString());
+      });
     }
 
     if (product.detail_number) {
@@ -134,11 +144,12 @@ export const ApiService = {
     return res.json();
   },
 
-  createCategory: async (name: string, image?: string, file?: File): Promise<Category> => {
+  createCategory: async (name: string, image?: string, file?: File, sort_order?: number): Promise<Category> => {
     const formData = new FormData();
     formData.append('name', name);
     if (image) formData.append('image', image);
     if (file) formData.append('file', file);
+    if (sort_order !== undefined) formData.append('sort_order', sort_order.toString());
 
     const res = await fetch(`${API_URL}/categories/`, {
       method: 'POST',
@@ -151,11 +162,12 @@ export const ApiService = {
     return res.json();
   },
 
-  updateCategory: async (id: number, name: string, image?: string, file?: File): Promise<Category> => {
+  updateCategory: async (id: number, name: string, image?: string, file?: File, sort_order?: number): Promise<Category> => {
     const formData = new FormData();
     formData.append('name', name);
     if (image) formData.append('image', image);
     if (file) formData.append('file', file);
+    if (sort_order !== undefined) formData.append('sort_order', sort_order.toString());
 
     const res = await fetch(`${API_URL}/categories/${id}`, {
       method: 'PUT',

@@ -2,6 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlmodel import Session, select, delete
 from sqlalchemy.orm import selectinload
+from sqlalchemy import func
 from database import get_session
 from models import Category, Subcategory, Product, ProductSubcategoryLink
 from schemas import (
@@ -12,8 +13,20 @@ from schemas import (
     SubcategoryTransferRequest,
 )
 from services.image_uploader import image_uploader
+from services.pricing import get_exchange_rate, compute_price_fields
 
 router = APIRouter(prefix="/categories", tags=["categories"])
+
+
+def _get_next_category_sort_order(session: Session) -> int:
+    result = session.exec(select(func.max(Category.sort_order))).first()
+    if result is None:
+        return 0
+    if isinstance(result, tuple):
+        result = result[0]
+    if result is None:
+        return 0
+    return int(result) + 1
 
 
 def _split_categories(value: Optional[str]) -> List[str]:
@@ -118,8 +131,11 @@ def _collect_subcategory_ids(product: Product) -> List[int]:
     return ids
 
 
-def _serialize_product(product: Product) -> dict:
+def _serialize_product(product: Product, rate: float) -> dict:
+    price_usd, price_uah = compute_price_fields(product, rate)
     prod_data = product.model_dump()
+    prod_data["priceUSD"] = price_usd
+    prod_data["priceUAH"] = price_uah
     prod_data["images"] = [img.url for img in product.images]
     prod_data["subcategory_ids"] = _collect_subcategory_ids(product)
     return prod_data
@@ -128,16 +144,18 @@ def _serialize_product(product: Product) -> dict:
 def get_categories(session: Session = Depends(get_session)):
     categories = session.exec(
         select(Category)
+        .order_by(Category.sort_order, Category.id)
         .options(
             selectinload(Category.subcategories)
         )
     ).all()
+    rate = get_exchange_rate(session)
     
     def build_subcategory_tree(sub: Subcategory, all_subs: List[Subcategory]) -> SubcategoryRead:
         sub_data = sub.model_dump()
 
         products = _get_products_for_subcategory(session, sub.id)
-        sub_data["products"] = [_serialize_product(prod) for prod in products]
+        sub_data["products"] = [_serialize_product(prod, rate) for prod in products]
         
         # Handle children subcategories
         children = [s for s in all_subs if s.parent_id == sub.id]
@@ -271,21 +289,22 @@ def _load_subcategories_for_category(
 
 
 def _serialize_subcategory_tree(
-    root: Subcategory, all_subs: List[Subcategory], session: Session
+    root: Subcategory, all_subs: List[Subcategory], session: Session, rate: float
 ) -> SubcategoryRead:
     sub_data = root.model_dump()
     products = _get_products_for_subcategory(session, root.id)
-    sub_data["products"] = [_serialize_product(product) for product in products]
+    sub_data["products"] = [_serialize_product(product, rate) for product in products]
 
     children = [sub for sub in all_subs if sub.parent_id == root.id]
     sub_data["subcategories"] = [
-        _serialize_subcategory_tree(child, all_subs, session) for child in children
+        _serialize_subcategory_tree(child, all_subs, session, rate)
+        for child in children
     ]
     return SubcategoryRead(**sub_data)
 
 
 def _build_subcategory_response(
-    session: Session, subcategory_id: int
+    session: Session, subcategory_id: int, rate: float
 ) -> SubcategoryRead:
     subcategory = session.exec(
         select(Subcategory)
@@ -293,7 +312,7 @@ def _build_subcategory_response(
         .options(selectinload(Subcategory.products))
     ).one()
     all_subs = _load_subcategories_for_category(session, subcategory.category_id)
-    return _serialize_subcategory_tree(subcategory, all_subs, session)
+    return _serialize_subcategory_tree(subcategory, all_subs, session, rate)
 
 
 @router.post("/", response_model=CategoryRead)
@@ -301,6 +320,7 @@ async def create_category(
     name: str = Form(...),
     image: str = Form(None),
     file: UploadFile = File(None),
+    sort_order: Optional[int] = Form(None),
     session: Session = Depends(get_session)
 ):
     # Handle file upload
@@ -308,7 +328,9 @@ async def create_category(
     if file and file.filename:
         image_url = await image_uploader.upload_image(file, folder="tesla-parts/categories")
 
-    db_category = Category(name=name, image=image_url)
+    order_value = sort_order if sort_order is not None else _get_next_category_sort_order(session)
+
+    db_category = Category(name=name, image=image_url, sort_order=order_value)
     session.add(db_category)
     session.commit()
     session.refresh(db_category)
@@ -338,7 +360,8 @@ async def create_subcategory(
     )
     session.add(db_subcategory)
     session.commit()
-    return _build_subcategory_response(session, db_subcategory.id)
+    rate = get_exchange_rate(session)
+    return _build_subcategory_response(session, db_subcategory.id, rate)
 
 @router.put("/{category_id}", response_model=CategoryRead)
 async def update_category(
@@ -346,6 +369,7 @@ async def update_category(
     name: str = Form(...),
     image: str = Form(None),
     file: UploadFile = File(None),
+    sort_order: Optional[int] = Form(None),
     session: Session = Depends(get_session)
 ):
     category = session.get(Category, category_id)
@@ -353,6 +377,8 @@ async def update_category(
         raise HTTPException(status_code=404, detail="Category not found")
     
     category.name = name
+    if sort_order is not None:
+        category.sort_order = sort_order
     
     # Handle file upload
     if file and file.filename:
@@ -400,7 +426,8 @@ async def update_subcategory(
         
     session.add(subcategory)
     session.commit()
-    return _build_subcategory_response(session, subcategory.id)
+    rate = get_exchange_rate(session)
+    return _build_subcategory_response(session, subcategory.id, rate)
 
 @router.post("/subcategories/{subcategory_id}/move", response_model=SubcategoryRead)
 def move_subcategory(
@@ -436,7 +463,8 @@ def move_subcategory(
 
     session.add(subcategory)
     session.commit()
-    return _build_subcategory_response(session, subcategory.id)
+    rate = get_exchange_rate(session)
+    return _build_subcategory_response(session, subcategory.id, rate)
 
 
 @router.post("/subcategories/{subcategory_id}/copy", response_model=SubcategoryRead)
@@ -468,7 +496,8 @@ def copy_subcategory(
         transfer.target_parent_id,
     )
     session.commit()
-    return _build_subcategory_response(session, new_subcategory.id)
+    rate = get_exchange_rate(session)
+    return _build_subcategory_response(session, new_subcategory.id, rate)
 
 
 @router.delete("/{category_id}")

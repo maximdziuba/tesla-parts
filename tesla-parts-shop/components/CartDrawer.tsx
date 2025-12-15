@@ -1,13 +1,14 @@
 import React from 'react';
 import { CartItem, Currency } from '../types';
 import { X, Trash2, Plus, Minus } from 'lucide-react';
-import { EXCHANGE_RATES } from '../constants';
+import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 
 interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
   currency: Currency;
+  uahPerUsd: number;
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemoveItem: (id: string) => void;
   onCheckout: () => void;
@@ -18,20 +19,36 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
   onClose,
   items,
   currency,
+  uahPerUsd,
   onUpdateQuantity,
   onRemoveItem,
   onCheckout
 }) => {
-  const getPrice = (priceUAH: number) => {
-    const rate = EXCHANGE_RATES[currency] || 1;
-    const price = priceUAH * (currency === Currency.UAH ? 1 : rate);
+  const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
+
+  const getItemUsdPrice = (item: CartItem) => {
+    if (item.priceUSD && item.priceUSD > 0) return item.priceUSD;
+    if (item.priceUAH && item.priceUAH > 0 && effectiveRate > 0) {
+      return item.priceUAH / effectiveRate;
+    }
+    return 0;
+  };
+
+  const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('uk-UA', { 
       style: 'currency', 
       currency: currency 
-    }).format(price);
+    }).format(amount);
   };
 
-  const total = items.reduce((sum, item) => sum + (item.priceUAH * item.quantity), 0);
+  const formatPrice = (item: CartItem, quantity = 1) => {
+    const usdPrice = getItemUsdPrice(item) * quantity;
+    const amount = currency === Currency.USD ? usdPrice : usdPrice * effectiveRate;
+    return formatAmount(amount);
+  };
+
+  const totalUSD = items.reduce((sum, item) => sum + getItemUsdPrice(item) * item.quantity, 0);
+  const totalDisplay = currency === Currency.USD ? totalUSD : totalUSD * effectiveRate;
 
   if (!isOpen) return null;
 
@@ -90,7 +107,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                           <Plus size={14} />
                         </button>
                       </div>
-                      <div className="text-sm font-bold">{getPrice(item.priceUAH * item.quantity)}</div>
+                      <div className="text-sm font-bold">{formatPrice(item, item.quantity)}</div>
                     </div>
                   </div>
                   <button 
@@ -109,7 +126,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
             <div className="border-t border-gray-100 px-4 py-6 bg-gray-50">
               <div className="flex justify-between items-center mb-4 text-lg font-bold text-gray-900">
                 <span>Всього</span>
-                <span>{getPrice(total)}</span>
+                <span>{formatAmount(totalDisplay)}</span>
               </div>
               <p className="text-xs text-gray-500 mb-4 text-center">Вартість доставки розраховується за тарифами перевізника</p>
               <button

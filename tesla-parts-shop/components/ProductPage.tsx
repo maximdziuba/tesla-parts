@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Product, Currency } from '../types';
 import { ShoppingCart, ArrowLeft, Check } from 'lucide-react';
+import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 
 interface ProductPageProps {
     product: Product;
     currency: Currency;
+    uahPerUsd: number;
     onAddToCart: (product: Product) => void;
     onBack: () => void;
 }
 
-const ProductPage: React.FC<ProductPageProps> = ({ product, currency, onAddToCart, onBack }) => {
+const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd, onAddToCart, onBack }) => {
     // Combine main image with additional images and remove duplicates
     const allImages = Array.from(new Set([product.image, ...(product.images || [])].filter(Boolean)));
     const [selectedImage, setSelectedImage] = useState(allImages[0]);
@@ -19,6 +21,20 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, onAddToCar
         onAddToCart(product);
         setAdded(true);
         setTimeout(() => setAdded(false), 2000);
+    };
+
+    const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
+    const getDisplayPrice = () => {
+        const priceUSD = product.priceUSD && product.priceUSD > 0
+            ? product.priceUSD
+            : (product.priceUAH && product.priceUAH > 0 && effectiveRate > 0
+                ? product.priceUAH / effectiveRate
+                : 0);
+        const amount = currency === Currency.USD ? priceUSD : priceUSD * effectiveRate;
+        return new Intl.NumberFormat('uk-UA', {
+            style: 'currency',
+            currency
+        }).format(amount);
     };
 
     return (
@@ -88,13 +104,8 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, onAddToCar
 
                             <div className="mb-8">
                                 <div className="text-3xl font-bold text-tesla-dark">
-                                    {product.priceUAH.toLocaleString()} {currency}
+                                    {getDisplayPrice()}
                                 </div>
-                                {product.priceUSD && (
-                                    <div className="text-xl text-gray-500 mt-1">
-                                        ${product.priceUSD.toFixed(2)}
-                                    </div>
-                                )}
                             </div>
 
                             <div className="prose prose-sm text-gray-600 mb-8">

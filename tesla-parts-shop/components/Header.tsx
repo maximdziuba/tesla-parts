@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Search, Menu, X, Instagram, Send, Phone, Info, Truck, RefreshCw, HelpCircle } from 'lucide-react';
-import { Currency } from '../types';
-import teslaLogo from '../static/tesla-logo.png';
+import { ShoppingCart, Search, Menu, X, Instagram, Send } from 'lucide-react';
+import { Category, Currency } from '../types';
 import TeslaPartsCenterLogo from './ShopLogo';
-
 interface HeaderProps {
   cartCount: number;
-  cartTotal: number;
+  cartTotalUAH: number;
   currency: Currency;
+  uahPerUsd: number;
+  categories: Category[];
   setCurrency: (c: Currency) => void;
   onCartClick: () => void;
   onNavigate: (page: string) => void;
@@ -16,8 +16,10 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ 
   cartCount, 
-  cartTotal, 
+  cartTotalUAH, 
   currency, 
+  uahPerUsd,
+  categories,
   setCurrency, 
   onCartClick, 
   onNavigate,
@@ -31,12 +33,19 @@ const Header: React.FC<HeaderProps> = ({
     onSearch(searchQuery);
   };
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (amount: number) => {
     return new Intl.NumberFormat('uk-UA', { 
       style: 'currency', 
       currency: currency 
-    }).format(price);
+    }).format(amount);
   };
+  const displayCartTotal = (() => {
+    if (currency === Currency.UAH) return cartTotalUAH;
+    const rate = uahPerUsd > 0 ? uahPerUsd : 1;
+    return cartTotalUAH / rate;
+  })();
+
+  const sortedCategories = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -81,10 +90,16 @@ const Header: React.FC<HeaderProps> = ({
           {/* Desktop Search & Menu */}
           <div className="hidden md:flex items-center flex-1 max-w-2xl px-8 gap-6">
              {/* Category Links */}
-            <div className="flex gap-4 font-medium text-tesla-dark whitespace-nowrap">
-              <button onClick={() => onNavigate('Model 3')} className="hover:text-tesla-red transition">Model 3</button>
-              <button onClick={() => onNavigate('Model S')} className="hover:text-tesla-red transition">Model S</button>
-              <button onClick={() => onNavigate('Model X')} className="hover:text-tesla-red transition">Model X</button>
+            <div className="flex gap-4 font-medium text-tesla-dark whitespace-nowrap overflow-x-auto">
+              {sortedCategories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => onNavigate(cat.name)}
+                  className="hover:text-tesla-red transition"
+                >
+                  {cat.name}
+                </button>
+              ))}
             </div>
 
             {/* Search Bar */}
@@ -116,7 +131,7 @@ const Header: React.FC<HeaderProps> = ({
               </div>
               <div className="hidden lg:block text-sm text-right leading-tight">
                 <div className="text-gray-500 text-xs">Кошик</div>
-                <div className="font-bold text-tesla-dark">{formatPrice(cartTotal)}</div>
+                <div className="font-bold text-tesla-dark">{formatPrice(displayCartTotal)}</div>
               </div>
             </div>
 
@@ -151,9 +166,15 @@ const Header: React.FC<HeaderProps> = ({
               <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
             </form>
             <div className="flex flex-col gap-2 font-medium text-lg">
-              <button onClick={() => { onNavigate('Model 3'); setIsMenuOpen(false); }} className="text-left py-2 border-b border-gray-100">Model 3</button>
-              <button onClick={() => { onNavigate('Model S'); setIsMenuOpen(false); }} className="text-left py-2 border-b border-gray-100">Model S</button>
-              <button onClick={() => { onNavigate('Model X'); setIsMenuOpen(false); }} className="text-left py-2 border-b border-gray-100">Model X</button>
+              {sortedCategories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => { onNavigate(cat.name); setIsMenuOpen(false); }}
+                  className="text-left py-2 border-b border-gray-100"
+                >
+                  {cat.name}
+                </button>
+              ))}
               <button onClick={() => { onNavigate('checkout'); setIsMenuOpen(false); }} className="text-left py-2 text-tesla-red">Оформити замовлення</button>
             </div>
           </div>

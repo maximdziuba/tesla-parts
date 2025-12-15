@@ -68,7 +68,7 @@ const NovaPostWidget: React.FC<NovaPostWidgetProps> = ({ onSelect }) => {
           city: data.addressParts?.city || '',
           address: address
         });
-
+        
         // 4. Close modal
         setIsOpen(false);
       }

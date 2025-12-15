@@ -1,24 +1,35 @@
 import React from 'react';
-import { Product, Currency, CartItem } from '../types';
+import { Product, Currency } from '../types';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
-import { EXCHANGE_RATES } from '../constants';
+import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 
 interface ProductListProps {
   products: Product[];
   currency: Currency;
+  uahPerUsd: number;
   onAddToCart: (product: Product) => void;
   onProductClick: (product: Product) => void;
   title?: string;
 }
 
-const ProductList: React.FC<ProductListProps> = ({ products, currency, onAddToCart, onProductClick, title }) => {
-  const getPrice = (priceUAH: number) => {
-    const rate = EXCHANGE_RATES[currency] || 1;
-    const price = priceUAH * (currency === Currency.UAH ? 1 : rate);
+const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd, onAddToCart, onProductClick, title }) => {
+  const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
+
+  const getUsdPrice = (product: Product) => {
+    if (product.priceUSD && product.priceUSD > 0) return product.priceUSD;
+    if (product.priceUAH && product.priceUAH > 0 && effectiveRate > 0) {
+      return product.priceUAH / effectiveRate;
+    }
+    return 0;
+  };
+
+  const formatPrice = (product: Product) => {
+    const usd = getUsdPrice(product);
+    const amount = currency === Currency.USD ? usd : usd * effectiveRate;
     return new Intl.NumberFormat('uk-UA', {
       style: 'currency',
       currency: currency
-    }).format(price);
+    }).format(amount);
   };
 
   if (products.length === 0) {
@@ -63,13 +74,13 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, onAddToCa
               <div className="mt-auto pt-4 flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-lg font-bold text-tesla-dark">
-                    {getPrice(product.priceUAH)}
+                    {formatPrice(product)}
                   </span>
-                  {product.priceUSD && (
+                  {/* {product.priceUSD && (
                     <span className="text-sm text-gray-500">
                       ${product.priceUSD.toFixed(2)}
                     </span>
-                  )}
+                  )} */}
                 </div>
                 <button
                   onClick={(e) => {

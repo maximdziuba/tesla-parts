@@ -1,10 +1,6 @@
 import { City, Product } from './types';
 
-export const EXCHANGE_RATES = {
-  UAH: 1,
-  USD: 0.024, // 1 UAH = 0.024 USD (approx 1/41)
-  EUR: 0.022
-};
+export const DEFAULT_EXCHANGE_RATE_UAH_PER_USD = 40; // fallback if backend setting missing
 
 export const MOCK_CITIES: City[] = [
   {

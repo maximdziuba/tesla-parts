@@ -11,6 +11,9 @@ import { Product, Currency, CartItem, Category, Subcategory } from './types';
 import { api } from './services/api';
 import { CheckCircle } from 'lucide-react';
 import TeslaPartsCenterLogo from './components/ShopLogo';
+import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from './constants';
+
+const CART_STORAGE_KEY = 'tesla-parts-cart';
 
 const parseProductCategories = (value?: string | null) => {
   if (!value) return [];
@@ -34,6 +37,32 @@ const getProductSubcategoryIds = (product: Product): number[] => {
   return product.subcategory_id ? [product.subcategory_id] : [];
 };
 
+const getInitialCart = (): CartItem[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(CART_STORAGE_KEY);
+    if (stored) {
+      const parsed: CartItem[] = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to load cart from storage', err);
+  }
+  return [];
+};
+
+const getProductUsdPrice = (product: Product, rate: number): number => {
+  if (product.priceUSD && product.priceUSD > 0) {
+    return product.priceUSD;
+  }
+  if (product.priceUAH && product.priceUAH > 0 && rate > 0) {
+    return product.priceUAH / rate;
+  }
+  return 0;
+};
+
 const App: React.FC = () => {
   // Navigation State
   const [currentView, setCurrentView] = useState('home'); // home, checkout, success, or category name
@@ -47,9 +76,18 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Cart & Settings
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => getInitialCart());
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>(Currency.UAH);
+  const [uahPerUsd, setUahPerUsd] = useState(DEFAULT_EXCHANGE_RATE_UAH_PER_USD);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    } catch (err) {
+      console.warn('Failed to persist cart', err);
+    }
+  }, [cart]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -67,6 +105,21 @@ const App: React.FC = () => {
       }
     };
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const value = await api.getSetting('exchange_rate');
+        const parsed = value ? parseFloat(value) : NaN;
+        if (!Number.isNaN(parsed) && parsed > 0) {
+          setUahPerUsd(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to load exchange rate", e);
+      }
+    };
+    fetchRate();
   }, []);
 
   // Cart Logic
@@ -96,7 +149,13 @@ const App: React.FC = () => {
 
   const clearCart = () => setCart([]);
 
-  const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + (item.priceUAH * item.quantity), 0), [cart]);
+  const cartTotalUAH = useMemo(() => {
+    const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
+    return cart.reduce((sum, item) => {
+      const priceUSD = getProductUsdPrice(item, effectiveRate);
+      return sum + priceUSD * effectiveRate * item.quantity;
+    }, 0);
+  }, [cart, uahPerUsd]);
   const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
 
   // Navigation Logic
@@ -175,14 +234,21 @@ const App: React.FC = () => {
     return filtered;
   }, [products, currentView, searchQuery, selectedSubcategory, categories]);
 
-  const currentCategory = categories.find(c => c.name === currentView);
+  const sortedCategories = useMemo(
+    () => [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+    [categories]
+  );
+
+  const currentCategory = sortedCategories.find(c => c.name === currentView);
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-tesla-dark bg-[#f8fafc]">
       <Header
         cartCount={cartCount}
-        cartTotal={cartTotal}
+        cartTotalUAH={cartTotalUAH}
         currency={currency}
+        uahPerUsd={uahPerUsd}
+        categories={sortedCategories}
         setCurrency={setCurrency}
         onCartClick={() => setIsCartOpen(true)}
         onNavigate={handleNavigate}
@@ -215,7 +281,8 @@ const App: React.FC = () => {
           <Checkout
             cartItems={cart}
             currency={currency}
-            totalUAH={cartTotal}
+            uahPerUsd={uahPerUsd}
+            totalUAH={cartTotalUAH}
             onSuccess={() => {
               clearCart();
               handleNavigate('success');
@@ -228,6 +295,7 @@ const App: React.FC = () => {
           <ProductPage
             product={selectedProduct}
             currency={currency}
+            uahPerUsd={uahPerUsd}
             onAddToCart={addToCart}
             onBack={() => {
               // Go back to category if product has one, else home
@@ -336,6 +404,7 @@ const App: React.FC = () => {
                         <ProductList
                           products={filteredProducts}
                           currency={currency}
+                          uahPerUsd={uahPerUsd}
                           onAddToCart={addToCart}
                           onProductClick={handleProductClick}
                         />
@@ -375,6 +444,7 @@ const App: React.FC = () => {
                       title={currentView === 'home' ? 'Популярні товари' : undefined}
                       products={filteredProducts}
                       currency={currency}
+                      uahPerUsd={uahPerUsd}
                       onAddToCart={addToCart}
                       onProductClick={handleProductClick}
                     />
@@ -406,7 +476,7 @@ const App: React.FC = () => {
           <div>
             <h3 className="text-white font-bold mb-4">Навігація</h3>
             <ul className="space-y-2 text-sm">
-              {categories.slice(0, 4).map(cat => (
+              {sortedCategories.slice(0, 4).map(cat => (
                 <li key={cat.id}><button onClick={() => handleNavigate(cat.name)} className="hover:text-white">{cat.name}</button></li>
               ))}
             </ul>
@@ -439,6 +509,7 @@ const App: React.FC = () => {
         onClose={() => setIsCartOpen(false)}
         items={cart}
         currency={currency}
+        uahPerUsd={uahPerUsd}
         onUpdateQuantity={updateQuantity}
         onRemoveItem={removeItem}
         onCheckout={() => {

@@ -5,6 +5,7 @@ class ProductBase(BaseModel):
     id: str
     name: str
     category: str
+    priceUSD: float | None = None
     priceUAH: float
     image: str
     description: str
@@ -47,11 +48,13 @@ class CategoryRead(BaseModel):
     id: int
     name: str
     image: str | None = None
+    sort_order: int
     subcategories: List[SubcategoryRead] = []
 
 class CategoryCreate(BaseModel):
     name: str
     image: str | None = None
+    sort_order: int | None = None
 
 class SubcategoryCreate(BaseModel):
     name: str

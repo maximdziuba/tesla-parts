@@ -1,9 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ApiService } from '../services/api';
-import { ArrowLeft, Upload, X } from 'lucide-react';
+import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Category, Subcategory } from '../types';
+
+interface CategoryAssignment {
+    id: string;
+    categoryId: number | null;
+    subcategoryPath: number[];
+}
+
+const generateAssignmentId = () => `assignment-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+
+const createEmptyAssignment = (): CategoryAssignment => ({
+    id: generateAssignmentId(),
+    categoryId: null,
+    subcategoryPath: [],
+});
 
 export const ProductForm: React.FC = () => {
     const navigate = useNavigate();
@@ -14,6 +28,8 @@ export const ProductForm: React.FC = () => {
     const [files, setFiles] = useState<File[]>([]);
     const [keptImages, setKeptImages] = useState<string[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [categoryAssignments, setCategoryAssignments] = useState<CategoryAssignment[]>(() => [createEmptyAssignment()]);
+    const [pendingSubcategoryIds, setPendingSubcategoryIds] = useState<number[] | null>(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -37,51 +53,43 @@ export const ProductForm: React.FC = () => {
         }
     }, [id]);
 
+    useEffect(() => {
+        if (!isEditMode) {
+            setCategoryAssignments([createEmptyAssignment()]);
+            setPendingSubcategoryIds(null);
+        }
+    }, [isEditMode]);
+
     const loadProduct = async (productId: string) => {
         try {
-            // We need a getProduct method in ApiService that returns single product
-            // Assuming it exists or we use getProducts and find it (inefficient but works if getProduct missing)
-            // Wait, ApiService.getProducts returns all. We should check if getProduct(id) exists.
-            // Checking api.ts... it DOES NOT have getProduct(id). 
-            // Wait, I see `read_product` in backend.
-            // I need to add `getProduct` to `api.ts` first? 
-            // Let me check `api.ts` content again.
-            // It has `getProducts` (all).
-            // I should add `getProduct` to `api.ts`.
-            // For now, I will assume I added it or I will add it in next step.
-            // Actually, let's use a placeholder and I'll fix api.ts in a moment.
-            // Or I can fetch all and find. Let's fetch all for now to avoid breaking flow, or better, add getProduct.
-            // I will add getProduct to api.ts in a separate tool call.
+            const product = await ApiService.getProduct(productId);
+            setFormData({
+                name: product.name,
+                category: product.category || '',
+                subcategory_id: product.subcategory_id,
+                priceUAH: product.priceUAH,
+                priceUSD: product.priceUSD || 0,
+                image: product.image,
+                description: product.description,
+                inStock: product.inStock,
+                detail_number: product.detail_number || ''
+            });
 
-            // Temporary: fetch all and find
-            const products = await ApiService.getProducts();
-            const product = products.find(p => p.id === productId);
-
-            if (product) {
-                setFormData({
-                    name: product.name,
-                    category: product.category,
-                    subcategory_id: product.subcategory_id,
-                    priceUAH: product.priceUAH,
-                    priceUSD: product.priceUSD || 0,
-                    image: product.image,
-                    description: product.description,
-                    inStock: product.inStock,
-                    detail_number: product.detail_number || ''
-                });
-
-                // Set existing images
-                if (product.images && product.images.length > 0) {
-                    setKeptImages(product.images);
-                } else if (product.image) {
-                    // Fallback if images array is empty but main image exists
-                    setKeptImages([product.image]);
-                }
-                // Also need to set selectedSubcategoryPath based on subcategory_id
-                // This is tricky because we need to reconstruct the path.
-                // We'll leave path empty for now, user might need to re-select if they want to change it.
-                // Or we can try to find it.
+            if (product.images && product.images.length > 0) {
+                setKeptImages(product.images);
+            } else if (product.image) {
+                setKeptImages([product.image]);
+            } else {
+                setKeptImages([]);
             }
+
+            const productSubcategoryIds =
+                (product.subcategory_ids && product.subcategory_ids.length > 0)
+                    ? product.subcategory_ids
+                    : product.subcategory_id
+                        ? [product.subcategory_id]
+                        : [];
+            setPendingSubcategoryIds(productSubcategoryIds);
         } catch (e) {
             console.error("Failed to load product", e);
         }
@@ -108,124 +116,236 @@ export const ProductForm: React.FC = () => {
         try {
             const data = await ApiService.getCategories();
             setCategories(data);
-            if (data.length > 0) {
-                setFormData(prev => ({ ...prev, category: data[0].name }));
-            }
         } catch (e) {
             console.error("Failed to load categories", e);
         }
     };
 
-    const selectedCategory = categories.find(c => c.name === formData.category);
+    const subcategoryPathMap = useMemo(() => {
+        const map = new Map<number, { categoryId: number; path: number[] }>();
+        const traverse = (subs: Subcategory[] | undefined, path: number[], categoryId: number) => {
+            if (!subs) return;
+            subs.forEach(sub => {
+                const currentPath = [...path, sub.id];
+                map.set(sub.id, { categoryId, path: currentPath });
+                if (sub.subcategories && sub.subcategories.length > 0) {
+                    traverse(sub.subcategories, currentPath, categoryId);
+                }
+            });
+        };
+        categories.forEach(category => {
+            traverse(category.subcategories, [], category.id);
+        });
+        return map;
+    }, [categories]);
 
-    // State to track the path of selected subcategories (e.g., [parentId, childId])
-    const [selectedSubcategoryPath, setSelectedSubcategoryPath] = useState<number[]>([]);
-
-    // Update formData when path changes
-    useEffect(() => {
-        const lastId = selectedSubcategoryPath[selectedSubcategoryPath.length - 1];
-        setFormData(prev => ({ ...prev, subcategory_id: lastId }));
-    }, [selectedSubcategoryPath]);
-
-    // Reset path when category changes
-    useEffect(() => {
-        setSelectedSubcategoryPath([]);
-    }, [formData.category]);
-
-    const handleSubcategoryChange = (level: number, value: string) => {
-        const newPath = [...selectedSubcategoryPath];
-        if (value === "") {
-            // If "Select..." is chosen, remove this level and all deeper levels
-            newPath.splice(level);
-        } else {
-            // Update the selection at this level and remove any deeper levels (since path changed)
-            newPath[level] = Number(value);
-            newPath.splice(level + 1);
-        }
-        setSelectedSubcategoryPath(newPath);
+    const buildAssignmentsFromIds = (ids: number[]): CategoryAssignment[] => {
+        const uniqueIds = Array.from(new Set(ids));
+        const assignments: CategoryAssignment[] = [];
+        uniqueIds.forEach(subId => {
+            const info = subcategoryPathMap.get(subId);
+            if (!info) return;
+            assignments.push({
+                id: generateAssignmentId(),
+                categoryId: info.categoryId,
+                subcategoryPath: [...info.path],
+            });
+        });
+        return assignments.length ? assignments : [createEmptyAssignment()];
     };
 
-    // Helper to get subcategories for a specific level
-    const getSubcategoriesForLevel = (level: number): Subcategory[] => {
-        if (level === 0) {
-            return selectedCategory?.subcategories || [];
+    useEffect(() => {
+        if (!pendingSubcategoryIds || pendingSubcategoryIds.length === 0 || categories.length === 0) {
+            return;
         }
-        const parentId = selectedSubcategoryPath[level - 1];
-        // We need to find the parent subcategory object to get its children.
-        // This requires searching through the tree.
-        // Since we don't have a flat map, we can traverse from the top.
+        const assignments = buildAssignmentsFromIds(pendingSubcategoryIds);
+        if (assignments.length) {
+            setCategoryAssignments(assignments);
+        }
+    }, [pendingSubcategoryIds, categories, subcategoryPathMap]);
 
-        let currentLevelSubs = selectedCategory?.subcategories || [];
+    useEffect(() => {
+        const names = categoryAssignments
+            .map(assignment => {
+                if (assignment.categoryId === null) return null;
+                const cat = categories.find(c => c.id === assignment.categoryId);
+                return cat?.name || null;
+            })
+            .filter((name): name is string => Boolean(name));
+        const uniqueNames = Array.from(new Set(names));
+        const combined = uniqueNames.join(', ');
+        setFormData(prev => {
+            if (prev.category === combined) {
+                return prev;
+            }
+            return { ...prev, category: combined };
+        });
+    }, [categoryAssignments, categories]);
+
+    const handleAssignmentCategoryChange = (assignmentId: string, value: string) => {
+        const numericValue = value ? Number(value) : null;
+        setCategoryAssignments(prev =>
+            prev.map(assignment =>
+                assignment.id === assignmentId
+                    ? { ...assignment, categoryId: numericValue, subcategoryPath: [] }
+                    : assignment
+            )
+        );
+    };
+
+    const handleAssignmentSubcategoryChange = (assignmentId: string, level: number, value: string) => {
+        setCategoryAssignments(prev =>
+            prev.map(assignment => {
+                if (assignment.id !== assignmentId) return assignment;
+                const newPath = [...assignment.subcategoryPath];
+                if (!value) {
+                    newPath.splice(level);
+                } else {
+                    newPath[level] = Number(value);
+                    newPath.splice(level + 1);
+                }
+                return { ...assignment, subcategoryPath: newPath };
+            })
+        );
+    };
+
+    const getSubcategoriesForAssignmentLevel = (assignment: CategoryAssignment, level: number): Subcategory[] => {
+        if (assignment.categoryId === null) return [];
+        const category = categories.find(c => c.id === assignment.categoryId);
+        if (!category) return [];
+
+        let currentSubs = category.subcategories || [];
         for (let i = 0; i < level; i++) {
-            const id = selectedSubcategoryPath[i];
-            const found = currentLevelSubs.find(s => s.id === id);
-            if (found && found.subcategories) {
-                currentLevelSubs = found.subcategories;
-            } else {
+            const id = assignment.subcategoryPath[i];
+            if (!id) return [];
+            const found = currentSubs.find(sub => sub.id === id);
+            if (!found || !found.subcategories) {
                 return [];
             }
+            currentSubs = found.subcategories;
         }
-        return currentLevelSubs;
+        return currentSubs || [];
     };
 
-    // Determine how many dropdowns to show.
-    // Always show at least one (Level 0) if category is selected.
-    // If a selection is made at Level N, and that selection has children, show Level N+1.
-    const renderSubcategoryDropdowns = () => {
-        if (!formData.category || !selectedCategory?.subcategories?.length) return null;
+    const renderSubcategorySelectors = (assignment: CategoryAssignment) => {
+        if (assignment.categoryId === null) {
+            return <p className="text-sm text-gray-500 mt-2">Оберіть категорію, щоб вибрати підкатегорії</p>;
+        }
 
-        const dropdowns = [];
+        const dropdowns: React.ReactNode[] = [];
         let level = 0;
-        let showNext = true;
+        let continueLoop = true;
 
-        while (showNext) {
-            const subs = getSubcategoriesForLevel(level);
-            if (subs.length === 0 && level > 0) break; // If no subs at this level and it's not the first dropdown, stop
+        while (continueLoop) {
+            const subs = getSubcategoriesForAssignmentLevel(assignment, level);
+            if (subs.length === 0) {
+                if (level === 0) {
+                    dropdowns.push(
+                        <p key={`${assignment.id}-empty`} className="text-sm text-gray-500 mt-2">
+                            У цій категорії ще немає підкатегорій
+                        </p>
+                    );
+                }
+                break;
+            }
 
-            const currentSelection = selectedSubcategoryPath[level] || '';
-
+            const currentSelection = assignment.subcategoryPath[level] ?? '';
             dropdowns.push(
-                <div key={level} className="mt-2">
+                <div key={`${assignment.id}-level-${level}`} className="mt-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {level === 0 ? 'Підкатегорія' : `Підкатегорія (Рівень ${level + 1})`}
+                        {level === 0 ? "Підкатегорія" : `Підкатегорія (рівень ${level + 1})`}
                     </label>
                     <select
                         value={currentSelection}
-                        onChange={e => handleSubcategoryChange(level, e.target.value)}
+                        onChange={e => handleAssignmentSubcategoryChange(assignment.id, level, e.target.value)}
                         className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
-                        disabled={level > 0 && !selectedSubcategoryPath[level - 1]} // Disable if parent not selected
                     >
                         <option value="">Оберіть підкатегорію</option>
-                        {subs.map(s => (
-                            <option key={s.id} value={s.id}>{s.name}</option>
+                        {subs.map(sub => (
+                            <option key={sub.id} value={sub.id}>{sub.name}</option>
                         ))}
                     </select>
                 </div>
             );
 
-            // Only show next level if current level has a selection and that selection has children
             if (currentSelection) {
-                const selectedSub = subs.find(s => s.id === Number(currentSelection));
+                const selectedSub = subs.find(sub => sub.id === Number(currentSelection));
                 if (selectedSub && selectedSub.subcategories && selectedSub.subcategories.length > 0) {
                     level++;
                 } else {
-                    showNext = false;
+                    continueLoop = false;
                 }
             } else {
-                showNext = false;
+                continueLoop = false;
             }
         }
+
         return dropdowns;
+    };
+
+    const handleAddAssignment = () => {
+        setCategoryAssignments(prev => [...prev, createEmptyAssignment()]);
+    };
+
+    const handleRemoveAssignment = (assignmentId: string) => {
+        setCategoryAssignments(prev => {
+            if (prev.length <= 1) {
+                return prev;
+            }
+            return prev.filter(assignment => assignment.id !== assignmentId);
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
+            const hasInvalidAssignment = categoryAssignments.some(
+                assignment => assignment.categoryId === null || assignment.subcategoryPath.length === 0
+            );
+            if (hasInvalidAssignment) {
+                alert('Заповніть категорію та підкатегорію для кожного блоку або видаліть зайві');
+                setLoading(false);
+                return;
+            }
+
+            const selectedSubcategoryIds = categoryAssignments
+                .map(assignment => assignment.subcategoryPath[assignment.subcategoryPath.length - 1])
+                .filter((id): id is number => typeof id === 'number');
+            const uniqueSubcategoryIds = Array.from(new Set(selectedSubcategoryIds));
+
+            if (uniqueSubcategoryIds.length === 0) {
+                alert('Оберіть хоча б одну підкатегорію');
+                setLoading(false);
+                return;
+            }
+
+            const categoryNames = Array.from(
+                new Set(
+                    categoryAssignments
+                        .map(assignment => {
+                            if (assignment.categoryId === null) return null;
+                            const cat = categories.find(c => c.id === assignment.categoryId);
+                            return cat?.name || null;
+                        })
+                        .filter((name): name is string => Boolean(name))
+                )
+            );
+            const categoryLabel = categoryNames.join(', ');
+            const primarySubcategoryId = uniqueSubcategoryIds[0];
+
+            const basePayload = {
+                ...formData,
+                category: categoryLabel || formData.category,
+                subcategory_id: primarySubcategoryId,
+                subcategory_ids: uniqueSubcategoryIds,
+                files,
+            };
+
             if (isEditMode && id) {
-                await ApiService.updateProduct(id, { ...formData, files, kept_images: keptImages });
+                await ApiService.updateProduct(id, { ...basePayload, kept_images: keptImages });
             } else {
-                await ApiService.createProduct({ ...formData, files });
+                await ApiService.createProduct(basePayload);
             }
             navigate('/products');
         } catch (e) {
@@ -273,40 +393,55 @@ export const ProductForm: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Категорія</label>
-                            <select
-                                value={formData.category}
-                                onChange={e => {
-                                    const cat = categories.find(c => c.name === e.target.value);
-                                    setFormData({
-                                        ...formData,
-                                        category: e.target.value,
-                                        subcategory_id: undefined // Reset subcategory when category changes
-                                    });
-                                }}
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Категорії</label>
+                                <p className="text-xs text-gray-500 mt-1">Додайте одну або декілька категорій та відповідні підкатегорії</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleAddAssignment}
+                                className="inline-flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-700"
                             >
-                                <option value="">Оберіть категорію</option>
-                                {categories.map(c => (
-                                    <option key={c.id} value={c.name}>{c.name}</option>
-                                ))}
-                            </select>
+                                <Plus size={16} />
+                                Додати
+                            </button>
                         </div>
-                        <div>
-                            {renderSubcategoryDropdowns()}
-                            {/* Fallback/Placeholder if no category selected */}
-                            {!formData.category && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Підкатегорія</label>
+                        <div className="space-y-4">
+                            {categoryAssignments.map((assignment, index) => (
+                                <div key={assignment.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-sm font-semibold text-gray-700">
+                                            Категорія #{index + 1}
+                                        </span>
+                                        {categoryAssignments.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveAssignment(assignment.id)}
+                                                className="text-gray-400 hover:text-red-500 transition"
+                                                title="Видалити категорію"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Категорія</label>
                                     <select
-                                        disabled
-                                        className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-gray-400"
+                                        value={assignment.categoryId ?? ''}
+                                        onChange={e => handleAssignmentCategoryChange(assignment.id, e.target.value)}
+                                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
                                     >
-                                        <option>Спочатку оберіть категорію</option>
+                                        <option value="">Оберіть категорію</option>
+                                        {categories.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
                                     </select>
+                                    {renderSubcategorySelectors(assignment)}
                                 </div>
+                            ))}
+                            {categoryAssignments.length === 0 && (
+                                <div className="text-sm text-gray-500">Додайте принаймні одну категорію</div>
                             )}
                         </div>
                     </div>

@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
 import { PaymentMethod, CartItem, Currency, OrderData } from '../types';
 import { api } from '../services/api';
-import { EXCHANGE_RATES } from '../constants';
 import { Truck, CreditCard, Building, Wallet } from 'lucide-react';
 import NovaPostWidget from '../components/NovaPostWidget'; // Ensure this path is correct
+import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 
 interface CheckoutProps {
   cartItems: CartItem[];
   currency: Currency;
+  uahPerUsd: number;
   onSuccess: () => void;
   totalUAH: number;
 }
 
-const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, totalUAH }) => {
+const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onSuccess, totalUAH }) => {
   // --- Form State ---
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.IBAN);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   
   // --- Delivery State (Simplified) ---
   // We no longer need arrays for cities/warehouses. We just store the final result.
@@ -41,8 +43,56 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
     });
   };
 
+  const formatPhoneNumber = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 10);
+    const parts = [
+      digits.slice(0, 3),
+      digits.slice(3, 6),
+      digits.slice(6, 8),
+      digits.slice(8, 10),
+    ].filter(Boolean);
+    return parts.join(' ');
+  };
+
+  const validatePhone = (value: string) => {
+    const pattern = /^0\d{2}\s\d{3}\s\d{2}\s\d{2}$/;
+    const digits = value.replace(/\D/g, '');
+    if (digits.length !== 10) {
+      setPhoneError("Номер має містити 10 цифр у форматі 0XX XXX XX XX");
+      return false;
+    }
+    if (!pattern.test(value)) {
+      setPhoneError("Номер має бути у форматі 0XX XXX XX XX");
+      return false;
+    }
+    setPhoneError(null);
+    return true;
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhoneNumber(value);
+    setPhone(formatted);
+    if (!formatted) {
+      setPhoneError(null);
+      return;
+    }
+
+    const digits = formatted.replace(/\D/g, '');
+    if (digits.length < 10) {
+      setPhoneError(null);
+      return;
+    }
+
+    validatePhone(formatted);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validatePhone(phone)) {
+      alert("Будь ласка, введіть коректний номер телефону");
+      return;
+    }
 
     if (!deliveryData) {
       alert("Будь ласка, оберіть відділення доставки на мапі");
@@ -76,14 +126,22 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
     }
   };
 
-  const getPrice = (priceUAH: number) => {
-    const rate = EXCHANGE_RATES[currency] || 1;
-    const price = priceUAH * (currency === Currency.UAH ? 1 : rate);
+  const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
+  const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('uk-UA', {
       style: 'currency',
       currency: currency
-    }).format(price);
+    }).format(amount);
   };
+
+  const formatItemPrice = (item: CartItem) => {
+    const priceUSD = item.priceUSD && item.priceUSD > 0
+      ? item.priceUSD
+      : (item.priceUAH && item.priceUAH > 0 && effectiveRate > 0 ? item.priceUAH / effectiveRate : 0);
+    const amount = currency === Currency.USD ? priceUSD : priceUSD * effectiveRate;
+    return formatAmount(amount);
+  };
+  const totalDisplayAmount = currency === Currency.UAH ? totalUAH : (effectiveRate > 0 ? totalUAH / effectiveRate : totalUAH);
 
   if (cartItems.length === 0) {
     return <div className="p-8 text-center text-gray-500">Кошик порожній</div>;
@@ -117,7 +175,17 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
-                  <input required type="tel" placeholder="+380..." value={phone} onChange={e => setPhone(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-tesla-red outline-none" />
+                  <input
+                    required
+                    type="tel"
+                    placeholder="0XX XX XX XX"
+                    value={phone}
+                    onChange={e => handlePhoneChange(e.target.value)}
+                    className={`w-full border rounded-md p-2 focus:ring-2 focus:ring-tesla-red outline-none ${phoneError ? 'border-red-500' : ''}`}
+                  />
+                  {phoneError && (
+                    <p className="text-sm text-red-600 mt-1">{phoneError}</p>
+                  )}
                 </div>
               </div>
             </section>
@@ -195,7 +263,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
                   </div>
                   <div className="flex-1">
                     <div className="font-medium line-clamp-2">{item.name}</div>
-                    <div className="text-gray-500">{item.quantity} x {getPrice(item.priceUAH)}</div>
+                    <div className="text-gray-500">{item.quantity} x {formatItemPrice(item)}</div>
                   </div>
                 </div>
               ))}
@@ -204,7 +272,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
             <div className="border-t pt-4 space-y-2 mb-6">
               <div className="flex justify-between text-gray-600">
                 <span>Сума товарів</span>
-                <span>{getPrice(totalUAH)}</span>
+                <span>{formatAmount(totalDisplayAmount)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Доставка</span>
@@ -212,7 +280,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, onSuccess, tot
               </div>
               <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t mt-2">
                 <span>Разом</span>
-                <span>{getPrice(totalUAH)}</span>
+                <span>{formatAmount(totalDisplayAmount)}</span>
               </div>
             </div>
 

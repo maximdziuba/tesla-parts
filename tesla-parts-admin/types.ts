@@ -12,6 +12,7 @@ export interface Category {
   id: number;
   name: string;
   image?: string;
+  sort_order?: number;
   subcategories: Subcategory[];
 }
 
