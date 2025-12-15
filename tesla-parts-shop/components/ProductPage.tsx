@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Product, Currency } from '../types';
-import { ShoppingCart, ArrowLeft, Check } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 
 interface ProductPageProps {
@@ -21,6 +21,18 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
         onAddToCart(product);
         setAdded(true);
         setTimeout(() => setAdded(false), 2000);
+    };
+
+    const handlePrevImage = () => {
+        const currentIndex = allImages.indexOf(selectedImage);
+        const prevIndex = (currentIndex - 1 + allImages.length) % allImages.length;
+        setSelectedImage(allImages[prevIndex]);
+    };
+
+    const handleNextImage = () => {
+        const currentIndex = allImages.indexOf(selectedImage);
+        const nextIndex = (currentIndex + 1) % allImages.length;
+        setSelectedImage(allImages[nextIndex]);
     };
 
     const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
@@ -51,12 +63,30 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
                 <div className="flex flex-col md:flex-row">
                     {/* Image Gallery */}
                     <div className="md:w-1/2 p-6 bg-gray-50">
-                        <div className="aspect-square rounded-xl overflow-hidden bg-white mb-4 shadow-sm">
-                            <img
-                                src={selectedImage}
-                                alt={product.name}
-                                className="w-full h-full object-contain"
-                            />
+                        <div className="relative">
+                            <div className="aspect-square rounded-xl overflow-hidden bg-white mb-4 shadow-sm">
+                                <img
+                                    src={selectedImage}
+                                    alt={product.name}
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
+                            {allImages.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={handlePrevImage}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/50 backdrop-blur-sm rounded-full p-2 text-gray-700 hover:bg-white transition-all"
+                                    >
+                                        <ChevronLeft size={24} />
+                                    </button>
+                                    <button
+                                        onClick={handleNextImage}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/50 backdrop-blur-sm rounded-full p-2 text-gray-700 hover:bg-white transition-all"
+                                    >
+                                        <ChevronRight size={24} />
+                                    </button>
+                                </>
+                            )}
                         </div>
 
                         {allImages.length > 1 && (
