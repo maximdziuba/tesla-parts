@@ -12,6 +12,8 @@ from services.pricing import get_exchange_rate, compute_price_fields
 
 router = APIRouter(prefix="/products", tags=["products"])
 
+PLACEHOLDER_IMAGE_URL = "https://via.placeholder.com/300"
+
 
 def _collect_subcategory_ids(product: Product) -> List[int]:
     ids: List[int] = []
@@ -123,6 +125,7 @@ async def create_product(
     description: str = Form(...),
     inStock: bool = Form(...),
     detail_number: Optional[str] = Form(None),
+    cross_number: str = Form(...),
     image: Optional[str] = Form(None),
     files: List[UploadFile] = File(None),
     session: Session = Depends(get_session)
@@ -143,7 +146,7 @@ async def create_product(
     if not main_image and image_urls:
         main_image = image_urls[0]
     if not main_image:
-        main_image = "https://via.placeholder.com/300"
+        main_image = PLACEHOLDER_IMAGE_URL
 
     normalized_subcategories = _normalize_subcategory_selection(
         subcategory_id,
@@ -165,6 +168,7 @@ async def create_product(
         description=description,
         inStock=inStock,
         detail_number=detail_number,
+        cross_number=cross_number,
         image=main_image
     )
     if priceUSD:
@@ -206,6 +210,7 @@ async def update_product(
     description: str = Form(...),
     inStock: bool = Form(...),
     detail_number: Optional[str] = Form(None),
+    cross_number: str = Form(...),
     image: Optional[str] = Form(None),
     files: List[UploadFile] = File(None),
     kept_images: List[str] = Form(None),
@@ -223,6 +228,7 @@ async def update_product(
     product.description = description
     product.inStock = inStock
     product.detail_number = detail_number
+    product.cross_number = cross_number
     
     # Update main image if provided
     if image:
@@ -277,7 +283,27 @@ async def update_product(
     session.commit()
     session.refresh(product)
     
-    updated_images = session.exec(select(ProductImage).where(ProductImage.product_id == product_id)).all()
+    updated_images = session.exec(
+        select(ProductImage)
+        .where(ProductImage.product_id == product_id)
+        .order_by(ProductImage.id)
+    ).all()
+
+    new_primary_url = updated_images[0].url if updated_images else None
+    image_updated = False
+
+    if new_primary_url and product.image != new_primary_url:
+        product.image = new_primary_url
+        image_updated = True
+    elif not new_primary_url and not product.image:
+        product.image = PLACEHOLDER_IMAGE_URL
+        image_updated = True
+
+    if image_updated:
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+
     product.images = updated_images
     return _build_product_response(product, rate)
 

@@ -19,6 +19,8 @@ const createEmptyAssignment = (): CategoryAssignment => ({
     subcategoryPath: [],
 });
 
+const PLACEHOLDER_IMAGE_URL = 'https://via.placeholder.com/300';
+
 export const ProductForm: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
@@ -37,10 +39,10 @@ export const ProductForm: React.FC = () => {
         subcategory_id: undefined as number | undefined,
         priceUAH: 0,
         priceUSD: 0,
-        image: '',
         description: '',
         inStock: true,
-        detail_number: ''
+        detail_number: '',
+        cross_number: ''
     });
 
     const [exchangeRate, setExchangeRate] = useState<number>(40); // Default fallback
@@ -69,15 +71,15 @@ export const ProductForm: React.FC = () => {
                 subcategory_id: product.subcategory_id,
                 priceUAH: product.priceUAH,
                 priceUSD: product.priceUSD || 0,
-                image: product.image,
                 description: product.description,
                 inStock: product.inStock,
-                detail_number: product.detail_number || ''
+                detail_number: product.detail_number || '',
+                cross_number: product.cross_number || ''
             });
 
             if (product.images && product.images.length > 0) {
                 setKeptImages(product.images);
-            } else if (product.image) {
+            } else if (product.image && product.image !== PLACEHOLDER_IMAGE_URL) {
                 setKeptImages([product.image]);
             } else {
                 setKeptImages([]);
@@ -391,6 +393,17 @@ export const ProductForm: React.FC = () => {
                                 placeholder="112201"
                             />
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Cross-номер</label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.cross_number}
+                                onChange={e => setFormData({ ...formData, cross_number: e.target.value })}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                placeholder="Наприклад: 5Q0972887B"
+                            />
+                        </div>
                     </div>
 
                     <div>
@@ -491,7 +504,6 @@ export const ProductForm: React.FC = () => {
                                         if (e.target.files) {
                                             // Append new files to existing ones
                                             setFiles(prev => [...prev, ...Array.from(e.target.files || [])]);
-                                            setFormData({ ...formData, image: '' }); // Clear URL if file selected
                                         }
                                     }}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -556,18 +568,6 @@ export const ProductForm: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="text-center text-sm text-gray-500">- АБО -</div>
-
-                            <input
-                                type="url"
-                                value={formData.image}
-                                onChange={e => {
-                                    setFormData({ ...formData, image: e.target.value });
-                                    setFiles([]); // Clear files if URL entered
-                                }}
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                                placeholder="Вставте пряме посилання на зображення"
-                            />
                         </div>
                     </div>
 

@@ -31,13 +31,12 @@ export const ApiService = {
     formData.append('priceUSD', (product.priceUSD || 0).toString());
     formData.append('description', product.description);
     formData.append('inStock', product.inStock.toString());
+    formData.append('cross_number', product.cross_number);
 
     if (product.files && product.files.length > 0) {
       product.files.forEach((file: File) => {
         formData.append('files', file);
       });
-    } else if (product.image) {
-      formData.append('image', product.image);
     }
 
     if (product.subcategory_id) {
@@ -72,13 +71,12 @@ export const ApiService = {
     formData.append('priceUSD', (product.priceUSD || 0).toString());
     formData.append('description', product.description);
     formData.append('inStock', product.inStock.toString());
+    formData.append('cross_number', product.cross_number);
 
     if (product.files && product.files.length > 0) {
       product.files.forEach((file: File) => {
         formData.append('files', file);
       });
-    } else if (product.image) {
-      formData.append('image', product.image);
     }
 
     if (product.subcategory_id) {
@@ -144,10 +142,9 @@ export const ApiService = {
     return res.json();
   },
 
-  createCategory: async (name: string, image?: string, file?: File, sort_order?: number): Promise<Category> => {
+  createCategory: async (name: string, file?: File, sort_order?: number): Promise<Category> => {
     const formData = new FormData();
     formData.append('name', name);
-    if (image) formData.append('image', image);
     if (file) formData.append('file', file);
     if (sort_order !== undefined) formData.append('sort_order', sort_order.toString());
 
@@ -162,10 +159,9 @@ export const ApiService = {
     return res.json();
   },
 
-  updateCategory: async (id: number, name: string, image?: string, file?: File, sort_order?: number): Promise<Category> => {
+  updateCategory: async (id: number, name: string, file?: File, sort_order?: number): Promise<Category> => {
     const formData = new FormData();
     formData.append('name', name);
-    if (image) formData.append('image', image);
     if (file) formData.append('file', file);
     if (sort_order !== undefined) formData.append('sort_order', sort_order.toString());
 
@@ -180,11 +176,10 @@ export const ApiService = {
     return res.json();
   },
 
-  createSubcategory: async (categoryId: number, name: string, image?: string, code?: string, parentId?: number, file?: File): Promise<Subcategory> => {
+  createSubcategory: async (categoryId: number, name: string, code?: string, parentId?: number, file?: File): Promise<Subcategory> => {
     const formData = new FormData();
     formData.append('name', name);
     formData.append('category_id', categoryId.toString());
-    if (image) formData.append('image', image);
     if (code) formData.append('code', code);
     if (parentId) formData.append('parent_id', parentId.toString());
     if (file) formData.append('file', file);
@@ -200,10 +195,9 @@ export const ApiService = {
     return res.json();
   },
 
-  updateSubcategory: async (id: number, name: string, image?: string, code?: string, parentId?: number, file?: File): Promise<Subcategory> => {
+  updateSubcategory: async (id: number, name: string, code?: string, parentId?: number, file?: File): Promise<Subcategory> => {
     const formData = new FormData();
     formData.append('name', name);
-    if (image) formData.append('image', image);
     if (code) formData.append('code', code);
     if (parentId !== undefined) formData.append('parent_id', parentId.toString());
     if (file) formData.append('file', file);

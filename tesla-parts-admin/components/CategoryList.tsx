@@ -22,8 +22,8 @@ interface SubcategoryItemProps {
     categories: Category[];
     level?: number;
     onDelete: (id: number) => void;
-    onCreate: (categoryId: number, name: string, image: string, code: string, parentId: number, file?: File) => void;
-    onEdit: (id: number, name: string, image: string, code: string, parentId?: number, file?: File) => void;
+    onCreate: (categoryId: number, name: string, code: string, parentId: number, file?: File) => void;
+    onEdit: (id: number, name: string, code: string, parentId?: number, file?: File) => void;
     onTransfer: (id: number, targetCategoryId: number, targetParentId: number | undefined, mode: 'move' | 'copy') => Promise<void>;
 }
 
@@ -77,13 +77,11 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
     // New Child State
     const [newName, setNewName] = useState('');
     const [newCode, setNewCode] = useState('');
-    const [newImage, setNewImage] = useState('');
     const [newFile, setNewFile] = useState<File | null>(null);
 
     // Edit State
     const [editName, setEditName] = useState(subcategory.name);
     const [editCode, setEditCode] = useState(subcategory.code || '');
-    const [editImage, setEditImage] = useState(subcategory.image || '');
     const [editFile, setEditFile] = useState<File | null>(null);
 
     useEffect(() => {
@@ -104,10 +102,9 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
 
     const handleAddChild = () => {
         if (!newName.trim()) return;
-        onCreate(categoryId, newName, newImage, newCode, subcategory.id, newFile || undefined);
+        onCreate(categoryId, newName, newCode, subcategory.id, newFile || undefined);
         setNewName('');
         setNewCode('');
-        setNewImage('');
         setNewFile(null);
         setIsAddingChild(false);
         setIsExpanded(true);
@@ -115,7 +112,8 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
 
     const handleSaveEdit = () => {
         if (!editName.trim()) return;
-        onEdit(subcategory.id, editName, editImage, editCode, subcategory.parent_id, editFile || undefined);
+        onEdit(subcategory.id, editName, editCode, subcategory.parent_id ?? undefined, editFile || undefined);
+        setEditFile(null);
         setIsEditing(false);
     };
 
@@ -147,7 +145,7 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                     {!hasChildren && <div className="w-6" />} {/* Spacer */}
 
                     {isEditing ? (
-                        <div className="flex items-center gap-2 flex-1">
+                        <div className="flex items-center gap-2 flex-1 flex-wrap">
                             <input
                                 type="text"
                                 value={editName}
@@ -162,13 +160,33 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                                 className="border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red w-20"
                                 placeholder="Код"
                             />
-                            <input
-                                type="text"
-                                value={editImage}
-                                onChange={e => setEditImage(e.target.value)}
-                                className="border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red w-32"
-                                placeholder="URL"
-                            />
+                            <div className="flex items-center gap-2">
+                                {subcategory.image && (
+                                    <img
+                                        src={subcategory.image}
+                                        alt=""
+                                        className="h-8 w-auto rounded object-contain bg-white border border-gray-200"
+                                    />
+                                )}
+                                <label className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded text-xs flex items-center gap-1">
+                                    <ImageIcon size={14} />
+                                    <span>Завантажити</span>
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        onChange={e => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                setEditFile(e.target.files[0]);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                                {editFile && (
+                                    <span className="text-xs text-gray-500 max-w-[120px] truncate">
+                                        {editFile.name}
+                                    </span>
+                                )}
+                            </div>
                             <button onClick={handleSaveEdit} className="text-green-600 hover:bg-green-50 p-1 rounded">
                                 <Check size={16} />
                             </button>
@@ -248,27 +266,27 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                     />
 
                     {/* Image Input Group */}
-                    <div className="flex items-center gap-1 flex-1 min-w-[200px]">
-                        <input
-                            type="text"
-                            value={newImage}
-                            onChange={e => setNewImage(e.target.value)}
-                            className="flex-1 border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red"
-                            placeholder="URL або файл ->"
-                        />
+                    <div className="flex items-center gap-2 flex-1 min-w-[200px]">
                         <label className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded text-xs flex items-center gap-1">
                             <ImageIcon size={14} />
+                            <span>Обрати файл</span>
                             <input
                                 type="file"
                                 className="hidden"
                                 onChange={e => {
                                     if (e.target.files && e.target.files[0]) {
                                         setNewFile(e.target.files[0]);
-                                        setNewImage(e.target.files[0].name);
+                                    } else {
+                                        setNewFile(null);
                                     }
                                 }}
                             />
                         </label>
+                        {newFile && (
+                            <span className="text-xs text-gray-500 max-w-[140px] truncate">
+                                {newFile.name}
+                            </span>
+                        )}
                     </div>
 
                     <button onClick={handleAddChild} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition text-sm font-medium">
@@ -366,21 +384,18 @@ const CategoryList: React.FC = () => {
 
     // New Category State
     const [newCategoryName, setNewCategoryName] = useState('');
-    const [newCategoryImage, setNewCategoryImage] = useState('');
     const [newCategoryFile, setNewCategoryFile] = useState<File | null>(null);
     const [newCategorySortOrder, setNewCategorySortOrder] = useState('');
 
     // Edit Category State
     const [editingCategory, setEditingCategory] = useState<number | null>(null);
     const [editCategoryName, setEditCategoryName] = useState('');
-    const [editCategoryImage, setEditCategoryImage] = useState('');
     const [editCategoryFile, setEditCategoryFile] = useState<File | null>(null);
     const [editCategorySortOrder, setEditCategorySortOrder] = useState<number | ''>(0);
 
     // New Subcategory State (Top Level)
     const [newSubcategoryNames, setNewSubcategoryNames] = useState<{ [key: number]: string }>({});
     const [newSubcategoryCodes, setNewSubcategoryCodes] = useState<{ [key: number]: string }>({});
-    const [newSubcategoryImages, setNewSubcategoryImages] = useState<{ [key: number]: string }>({});
     const [newSubcategoryFiles, setNewSubcategoryFiles] = useState<{ [key: number]: File | null }>({});
 
     useEffect(() => {
@@ -410,9 +425,8 @@ const CategoryList: React.FC = () => {
 
         try {
             const sortValue = newCategorySortOrder !== '' ? Number(newCategorySortOrder) : undefined;
-            await ApiService.createCategory(newCategoryName, newCategoryImage, newCategoryFile || undefined, sortValue);
+            await ApiService.createCategory(newCategoryName, newCategoryFile || undefined, sortValue);
             setNewCategoryName('');
-            setNewCategoryImage('');
             setNewCategoryFile(null);
             setNewCategorySortOrder('');
             loadCategories();
@@ -434,7 +448,6 @@ const CategoryList: React.FC = () => {
     const startEditCategory = (category: Category) => {
         setEditingCategory(category.id);
         setEditCategoryName(category.name);
-        setEditCategoryImage(category.image || '');
         setEditCategoryFile(null);
         setEditCategorySortOrder(category.sort_order ?? 0);
     };
@@ -443,7 +456,7 @@ const CategoryList: React.FC = () => {
         if (!editingCategory || !editCategoryName.trim()) return;
         try {
             const sortValue = editCategorySortOrder === '' ? undefined : Number(editCategorySortOrder);
-            await ApiService.updateCategory(editingCategory, editCategoryName, editCategoryImage, editCategoryFile || undefined, sortValue);
+            await ApiService.updateCategory(editingCategory, editCategoryName, editCategoryFile || undefined, sortValue);
             setEditingCategory(null);
             loadCategories();
         } catch (e) {
@@ -451,15 +464,14 @@ const CategoryList: React.FC = () => {
         }
     };
 
-    const handleCreateSubcategory = async (categoryId: number, name: string, image?: string, code?: string, parentId?: number, file?: File) => {
+    const handleCreateSubcategory = async (categoryId: number, name: string, code?: string, parentId?: number, file?: File) => {
         if (!name?.trim()) return;
 
         try {
-            await ApiService.createSubcategory(categoryId, name, image, code, parentId, file);
+            await ApiService.createSubcategory(categoryId, name, code, parentId, file);
             if (!parentId) {
                 setNewSubcategoryNames(prev => ({ ...prev, [categoryId]: '' }));
                 setNewSubcategoryCodes(prev => ({ ...prev, [categoryId]: '' }));
-                setNewSubcategoryImages(prev => ({ ...prev, [categoryId]: '' }));
                 setNewSubcategoryFiles(prev => ({ ...prev, [categoryId]: null }));
             }
             loadCategories();
@@ -472,16 +484,15 @@ const CategoryList: React.FC = () => {
         handleCreateSubcategory(
             category.id,
             newSubcategoryNames[category.id],
-            newSubcategoryImages[category.id],
             newSubcategoryCodes[category.id],
             undefined,
             newSubcategoryFiles[category.id] || undefined
         );
     };
 
-    const handleUpdateSubcategory = async (id: number, name: string, image: string, code: string, parentId?: number, file?: File) => {
+    const handleUpdateSubcategory = async (id: number, name: string, code: string, parentId?: number, file?: File) => {
         try {
-            await ApiService.updateSubcategory(id, name, image, code, parentId, file);
+            await ApiService.updateSubcategory(id, name, code, parentId, file);
             loadCategories();
         } catch (e) {
             alert("Failed to update subcategory");
@@ -554,28 +565,28 @@ const CategoryList: React.FC = () => {
                         />
                     </div>
                     <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">URL зображення (опціонально)</label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={newCategoryImage}
-                                onChange={e => setNewCategoryImage(e.target.value)}
-                                className="flex-1 border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
-                                placeholder="https://..."
-                            />
-                            <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md flex items-center justify-center border border-gray-300">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Зображення (опціонально)</label>
+                        <div className="flex flex-col gap-2">
+                            <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md inline-flex items-center gap-2 border border-gray-300 w-full justify-center">
                                 <ImageIcon size={20} />
+                                <span>Завантажити файл</span>
                                 <input
                                     type="file"
                                     className="hidden"
                                     onChange={e => {
                                         if (e.target.files && e.target.files[0]) {
                                             setNewCategoryFile(e.target.files[0]);
-                                            setNewCategoryImage(e.target.files[0].name);
+                                        } else {
+                                            setNewCategoryFile(null);
                                         }
                                     }}
                                 />
                             </label>
+                            {newCategoryFile && (
+                                <span className="text-xs text-gray-500 truncate">
+                                    Обрано: {newCategoryFile.name}
+                                </span>
+                            )}
                         </div>
                     </div>
                     <button
@@ -609,27 +620,34 @@ const CategoryList: React.FC = () => {
                                             placeholder="Порядок"
                                         />
                                         <div className="flex items-center gap-2 flex-1">
-                                        <input
-                                            type="text"
-                                            value={editCategoryImage}
-                                            onChange={e => setEditCategoryImage(e.target.value)}
-                                            className="flex-1 border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red"
-                                            placeholder="URL"
-                                        />
-                                        <label className="cursor-pointer bg-gray-200 hover:bg-gray-300 p-1.5 rounded">
-                                            <ImageIcon size={16} />
-                                            <input
-                                                type="file"
-                                                className="hidden"
-                                                onChange={e => {
-                                                    if (e.target.files && e.target.files[0]) {
-                                                        setEditCategoryFile(e.target.files[0]);
-                                                        setEditCategoryImage(e.target.files[0].name);
-                                                    }
-                                                }}
-                                            />
-                                        </label>
-                                    </div>
+                                            {category.image && (
+                                                <img
+                                                    src={category.image}
+                                                    alt=""
+                                                    className="h-10 w-auto rounded object-contain bg-white border border-gray-200"
+                                                />
+                                            )}
+                                            <label className="cursor-pointer bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded inline-flex items-center gap-1 text-sm">
+                                                <ImageIcon size={16} />
+                                                <span>Змінити</span>
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    onChange={e => {
+                                                        if (e.target.files && e.target.files[0]) {
+                                                            setEditCategoryFile(e.target.files[0]);
+                                                        } else {
+                                                            setEditCategoryFile(null);
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                            {editCategoryFile && (
+                                                <span className="text-xs text-gray-500 truncate max-w-[140px]">
+                                                    {editCategoryFile.name}
+                                                </span>
+                                            )}
+                                        </div>
                                     <button onClick={handleUpdateCategory} className="text-green-600 hover:bg-green-50 p-2 rounded">
                                         <Check size={20} />
                                     </button>
@@ -719,30 +737,23 @@ const CategoryList: React.FC = () => {
                                             }}
                                         />
                                         <div className="flex items-center gap-2 flex-1">
-                                            <input
-                                                type="text"
-                                                value={newSubcategoryImages[category.id] || ''}
-                                                onChange={e => setNewSubcategoryImages(prev => ({ ...prev, [category.id]: e.target.value }))}
-                                                className="flex-1 border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-tesla-red outline-none"
-                                                placeholder="URL зображення..."
-                                                onKeyDown={e => {
-                                                    if (e.key === 'Enter') triggerRootSubcategoryCreate(category);
-                                                }}
-                                            />
                                             <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md flex items-center gap-1 border border-gray-300">
                                                 <ImageIcon size={16} />
+                                                <span>Завантажити</span>
                                                 <input
                                                     type="file"
                                                     className="hidden"
                                                     onChange={e => {
                                                         const file = e.target.files?.[0] || null;
                                                         setNewSubcategoryFiles(prev => ({ ...prev, [category.id]: file }));
-                                                        if (file) {
-                                                            setNewSubcategoryImages(prev => ({ ...prev, [category.id]: file.name }));
-                                                        }
                                                     }}
                                                 />
                                             </label>
+                                            {newSubcategoryFiles[category.id] && (
+                                                <span className="text-xs text-gray-500 truncate max-w-[160px]">
+                                                    {newSubcategoryFiles[category.id]?.name}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     <button

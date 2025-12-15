@@ -40,8 +40,11 @@ export const ProductList: React.FC = () => {
       result = result.filter(p => extractCategories(p.category).includes(categoryFilter));
     }
     if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
       result = result.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase())
+        p.name.toLowerCase().includes(lower) ||
+        (p.detail_number && p.detail_number.toLowerCase().includes(lower)) ||
+        (p.cross_number && p.cross_number.toLowerCase().includes(lower))
       );
     }
     setFilteredProducts(result);
@@ -188,6 +191,9 @@ export const ProductList: React.FC = () => {
                       <div>
                         <div className="font-medium text-gray-900">{product.name}</div>
                         <div className="text-xs text-gray-400 truncate max-w-[200px]">{product.description}</div>
+                        {product.cross_number && (
+                          <div className="text-xs text-gray-500 mt-1">Cross: {product.cross_number}</div>
+                        )}
                       </div>
                     </div>
                   </td>

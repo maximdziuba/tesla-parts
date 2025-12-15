@@ -13,6 +13,7 @@ engine = create_engine(sqlite_url, connect_args=connect_args)
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
     _ensure_category_sort_order_column()
+    _ensure_product_cross_number_column()
 
 def get_session():
     with Session(engine) as session:
@@ -24,4 +25,12 @@ def _ensure_category_sort_order_column():
         columns = {row[1] for row in result}
         if "sort_order" not in columns:
             conn.execute(text("ALTER TABLE category ADD COLUMN sort_order INTEGER DEFAULT 0"))
+            conn.commit()
+
+def _ensure_product_cross_number_column():
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info('product')")).fetchall()
+        columns = {row[1] for row in result}
+        if "cross_number" not in columns:
+            conn.execute(text("ALTER TABLE product ADD COLUMN cross_number VARCHAR DEFAULT ''"))
             conn.commit()

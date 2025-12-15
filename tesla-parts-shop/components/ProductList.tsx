@@ -68,7 +68,12 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
 
             <div className="p-4 flex-1 flex flex-col">
               <div className="text-xs text-gray-500 mb-1">{product.category}</div>
-              <div className="text-xs text-gray-500 mb-1">{product.detail_number}</div>
+              {product.detail_number && (
+                <div className="text-xs text-gray-500 mb-1">{product.detail_number}</div>
+              )}
+              {product.cross_number && (
+                <div className="text-[11px] text-gray-400 mb-1">Cross: {product.cross_number}</div>
+              )}
               <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3rem] group-hover:text-tesla-red transition-colors">{product.name}</h3>
 
               <div className="mt-auto pt-4 flex items-center justify-between">

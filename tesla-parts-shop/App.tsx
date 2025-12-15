@@ -219,6 +219,7 @@ const App: React.FC = () => {
         return (
           p.name.toLowerCase().includes(lowerQuery) ||
           (p.detail_number && p.detail_number.toLowerCase().includes(lowerQuery)) ||
+          (p.cross_number && p.cross_number.toLowerCase().includes(lowerQuery)) ||
           productSubIds.some(id => matchingSubcategoryIds.has(id))
         );
       });

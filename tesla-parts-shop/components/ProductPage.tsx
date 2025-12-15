@@ -88,6 +88,11 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
                                             Part #: {product.detail_number}
                                         </span>
                                     )}
+                                    {product.cross_number && (
+                                        <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
+                                            Cross #: {product.cross_number}
+                                        </span>
+                                    )}
                                 </div>
                                 {product.inStock ? (
                                     <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">

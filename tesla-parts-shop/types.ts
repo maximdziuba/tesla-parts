@@ -32,6 +32,7 @@ export interface Product {
   description: string;
   inStock: boolean;
   detail_number?: string;
+  cross_number: string;
 }
 
 export interface CartItem extends Product {

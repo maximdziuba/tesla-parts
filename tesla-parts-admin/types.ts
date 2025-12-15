@@ -29,6 +29,7 @@ export interface Product {
   inStock: boolean;
   detail_number?: string;
   priceUSD?: number;
+  cross_number: string;
 }
 
 export interface OrderItem {

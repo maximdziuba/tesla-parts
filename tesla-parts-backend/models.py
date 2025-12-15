@@ -43,6 +43,7 @@ class Product(SQLModel, table=True):
     description: str
     inStock: bool
     detail_number: Optional[str] = None
+    cross_number: str = Field(default="")
     
     subcategory: Optional[Subcategory] = Relationship(back_populates="products")
     linked_subcategories: List[Subcategory] = Relationship(
