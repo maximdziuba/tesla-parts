@@ -94,3 +94,8 @@ class Page(SQLModel, table=True):
     content: str
     is_published: bool = Field(default=True)
     location: str = Field(default="footer") # header, footer, both, none
+
+class User(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(unique=True, index=True)
+    hashed_password: str

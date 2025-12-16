@@ -1,6 +1,8 @@
-from sqlmodel import SQLModel, create_engine, Session
+from sqlmodel import SQLModel, create_engine, Session, select
 from sqlalchemy import text
 import os
+from models import Settings, User # Import Settings and User model
+from auth import get_password_hash # Import password hashing utility
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -23,6 +25,15 @@ def create_db_and_tables():
     if is_sqlite():
         _ensure_category_sort_order_column()
         _ensure_product_cross_number_column()
+    
+    with Session(engine) as session:
+        # Check if admin user exists, if not, create it
+        admin_user = session.exec(select(User).where(User.username == "admin")).first()
+        if not admin_user:
+            hashed_password = get_password_hash("admin123") # Default password 'secret'
+            initial_admin_user = User(username="admin", hashed_password=hashed_password)
+            session.add(initial_admin_user)
+            session.commit()
 
 def get_session():
     with Session(engine) as session:

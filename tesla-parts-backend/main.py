@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from database import create_db_and_tables
-from routers import products, orders, categories, settings, pages
+from routers import products, orders, categories, settings, pages, auth # Import auth router
 from contextlib import asynccontextmanager
 import os
 
@@ -19,6 +19,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Add your production frontend URLs here
 origins = [
     "http://localhost:3000",
+    "http://localhost:3001",
     "http://teslapartscenter.com.ua",
     "http://www.teslapartscenter.com.ua",
     "http://admin.teslapartscenter.com.ua",
@@ -44,6 +45,7 @@ app.include_router(orders.router)
 app.include_router(categories.router)
 app.include_router(settings.router)
 app.include_router(pages.router)
+app.include_router(auth.router) # Include auth router
 
 @app.get("/")
 def read_root():

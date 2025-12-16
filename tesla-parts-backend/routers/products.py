@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlmodel import Session, select, delete
 from typing import List, Optional
 import shutil
@@ -9,6 +9,7 @@ from models import Product, ProductImage, ProductSubcategoryLink
 from schemas import ProductCreate, ProductRead, ProductBulkDeleteRequest
 from services.image_uploader import image_uploader
 from services.pricing import get_exchange_rate, compute_price_fields
+from dependencies import get_current_admin
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -70,12 +71,6 @@ def _sync_linked_subcategories(
         )
     session.commit()
 
-def verify_admin(x_admin_secret: str = Header(None)):
-    import os
-    expected = os.getenv("ADMIN_SECRET", "secret")
-    if x_admin_secret != expected:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
 @router.get("/", response_model=List[ProductRead])
 def read_products(category: str = None, subcategory_id: int = None, session: Session = Depends(get_session)):
     query = select(Product).options(
@@ -113,7 +108,7 @@ def read_labels(session: Session = Depends(get_session)):
     categories = list(set(p.category for p in products))
     return categories
 
-@router.post("/", response_model=ProductRead, dependencies=[Depends(verify_admin)])
+@router.post("/", response_model=ProductRead, dependencies=[Depends(get_current_admin)])
 async def create_product(
     id: Optional[str] = Form(None),
     name: str = Form(...),
@@ -198,7 +193,7 @@ async def create_product(
     # Construct response manually to avoid modifying the SQLModel relationship with strings
     return _build_product_response(product_data, rate)
 
-@router.put("/{product_id}", response_model=ProductRead, dependencies=[Depends(verify_admin)])
+@router.put("/{product_id}", response_model=ProductRead, dependencies=[Depends(get_current_admin)])
 async def update_product(
     product_id: str,
     name: str = Form(...),
@@ -307,7 +302,7 @@ async def update_product(
     product.images = updated_images
     return _build_product_response(product, rate)
 
-@router.delete("/{product_id}", dependencies=[Depends(verify_admin)])
+@router.delete("/{product_id}", dependencies=[Depends(get_current_admin)])
 def delete_product(product_id: str, session: Session = Depends(get_session)):
     product = session.get(Product, product_id)
     if not product:
@@ -322,7 +317,7 @@ def delete_product(product_id: str, session: Session = Depends(get_session)):
     return {"ok": True}
 
 
-@router.post("/bulk-delete", dependencies=[Depends(verify_admin)])
+@router.post("/bulk-delete", dependencies=[Depends(get_current_admin)])
 def bulk_delete_products(
     request: ProductBulkDeleteRequest,
     session: Session = Depends(get_session),

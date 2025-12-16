@@ -14,6 +14,7 @@ from schemas import (
 )
 from services.image_uploader import image_uploader
 from services.pricing import get_exchange_rate, compute_price_fields
+from dependencies import get_current_admin # Import get_current_admin
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -315,7 +316,7 @@ def _build_subcategory_response(
     return _serialize_subcategory_tree(subcategory, all_subs, session, rate)
 
 
-@router.post("/", response_model=CategoryRead)
+@router.post("/", response_model=CategoryRead, dependencies=[Depends(get_current_admin)])
 async def create_category(
     name: str = Form(...),
     image: str = Form(None),
@@ -336,7 +337,7 @@ async def create_category(
     session.refresh(db_category)
     return db_category
 
-@router.post("/{category_id}/subcategories/", response_model=SubcategoryRead)
+@router.post("/{category_id}/subcategories/", response_model=SubcategoryRead, dependencies=[Depends(get_current_admin)])
 async def create_subcategory(
     category_id: int,
     name: str = Form(...),
@@ -363,7 +364,7 @@ async def create_subcategory(
     rate = get_exchange_rate(session)
     return _build_subcategory_response(session, db_subcategory.id, rate)
 
-@router.put("/{category_id}", response_model=CategoryRead)
+@router.put("/{category_id}", response_model=CategoryRead, dependencies=[Depends(get_current_admin)])
 async def update_category(
     category_id: int,
     name: str = Form(...),
@@ -393,7 +394,7 @@ async def update_category(
     session.refresh(category)
     return category
 
-@router.put("/subcategories/{subcategory_id}", response_model=SubcategoryRead)
+@router.put("/subcategories/{subcategory_id}", response_model=SubcategoryRead, dependencies=[Depends(get_current_admin)])
 async def update_subcategory(
     subcategory_id: int,
     name: str = Form(...),
@@ -429,7 +430,7 @@ async def update_subcategory(
     rate = get_exchange_rate(session)
     return _build_subcategory_response(session, subcategory.id, rate)
 
-@router.post("/subcategories/{subcategory_id}/move", response_model=SubcategoryRead)
+@router.post("/subcategories/{subcategory_id}/move", response_model=SubcategoryRead, dependencies=[Depends(get_current_admin)])
 def move_subcategory(
     subcategory_id: int,
     transfer: SubcategoryTransferRequest,
@@ -467,7 +468,7 @@ def move_subcategory(
     return _build_subcategory_response(session, subcategory.id, rate)
 
 
-@router.post("/subcategories/{subcategory_id}/copy", response_model=SubcategoryRead)
+@router.post("/subcategories/{subcategory_id}/copy", response_model=SubcategoryRead, dependencies=[Depends(get_current_admin)])
 def copy_subcategory(
     subcategory_id: int,
     transfer: SubcategoryTransferRequest,
@@ -500,7 +501,7 @@ def copy_subcategory(
     return _build_subcategory_response(session, new_subcategory.id, rate)
 
 
-@router.delete("/{category_id}")
+@router.delete("/{category_id}", dependencies=[Depends(get_current_admin)])
 def delete_category(category_id: int, session: Session = Depends(get_session)):
     category = session.get(Category, category_id)
     if not category:
@@ -518,7 +519,7 @@ def delete_category(category_id: int, session: Session = Depends(get_session)):
     session.commit()
     return {"ok": True}
 
-@router.delete("/subcategories/{subcategory_id}")
+@router.delete("/subcategories/{subcategory_id}", dependencies=[Depends(get_current_admin)])
 def delete_subcategory(subcategory_id: int, session: Session = Depends(get_session)):
     subcategory = session.get(Subcategory, subcategory_id)
     if not subcategory:
