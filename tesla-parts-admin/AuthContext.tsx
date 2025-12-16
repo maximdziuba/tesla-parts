@@ -3,11 +3,13 @@ import { ApiService } from './services/api';
 
 interface AuthContextType {
   accessToken: string | null;
+  refreshToken: string | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   error: string | null;
   resetError: () => void;
+  refreshAccessToken: () => Promise<void>; // New function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,6 +17,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [accessToken, setAccessToken] = useState<string | null>(
     localStorage.getItem('accessToken')
+  );
+  const [refreshToken, setRefreshToken] = useState<string | null>( // New state for refresh token
+    localStorage.getItem('refreshToken')
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -26,11 +31,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [accessToken]);
 
+  useEffect(() => {
+    if (refreshToken) {
+      localStorage.setItem('refreshToken', refreshToken);
+    } else {
+      localStorage.removeItem('refreshToken');
+    }
+  }, [refreshToken]);
+
   const login = async (username: string, password: string) => {
     try {
       setError(null);
       const response = await ApiService.login(username, password);
       setAccessToken(response.access_token);
+      setRefreshToken(response.refresh_token); // Store refresh token
     } catch (err: any) {
       setError(err.message || 'Failed to login');
       throw err; // Re-throw to allow component to catch
@@ -39,6 +53,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     setAccessToken(null);
+    setRefreshToken(null); // Clear refresh token
+  };
+
+  const refreshAccessToken = async () => {
+    if (!refreshToken) {
+      logout();
+      throw new Error("No refresh token available");
+    }
+    try {
+      const response = await ApiService.refreshToken(refreshToken);
+      setAccessToken(response.access_token);
+      setRefreshToken(response.refresh_token); // Update with new refresh token
+    } catch (err: any) {
+      console.error("Failed to refresh token:", err);
+      logout(); // Logout if refresh fails
+      throw err;
+    }
   };
 
   const resetError = () => {
@@ -48,7 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isAuthenticated = !!accessToken;
 
   return (
-    <AuthContext.Provider value={{ accessToken, login, logout, isAuthenticated, error, resetError }}>
+    <AuthContext.Provider value={{ accessToken, refreshToken, login, logout, isAuthenticated, error, resetError, refreshAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

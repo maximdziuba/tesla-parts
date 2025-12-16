@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
 import { Order } from '../types';
-import { Search, Truck, CreditCard } from 'lucide-react';
+import { Search, Truck, CreditCard, Pencil, Check, X } from 'lucide-react'; // Import Pencil, Check, X
 
 export const OrderList: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingTtnOrderId, setEditingTtnOrderId] = useState<number | null>(null);
+  const [editingTtnValue, setEditingTtnValue] = useState<string>('');
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -20,6 +22,20 @@ export const OrderList: React.FC = () => {
     };
     fetchOrders();
   }, []);
+
+  const handleUpdateTtn = async (orderId: number) => {
+    try {
+      await ApiService.updateOrderTtn(orderId, editingTtnValue);
+      setOrders(prevOrders => prevOrders.map(order =>
+        order.id === orderId ? { ...order, ttn: editingTtnValue } : order
+      ));
+      setEditingTtnOrderId(null);
+      setEditingTtnValue('');
+    } catch (e) {
+      console.error("Failed to update TTN", e);
+      alert("Failed to update TTN");
+    }
+  };
 
   if (loading) return <div className="p-8 text-center">Завантаження...</div>;
 
@@ -48,6 +64,7 @@ export const OrderList: React.FC = () => {
                 <th className="px-6 py-4">Сума</th>
                 <th className="px-6 py-4">Оплата</th>
                 <th className="px-6 py-4">Статус</th>
+                <th className="px-6 py-4">ТТН</th> {/* New TTN column */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -85,11 +102,44 @@ export const OrderList: React.FC = () => {
                       {order.status === 'new' ? 'Нове' : order.status}
                     </span>
                   </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    {editingTtnOrderId === order.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editingTtnValue}
+                          onChange={(e) => setEditingTtnValue(e.target.value)}
+                          className="w-full border rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-red-500 outline-none"
+                          autoFocus
+                        />
+                        <button onClick={() => handleUpdateTtn(order.id)} className="text-green-600 hover:bg-green-50 p-1 rounded">
+                          <Check size={16} />
+                        </button>
+                        <button onClick={() => setEditingTtnOrderId(null)} className="text-gray-400 hover:bg-gray-100 p-1 rounded">
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span>{order.ttn || '-'}</span>
+                        <button
+                          onClick={() => {
+                            setEditingTtnOrderId(order.id);
+                            setEditingTtnValue(order.ttn || '');
+                          }}
+                          className="text-gray-400 hover:text-blue-500 p-1 rounded"
+                          title="Редагувати ТТН"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
               {orders.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500"> {/* Updated colspan */}
                     Замовлень немає.
                   </td>
                 </tr>

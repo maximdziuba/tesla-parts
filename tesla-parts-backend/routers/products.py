@@ -120,7 +120,7 @@ async def create_product(
     description: str = Form(...),
     inStock: bool = Form(...),
     detail_number: Optional[str] = Form(None),
-    cross_number: str = Form(...),
+    cross_number: Optional[str] = Form(None),
     image: Optional[str] = Form(None),
     files: List[UploadFile] = File(None),
     session: Session = Depends(get_session)
@@ -205,7 +205,7 @@ async def update_product(
     description: str = Form(...),
     inStock: bool = Form(...),
     detail_number: Optional[str] = Form(None),
-    cross_number: str = Form(...),
+    cross_number: Optional[str] = Form(None),
     image: Optional[str] = Form(None),
     files: List[UploadFile] = File(None),
     kept_images: List[str] = Form(None),

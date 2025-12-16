@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super-secret-jwt-key") # Use a strong, random key in production
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7 # Refresh token valid for 7 days
 
 # Password Hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

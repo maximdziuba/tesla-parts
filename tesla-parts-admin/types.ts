@@ -49,6 +49,7 @@ export interface Order {
   totalUAH: number;
   created_at: string;
   status: string;
+  ttn?: string; // Added TTN field
   items: OrderItem[];
 }
 

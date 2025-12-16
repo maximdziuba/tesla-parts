@@ -11,7 +11,7 @@ class ProductBase(BaseModel):
     description: str
     inStock: bool
     detail_number: str | None = None
-    cross_number: str
+    cross_number: str | None = None # Made optional
 
 
 class CartItem(ProductBase):
@@ -75,6 +75,7 @@ class OrderCreate(BaseModel):
     customer: Customer
     delivery: Delivery
     paymentMethod: str
+    ttn: str | None = None # Added TTN field
 
 class OrderItemRead(BaseModel):
     product_id: str
@@ -91,6 +92,7 @@ class OrderRead(BaseModel):
     delivery_city: str
     delivery_branch: str
     payment_method: str
+    ttn: str | None = None # Added TTN field
     items: List[OrderItemRead]
 
 

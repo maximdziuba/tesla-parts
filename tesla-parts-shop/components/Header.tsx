@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShoppingCart, Search, Menu, X, Instagram, Send } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ShoppingCart, Search, Menu, X, Instagram, Send, ChevronDown } from 'lucide-react';
 import { Category, Currency } from '../types';
 import TeslaPartsCenterLogo from './ShopLogo';
 interface HeaderProps {
@@ -32,7 +32,22 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State for dropdown visibility
+  const dropdownRef = useRef<HTMLDivElement>(null); // Ref for dropdown container
   
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownRef]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(searchQuery);
@@ -99,8 +114,8 @@ const Header: React.FC<HeaderProps> = ({
           {/* Desktop Search & Menu */}
           <div className="hidden md:flex items-center flex-1 max-w-2xl px-8 gap-6">
              {/* Category Links */}
-            <div className="flex gap-4 font-medium text-tesla-dark whitespace-nowrap overflow-x-auto">
-              {sortedCategories.map(cat => (
+            <div className="flex gap-4 font-medium text-tesla-dark whitespace-nowrap">
+              {sortedCategories.slice(0, 4).map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => onNavigate(cat.name)}
@@ -109,6 +124,27 @@ const Header: React.FC<HeaderProps> = ({
                   {cat.name}
                 </button>
               ))}
+              {sortedCategories.length > 4 && (
+                <div className="relative" ref={dropdownRef}> {/* Add ref here */}
+                  <button 
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)} // Toggle on click
+                    className="flex items-center hover:text-tesla-red transition"
+                  >
+                    Усі категорії <ChevronDown size={16} className="ml-1" />
+                  </button>
+                  <div className={`absolute left-0 top-full mt-2 w-48 bg-white shadow-lg rounded-md overflow-hidden z-10 ${isDropdownOpen ? 'block' : 'hidden'}`}> {/* Conditional class */}
+                    {sortedCategories.slice(4).map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => { onNavigate(cat.name); setIsDropdownOpen(false); }} // Close dropdown on item click
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Search Bar */}
@@ -175,7 +211,7 @@ const Header: React.FC<HeaderProps> = ({
               <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
             </form>
             <div className="flex flex-col gap-2 font-medium text-lg">
-              {sortedCategories.map(cat => (
+              {sortedCategories.slice(0, 4).map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => { onNavigate(cat.name); setIsMenuOpen(false); }}
@@ -184,6 +220,20 @@ const Header: React.FC<HeaderProps> = ({
                   {cat.name}
                 </button>
               ))}
+              {sortedCategories.length > 4 && (
+                <>
+                  <h3 className="text-left py-2 border-b border-gray-100">Усі категорії</h3>
+                  {sortedCategories.slice(4).map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => { onNavigate(cat.name); setIsMenuOpen(false); }}
+                      className="text-left py-2 border-b border-gray-100 pl-4"
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                </>
+              )}
               <button onClick={() => { onNavigate('checkout'); setIsMenuOpen(false); }} className="text-left py-2 text-tesla-red">Оформити замовлення</button>
             </div>
           </div>

@@ -315,6 +315,34 @@ def _build_subcategory_response(
     all_subs = _load_subcategories_for_category(session, subcategory.category_id)
     return _serialize_subcategory_tree(subcategory, all_subs, session, rate)
 
+def _build_category_read_response(session: Session, category: Category) -> CategoryRead:
+    rate = get_exchange_rate(session)
+    
+    # Reload category with subcategories and products for full serialization
+    category_with_relations = session.exec(
+        select(Category)
+        .where(Category.id == category.id)
+        .options(
+            selectinload(Category.subcategories).selectinload(Subcategory.products).selectinload(Product.images),
+            selectinload(Category.subcategories).selectinload(Subcategory.children)
+        )
+    ).first()
+
+    if not category_with_relations:
+        raise HTTPException(status_code=404, detail="Category not found after refresh")
+
+    cat_data = category_with_relations.model_dump()
+    
+    # Filter for top-level subcategories (no parent)
+    root_subs = [s for s in category_with_relations.subcategories if s.parent_id is None]
+    
+    # Build tree for each root subcategory
+    cat_data["subcategories"] = [
+        _serialize_subcategory_tree(sub, category_with_relations.subcategories, session, rate)
+        for sub in root_subs
+    ]
+        
+    return CategoryRead(**cat_data)
 
 @router.post("/", response_model=CategoryRead, dependencies=[Depends(get_current_admin)])
 async def create_category(
@@ -335,7 +363,7 @@ async def create_category(
     session.add(db_category)
     session.commit()
     session.refresh(db_category)
-    return db_category
+    return _build_category_read_response(session, db_category) # Use helper for response
 
 @router.post("/{category_id}/subcategories/", response_model=SubcategoryRead, dependencies=[Depends(get_current_admin)])
 async def create_subcategory(
@@ -392,7 +420,7 @@ async def update_category(
     session.add(category)
     session.commit()
     session.refresh(category)
-    return category
+    return _build_category_read_response(session, category) # Use helper for response
 
 @router.put("/subcategories/{subcategory_id}", response_model=SubcategoryRead, dependencies=[Depends(get_current_admin)])
 async def update_subcategory(

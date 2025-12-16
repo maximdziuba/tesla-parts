@@ -43,7 +43,7 @@ class Product(SQLModel, table=True):
     description: str
     inStock: bool
     detail_number: Optional[str] = None
-    cross_number: str = Field(default="")
+    cross_number: Optional[str] = None # Made optional
     
     subcategory: Optional[Subcategory] = Relationship(back_populates="products")
     linked_subcategories: List[Subcategory] = Relationship(
@@ -70,6 +70,7 @@ class Order(SQLModel, table=True):
     totalUAH: float
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = Field(default="new")
+    ttn: Optional[str] = None # Added TTN field
     
     items: List["OrderItem"] = Relationship(back_populates="order")
 
@@ -99,3 +100,4 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str = Field(unique=True, index=True)
     hashed_password: str
+    refresh_token: Optional[str] = None # New field for refresh token

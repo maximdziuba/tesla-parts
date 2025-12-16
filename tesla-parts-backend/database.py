@@ -30,7 +30,7 @@ def create_db_and_tables():
         # Check if admin user exists, if not, create it
         admin_user = session.exec(select(User).where(User.username == "admin")).first()
         if not admin_user:
-            hashed_password = get_password_hash("admin123") # Default password 'secret'
+            hashed_password = get_password_hash("admin123") # Default password
             initial_admin_user = User(username="admin", hashed_password=hashed_password)
             session.add(initial_admin_user)
             session.commit()
@@ -52,5 +52,5 @@ def _ensure_product_cross_number_column():
         result = conn.execute(text("PRAGMA table_info('product')")).fetchall()
         columns = {row[1] for row in result}
         if "cross_number" not in columns:
-            conn.execute(text("ALTER TABLE product ADD COLUMN cross_number VARCHAR DEFAULT ''"))
+            conn.execute(text("ALTER TABLE product ADD COLUMN cross_number VARCHAR")) # Changed from VARCHAR DEFAULT ''
             conn.commit()
