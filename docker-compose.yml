@@ -7,7 +7,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./tesla-parts-backend/tesla_parts.db:/app/tesla_parts.db
+      - ./tesla-parts-backend/tesla_parts.db:/app/tesla_parts.db:z
     environment:
       - ADMIN_SECRET=mysecret
       - FRONTEND_URL=http://localhost:3000
