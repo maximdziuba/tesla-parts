@@ -1,33 +1,45 @@
 version: '3.8'
 
 services:
+  # --- Nginx Gateway ---
+  gateway:
+    image: nginx:latest
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx-gateway/conf.d:/etc/nginx/conf.d:z
+    depends_on:
+      - backend
+      - shop
+      - admin
+
+  # --- Backend ---
   backend:
     build:
       context: ./tesla-parts-backend
-    ports:
-      - "8000:8000"
+    restart: always
     volumes:
       - ./tesla-parts-backend/tesla_parts.db:/app/tesla_parts.db:z
     environment:
-      - ADMIN_SECRET=mysecret
-      - FRONTEND_URL=http://localhost:3000
+      # Важливо: Дозволяємо фронтенду звертатися до API
+      - FRONTEND_URL=http://teslapartscenter.com.ua,http://admin.teslapartscenter.com.ua
+      - ADMIN_SECRET=${ADMIN_SECRET}
 
+  # --- Shop Frontend ---
   shop:
     build:
       context: ./tesla-parts-shop
       args:
-        VITE_API_URL: http://backend:8000
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
+        # Вказуємо публічну адресу API
+        VITE_API_URL: http://api.teslapartscenter.com.ua
+    restart: always
 
+  # --- Admin Frontend ---
   admin:
     build:
       context: ./tesla-parts-admin
       args:
-        VITE_API_URL: http://backend:8000
-    ports:
-      - "3001:80"
-    depends_on:
-      - backend
+        # Вказуємо публічну адресу API
+        VITE_API_URL: http://api.teslapartscenter.com.ua
+    restart: always
