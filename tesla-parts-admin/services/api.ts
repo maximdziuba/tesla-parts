@@ -300,11 +300,11 @@ export const ApiService = {
     
     if (file) {
       formData.append('file', file);
-    } else {
-      formData.append('image', ''); // Explicitly send empty string if no file
     }
     
-    formData.append('sort_order', sort_order !== undefined ? sort_order.toString() : '');
+    if (sort_order !== undefined && sort_order !== null) {
+      formData.append('sort_order', sort_order.toString());
+    }
 
     const res = await _authenticatedFetch(`${API_URL}/categories/`, {
       method: 'POST',
@@ -321,10 +321,8 @@ export const ApiService = {
     
     if (file) {
       formData.append('file', file);
-    } else {
-      formData.append('image', ''); // Explicitly send empty string if no file
     }
-
+    
     if (sort_order !== undefined && sort_order !== null) {
       formData.append('sort_order', sort_order.toString());
     }
@@ -347,8 +345,6 @@ export const ApiService = {
     
     if (file) {
       formData.append('file', file);
-    } else {
-      formData.append('image', ''); // Explicitly send empty string if no file
     }
 
     const res = await _authenticatedFetch(`${API_URL}/categories/${categoryId}/subcategories/`, {
@@ -368,8 +364,6 @@ export const ApiService = {
     
     if (file) {
       formData.append('file', file);
-    } else {
-      formData.append('image', ''); // Explicitly send empty string if no file
     }
 
     const res = await _authenticatedFetch(`${API_URL}/categories/subcategories/${id}`, {

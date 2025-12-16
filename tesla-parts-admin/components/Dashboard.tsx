@@ -79,16 +79,16 @@ export const Dashboard: React.FC = () => {
     );
   }
 
-  // Calculate Sales by Model
-  const salesByModel = ['Model 3', 'Model S', 'Model X', 'Model Y'].map(model => {
-    const modelProducts = products
-      .filter(p => getProductCategories(p.category).includes(model))
+  // Calculate Sales by Category
+  const salesByCategories = Array.from(new Set(products.flatMap(p => getProductCategories(p.category)))).map(categoryName => {
+    const categoryProducts = products
+      .filter(p => getProductCategories(p.category).includes(categoryName))
       .map(p => p.id);
     const count = orders.reduce((acc, order) => {
-      const modelItems = order.items.filter(item => modelProducts.includes(item.product_id));
-      return acc + modelItems.reduce((sum, item) => sum + item.quantity, 0);
+      const categoryItems = order.items.filter(item => categoryProducts.includes(item.product_id));
+      return acc + categoryItems.reduce((sum, item) => sum + item.quantity, 0);
     }, 0);
-    return { name: model, value: count };
+    return { name: categoryName, value: count };
   });
 
   return (
@@ -126,12 +126,12 @@ export const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart 1: Revenue Trend */}
+        {/* Chart 1: Sales by Category */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Продажі за Моделями (шт)</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4">Продажі за категоріями (шт)</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salesByModel}>
+              <BarChart data={salesByCategories}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} />
                 <YAxis axisLine={false} tickLine={false} />
