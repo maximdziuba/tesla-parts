@@ -19,13 +19,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Add your production frontend URLs here
 origins = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://tesla-parts.vercel.app",
-    "https://tesla-parts-admin.vercel.app"
+    "http://teslapartscenter.com.ua",
+    "http://www.teslapartscenter.com.ua",
+    "http://admin.teslapartscenter.com.ua",
 ]
 
 # Add frontend URL from environment variable if set
