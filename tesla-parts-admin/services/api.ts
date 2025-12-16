@@ -321,4 +321,20 @@ export const ApiService = {
     });
     return res.ok;
   },
+
+  getSocialLinks: async (): Promise<{ instagram: string; telegram: string }> => {
+    const res = await fetch(`${API_URL}/settings/social-links`);
+    if (!res.ok) throw new Error('Failed to fetch social links');
+    return res.json();
+  },
+
+  updateSocialLinks: async (links: { instagram: string; telegram: string }): Promise<any> => {
+    const res = await fetch(`${API_URL}/settings/social-links`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(links),
+    });
+    if (!res.ok) throw new Error('Failed to update social links');
+    return res.json();
+  },
 };

@@ -12,6 +12,10 @@ interface HeaderProps {
   onCartClick: () => void;
   onNavigate: (page: string) => void;
   onSearch: (query: string) => void;
+  socialLinks: {
+    instagram: string;
+    telegram: string;
+  };
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -23,11 +27,12 @@ const Header: React.FC<HeaderProps> = ({
   setCurrency, 
   onCartClick, 
   onNavigate,
-  onSearch
+  onSearch,
+  socialLinks,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
+  
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(searchQuery);
@@ -62,8 +67,12 @@ const Header: React.FC<HeaderProps> = ({
           
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <a href="#" className="hover:text-tesla-red transition"><Instagram size={16} /></a>
-              <a href="#" className="hover:text-tesla-red transition"><Send size={16} /></a>
+              {socialLinks.instagram && (
+                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-tesla-red tra nsition"><Instagram size={16} /></a>
+              )}
+              {socialLinks.telegram && (
+                <a href={socialLinks.telegram} target="_blank" rel="noopener noreferrer" className="hover:text-tesla-red transition"><Send size={16} /></a>
+              )}
             </div>
             <div className="border-l border-gray-700 pl-4 flex gap-2">
               {Object.values(Currency).map((cur) => (

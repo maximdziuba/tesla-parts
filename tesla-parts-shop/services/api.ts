@@ -84,5 +84,11 @@ export const api = {
         } catch {
             return null;
         }
+    },
+
+    getSocialLinks: async (): Promise<{ instagram: string; telegram: string }> => {
+        const res = await fetch(`${API_URL}/settings/social-links`);
+        if (!res.ok) throw new Error('Failed to fetch social links');
+        return res.json();
     }
 };

@@ -4,10 +4,15 @@ import { ApiService } from '../services/api';
 export const SettingsPage: React.FC = () => {
     const [rate, setRate] = useState<string>('');
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const [savingRate, setSavingRate] = useState(false);
+    const [instagram, setInstagram] = useState('');
+    const [telegram, setTelegram] = useState('');
+    const [savingSocial, setSavingSocial] = useState(false);
+
 
     useEffect(() => {
         loadRate();
+        loadSocialLinks();
     }, []);
 
     const loadRate = async () => {
@@ -20,10 +25,20 @@ export const SettingsPage: React.FC = () => {
             setLoading(false);
         }
     };
+    
+    const loadSocialLinks = async () => {
+        try {
+            const data = await ApiService.getSocialLinks();
+            setInstagram(data.instagram);
+            setTelegram(data.telegram);
+        } catch (e) {
+            console.error("Failed to load social links", e);
+        }
+    };
 
-    const handleSave = async (e: React.FormEvent) => {
+    const handleSaveRate = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSaving(true);
+        setSavingRate(true);
         try {
             await ApiService.updateSetting('exchange_rate', rate);
             alert('Курс збережено!');
@@ -31,9 +46,23 @@ export const SettingsPage: React.FC = () => {
             console.error("Failed to save rate", e);
             alert('Помилка при збереженні');
         } finally {
-            setSaving(false);
+            setSavingRate(false);
         }
     };
+
+    const handleSaveSocial = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingSocial(true);
+        try {
+            await ApiService.updateSocialLinks({ instagram, telegram });
+            alert('Посилання збережено!');
+        } catch (e) {
+            console.error("Failed to save social links", e);
+            alert('Помилка при збереженні');
+        } finally {
+            setSavingSocial(false);
+        }
+    }
 
     if (loading) return <div>Завантаження...</div>;
 
@@ -41,8 +70,8 @@ export const SettingsPage: React.FC = () => {
         <div className="max-w-xl mx-auto">
             <h1 className="text-2xl font-bold mb-6 text-gray-900">Налаштування</h1>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-                <form onSubmit={handleSave} className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
+                <form onSubmit={handleSaveRate} className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Курс долара (USD до UAH)
@@ -66,10 +95,46 @@ export const SettingsPage: React.FC = () => {
 
                     <button
                         type="submit"
-                        disabled={saving}
+                        disabled={savingRate}
                         className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition disabled:opacity-50"
                     >
-                        {saving ? 'Збереження...' : 'Зберегти'}
+                        {savingRate ? 'Збереження...' : 'Зберегти курс'}
+                    </button>
+                </form>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+                <form onSubmit={handleSaveSocial} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Instagram Link
+                        </label>
+                        <input
+                            type="text"
+                            value={instagram}
+                            onChange={e => setInstagram(e.target.value)}
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Telegram Link
+                        </label>
+                        <input
+                            type="text"
+                            value={telegram}
+                            onChange={e => setTelegram(e.target.value)}
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={savingSocial}
+                        className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition disabled:opacity-50"
+                    >
+                        {savingSocial ? 'Збереження...' : 'Зберегти посилання'}
                     </button>
                 </form>
             </div>

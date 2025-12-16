@@ -80,6 +80,7 @@ const App: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>(Currency.UAH);
   const [uahPerUsd, setUahPerUsd] = useState(DEFAULT_EXCHANGE_RATE_UAH_PER_USD);
+  const [socialLinks, setSocialLinks] = useState({ instagram: '', telegram: '' });
 
   useEffect(() => {
     try {
@@ -92,12 +93,14 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [productsData, categoriesData] = await Promise.all([
+        const [productsData, categoriesData, socialLinksData] = await Promise.all([
           api.getProducts(),
-          api.getCategories()
+          api.getCategories(),
+          api.getSocialLinks(),
         ]);
         setProducts(productsData);
         setCategories(categoriesData);
+        setSocialLinks(socialLinksData);
       } catch (e) {
         console.error("Failed to load data", e);
       } finally {
@@ -254,6 +257,7 @@ const App: React.FC = () => {
         onCartClick={() => setIsCartOpen(true)}
         onNavigate={handleNavigate}
         onSearch={handleSearch}
+        socialLinks={socialLinks}
       />
 
       <main className="flex-grow container mx-auto px-4 py-8">
@@ -495,8 +499,12 @@ const App: React.FC = () => {
             <p className="text-sm mb-2">+38 (099) 123-45-67</p>
             <p className="text-sm mb-2">info@teslaparts.ua</p>
             <div className="flex gap-4 mt-4">
-              <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">IG</div>
-              <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">TG</div>
+              {socialLinks.instagram && (
+                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">IG</a>
+              )}
+              {socialLinks.telegram && (
+                <a href={socialLinks.telegram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">TG</a>
+              )}
             </div>
           </div>
         </div>

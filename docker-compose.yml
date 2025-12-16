@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./tesla-parts-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./tesla-parts-backend/tesla_parts.db:/app/tesla_parts.db
+    environment:
+      - ADMIN_SECRET=mysecret
+      - FRONTEND_URL=http://localhost:3000
+
+  shop:
+    build:
+      context: ./tesla-parts-shop
+      args:
+        VITE_API_URL: http://backend:8000
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  admin:
+    build:
+      context: ./tesla-parts-admin
+      args:
+        VITE_API_URL: http://backend:8000
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
