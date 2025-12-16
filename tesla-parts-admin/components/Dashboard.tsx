@@ -80,7 +80,7 @@ export const Dashboard: React.FC = () => {
   }
 
   // Calculate Sales by Category
-  const salesByCategories = Array.from(new Set(products.flatMap(p => getProductCategories(p.category)))).map(categoryName => {
+  const salesByCategories = Array.from(new Set(products.flatMap(p => getProductCategories(p.category)))).map((categoryName: string) => {
     const categoryProducts = products
       .filter(p => getProductCategories(p.category).includes(categoryName))
       .map(p => p.id);

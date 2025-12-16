@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Product, Currency } from '../types';
 import { ShoppingCart, ArrowLeft, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
+import SeoHead from './SeoHead';
 
 interface ProductPageProps {
     product: Product;
@@ -13,9 +14,26 @@ interface ProductPageProps {
 
 const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd, onAddToCart, onBack }) => {
     // Combine main image with additional images and remove duplicates
-    const allImages = Array.from(new Set([product.image, ...(product.images || [])].filter(Boolean)));
+    const allImages = useMemo(
+        () => Array.from(new Set([product.image, ...(product.images || [])].filter(Boolean))),
+        [product.image, product.images]
+    );
     const [selectedImage, setSelectedImage] = useState(allImages[0]);
     const [added, setAdded] = useState(false);
+    const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
+
+    const seoTitle = product.meta_title?.trim() || product.name;
+    const seoDescription = useMemo(() => {
+        const trimmed = product.meta_description?.trim();
+        if (trimmed) return trimmed;
+        const desc = product.description?.trim();
+        if (desc) {
+            const shortened = desc.length > 160 ? `${desc.slice(0, 157).trimEnd()}...` : desc;
+            return shortened;
+        }
+        return `Buy ${product.name} at Tesla Parts Center`;
+    }, [product.meta_description, product.description, product.name]);
+    const seoImage = selectedImage || product.image;
 
     const handleAddToCart = () => {
         onAddToCart(product);
@@ -35,7 +53,6 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
         setSelectedImage(allImages[nextIndex]);
     };
 
-    const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
     const getDisplayPrice = () => {
         const priceUSD = product.priceUSD && product.priceUSD > 0
             ? product.priceUSD

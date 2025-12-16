@@ -1,10 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from database import create_db_and_tables
+from sqlmodel import Session, select
+from database import create_db_and_tables, engine
 from routers import products, orders, categories, settings, pages, auth # Import auth router
 from contextlib import asynccontextmanager
 import os
+from models import Product, Category
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,9 +22,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
-    "http://teslapartscenter.com.ua",
-    "http://www.teslapartscenter.com.ua",
-    "http://admin.teslapartscenter.com.ua",
+    "https://teslapartscenter.com.ua",
+    "https://www.teslapartscenter.com.ua",
+    "https://admin.teslapartscenter.com.ua",
 ]
 
 # Add frontend URL from environment variable if set
@@ -50,3 +52,33 @@ app.include_router(auth.router) # Include auth router
 @app.get("/")
 def read_root():
     return {"message": "Tesla Parts API is running"}
+
+def _slugify(value: str) -> str:
+    return (
+        value.lower()
+        .strip()
+        .replace(" ", "-")
+        .replace("/", "-")
+    )
+
+@app.get("/sitemap.xml", response_class=Response)
+def get_sitemap():
+    base_url = "https://teslapartscenter.com.ua"
+    with Session(engine) as session:
+        products = session.exec(select(Product)).all()
+        categories = session.exec(select(Category)).all()
+
+    xml_parts = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml_parts.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    xml_parts.append(f'<url><loc>{base_url}/</loc><changefreq>daily</changefreq></url>')
+
+    for category in categories:
+        slug = _slugify(category.name) if category.name else f"category/{category.id}"
+        xml_parts.append(f'<url><loc>{base_url}/{slug}</loc><changefreq>weekly</changefreq></url>')
+
+    for product in products:
+        xml_parts.append(f'<url><loc>{base_url}/product/{product.id}</loc><changefreq>weekly</changefreq></url>')
+
+    xml_parts.append("</urlset>")
+
+    return Response(content="".join(xml_parts), media_type="application/xml")

@@ -186,6 +186,8 @@ export const ApiService = {
     formData.append('description', product.description);
     formData.append('inStock', product.inStock.toString());
     formData.append('cross_number', product.cross_number);
+    formData.append('meta_title', product.meta_title ?? '');
+    formData.append('meta_description', product.meta_description ?? '');
 
     if (product.files && product.files.length > 0) {
       product.files.forEach((file: File) => {
@@ -227,6 +229,8 @@ export const ApiService = {
     formData.append('description', product.description);
     formData.append('inStock', product.inStock.toString());
     formData.append('cross_number', product.cross_number);
+    formData.append('meta_title', product.meta_title ?? '');
+    formData.append('meta_description', product.meta_description ?? '');
 
     if (product.files && product.files.length > 0) {
       product.files.forEach((file: File) => {

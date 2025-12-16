@@ -121,6 +121,8 @@ async def create_product(
     inStock: bool = Form(...),
     detail_number: Optional[str] = Form(None),
     cross_number: Optional[str] = Form(None),
+    meta_title: Optional[str] = Form(None),
+    meta_description: Optional[str] = Form(None),
     image: Optional[str] = Form(None),
     files: List[UploadFile] = File(None),
     session: Session = Depends(get_session)
@@ -164,6 +166,8 @@ async def create_product(
         inStock=inStock,
         detail_number=detail_number,
         cross_number=cross_number,
+        meta_title=meta_title,
+        meta_description=meta_description,
         image=main_image
     )
     if priceUSD:
@@ -206,6 +210,8 @@ async def update_product(
     inStock: bool = Form(...),
     detail_number: Optional[str] = Form(None),
     cross_number: Optional[str] = Form(None),
+    meta_title: Optional[str] = Form(None),
+    meta_description: Optional[str] = Form(None),
     image: Optional[str] = Form(None),
     files: List[UploadFile] = File(None),
     kept_images: List[str] = Form(None),
@@ -224,6 +230,8 @@ async def update_product(
     product.inStock = inStock
     product.detail_number = detail_number
     product.cross_number = cross_number
+    product.meta_title = meta_title
+    product.meta_description = meta_description
     
     # Update main image if provided
     if image:

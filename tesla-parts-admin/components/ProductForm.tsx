@@ -42,7 +42,9 @@ export const ProductForm: React.FC = () => {
         description: '',
         inStock: true,
         detail_number: '',
-        cross_number: ''
+        cross_number: '',
+        meta_title: '',
+        meta_description: ''
     });
 
     const [exchangeRate, setExchangeRate] = useState<number>(40); // Default fallback
@@ -74,7 +76,9 @@ export const ProductForm: React.FC = () => {
                 description: product.description,
                 inStock: product.inStock,
                 detail_number: product.detail_number || '',
-                cross_number: product.cross_number || ''
+                cross_number: product.cross_number || '',
+                meta_title: product.meta_title || '',
+                meta_description: product.meta_description || ''
             });
 
             if (product.images && product.images.length > 0) {
@@ -580,6 +584,34 @@ export const ProductForm: React.FC = () => {
                             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
                             placeholder="Детальний опис товару..."
                         />
+                    </div>
+
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4">SEO Налаштування</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Meta Title</label>
+                                <input
+                                    type="text"
+                                    value={formData.meta_title}
+                                    onChange={e => setFormData({ ...formData, meta_title: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    placeholder="Наприклад: Купити {назва товару}"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Використовується як заголовок сторінки продукту</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Meta Description</label>
+                                <textarea
+                                    rows={3}
+                                    value={formData.meta_description}
+                                    onChange={e => setFormData({ ...formData, meta_description: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    placeholder="Короткий опис для пошукових систем"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Рекомендовано до 160 символів</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex items-center">

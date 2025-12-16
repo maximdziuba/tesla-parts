@@ -12,6 +12,8 @@ class ProductBase(BaseModel):
     inStock: bool
     detail_number: str | None = None
     cross_number: str | None = None # Made optional
+    meta_title: str | None = None
+    meta_description: str | None = None
 
 
 class CartItem(ProductBase):

@@ -44,6 +44,8 @@ class Product(SQLModel, table=True):
     inStock: bool
     detail_number: Optional[str] = None
     cross_number: Optional[str] = None # Made optional
+    meta_title: Optional[str] = None
+    meta_description: Optional[str] = None
     
     subcategory: Optional[Subcategory] = Relationship(back_populates="products")
     linked_subcategories: List[Subcategory] = Relationship(

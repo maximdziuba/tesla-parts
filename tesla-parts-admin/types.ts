@@ -30,6 +30,8 @@ export interface Product {
   detail_number?: string;
   priceUSD?: number;
   cross_number: string;
+  meta_title?: string;
+  meta_description?: string;
 }
 
 export interface OrderItem {
