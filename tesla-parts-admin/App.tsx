@@ -9,9 +9,11 @@ import { Login } from './components/Login';
 import CategoryList from './components/CategoryList';
 import { SettingsPage } from './pages/SettingsPage';
 import { CMSPage } from './pages/CMSPage';
+import { ResetPasswordPage } from './pages/ResetPassword'; // Import ResetPasswordPage
+import { useAuth } from './AuthContext'; // Import useAuth
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-  const isAuthenticated = !!localStorage.getItem('adminSecret');
+  const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
@@ -42,6 +44,7 @@ const App: React.FC = () => {
                   <Route path="/orders" element={<OrderList />} />
                   <Route path="/categories" element={<CategoryList />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/settings/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/cms" element={<CMSPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

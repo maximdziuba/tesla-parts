@@ -9,8 +9,10 @@ import {
   LogOut,
   Car,
   Layers,
-  FileText
+  FileText,
+  Key
 } from 'lucide-react';
+import { useAuth } from '../AuthContext'; // Import useAuth
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -33,9 +35,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const { logout } = useAuth(); // Get logout function from useAuth
 
   const handleLogout = () => {
-    localStorage.removeItem('adminSecret');
+    logout(); // Call the logout function from AuthContext
     navigate('/login');
   };
 
@@ -95,6 +98,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             icon={Settings}
             label="Налаштування"
             active={location.pathname === '/settings'}
+          />
+          <SidebarItem
+            to="/settings/reset-password"
+            icon={Key}
+            label="Змінити Пароль"
+            active={location.pathname === '/settings/reset-password'}
           />
           <SidebarItem
             to="/cms"

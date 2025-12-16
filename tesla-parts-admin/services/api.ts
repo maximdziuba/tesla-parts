@@ -2,15 +2,55 @@ import { Product, Order, Category, Subcategory } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
-const getHeaders = () => {
-  const secret = localStorage.getItem('adminSecret');
-  return {
-    'Content-Type': 'application/json',
-    'x-admin-secret': secret || '',
-  };
+const getHeaders = (isMultipart: boolean = false) => {
+  const token = localStorage.getItem('accessToken');
+  const headers: HeadersInit = {};
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  // Set Content-Type only if it's not a multipart request
+  if (!isMultipart) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  return headers;
 };
 
 export const ApiService = {
+  login: async (username: string, password: string): Promise<{ access_token: string }> => {
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+
+    const res = await fetch(`${API_URL}/auth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail || 'Failed to login');
+    }
+    return res.json();
+  },
+
+  resetPassword: async (oldPassword: string, newPassword: string): Promise<{ message: string }> => {
+    const res = await fetch(`${API_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail || 'Failed to reset password');
+    }
+    return res.json();
+  },
+
   getProducts: async (): Promise<Product[]> => {
     const res = await fetch(`${API_URL}/products/`, { headers: getHeaders() });
     if (!res.ok) throw new Error('Failed to fetch products');
@@ -46,6 +86,9 @@ export const ApiService = {
       Array.from(new Set(product.subcategory_ids)).forEach((id: number) => {
         formData.append('subcategory_ids', id.toString());
       });
+    } else {
+      // Explicitly send an empty list if none are selected, so FastAPI receives the parameter
+      formData.append('subcategory_ids', '');
     }
 
     if (product.detail_number) {
@@ -54,9 +97,7 @@ export const ApiService = {
 
     const res = await fetch(`${API_URL}/products/`, {
       method: 'POST',
-      headers: {
-        'x-admin-secret': localStorage.getItem('adminSecret') || '',
-      },
+      headers: getHeaders(true), // Pass true for multipart
       body: formData,
     });
     if (!res.ok) throw new Error('Failed to create product');
@@ -86,6 +127,8 @@ export const ApiService = {
       Array.from(new Set(product.subcategory_ids)).forEach((id: number) => {
         formData.append('subcategory_ids', id.toString());
       });
+    } else {
+      formData.append('subcategory_ids', ''); // Explicitly send an empty value
     }
 
     if (product.detail_number) {
@@ -100,9 +143,7 @@ export const ApiService = {
 
     const res = await fetch(`${API_URL}/products/${id}`, {
       method: 'PUT',
-      headers: {
-        'x-admin-secret': localStorage.getItem('adminSecret') || '',
-      },
+      headers: getHeaders(true), // Pass true for multipart
       body: formData,
     });
     if (!res.ok) throw new Error('Failed to update product');
@@ -120,10 +161,7 @@ export const ApiService = {
   bulkDeleteProducts: async (ids: string[]): Promise<{ deleted: number }> => {
     const res = await fetch(`${API_URL}/products/bulk-delete`, {
       method: 'POST',
-      headers: {
-        ...getHeaders(),
-        'Content-Type': 'application/json',
-      },
+      headers: getHeaders(),
       body: JSON.stringify({ product_ids: ids }),
     });
     if (!res.ok) throw new Error('Failed to delete products');
@@ -150,9 +188,7 @@ export const ApiService = {
 
     const res = await fetch(`${API_URL}/categories/`, {
       method: 'POST',
-      headers: {
-        'x-admin-secret': localStorage.getItem('adminSecret') || '',
-      },
+      headers: getHeaders(true), // Pass true for multipart
       body: formData,
     });
     if (!res.ok) throw new Error('Failed to create category');
@@ -167,9 +203,7 @@ export const ApiService = {
 
     const res = await fetch(`${API_URL}/categories/${id}`, {
       method: 'PUT',
-      headers: {
-        'x-admin-secret': localStorage.getItem('adminSecret') || '',
-      },
+      headers: getHeaders(true), // Pass true for multipart
       body: formData,
     });
     if (!res.ok) throw new Error('Failed to update category');
@@ -186,9 +220,7 @@ export const ApiService = {
 
     const res = await fetch(`${API_URL}/categories/${categoryId}/subcategories/`, {
       method: 'POST',
-      headers: {
-        'x-admin-secret': localStorage.getItem('adminSecret') || '',
-      },
+      headers: getHeaders(true), // Pass true for multipart
       body: formData,
     });
     if (!res.ok) throw new Error('Failed to create subcategory');
@@ -204,9 +236,7 @@ export const ApiService = {
 
     const res = await fetch(`${API_URL}/categories/subcategories/${id}`, {
       method: 'PUT',
-      headers: {
-        'x-admin-secret': localStorage.getItem('adminSecret') || '',
-      },
+      headers: getHeaders(true), // Pass true for multipart
       body: formData,
     });
     if (!res.ok) throw new Error('Failed to update subcategory');
@@ -256,7 +286,7 @@ export const ApiService = {
   },
 
   checkAuth: () => {
-    return !!localStorage.getItem('adminSecret');
+    return !!localStorage.getItem('accessToken');
   },
 
   getSetting: async (key: string): Promise<{ key: string; value: string }> => {
