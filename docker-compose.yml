@@ -1,6 +1,17 @@
 version: '3.8'
 
 services:
+  # --- Database ---
+  db:
+    image: postgres:15-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=tesla
+      - POSTGRES_PASSWORD=teslapass
+      - POSTGRES_DB=tesladb
+
   # --- Nginx Gateway ---
   gateway:
     image: nginx:latest
@@ -19,13 +30,13 @@ services:
     build:
       context: ./tesla-parts-backend
     restart: always
-    volumes:
-      - ./tesla-parts-backend/tesla_parts.db:/app/tesla_parts.db:z
     environment:
-      # Важливо: Дозволяємо фронтенду звертатися до API
+      - DATABASE_URL=postgresql://tesla:teslapass@db:5432/tesladb
       - FRONTEND_URL=http://teslapartscenter.com.ua,http://admin.teslapartscenter.com.ua
       - ADMIN_SECRET=${ADMIN_SECRET}
-
+    depends_on:
+      - db
+      
   # --- Shop Frontend ---
   shop:
     build:
@@ -43,3 +54,6 @@ services:
         # Вказуємо публічну адресу API
         VITE_API_URL: http://api.teslapartscenter.com.ua
     restart: always
+
+volumes:
+  postgres_data:
