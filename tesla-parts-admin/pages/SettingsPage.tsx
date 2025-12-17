@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
+import AdminSeoSettings from '../components/AdminSeoSettings';
 
 export const SettingsPage: React.FC = () => {
     const [rate, setRate] = useState<string>('');
@@ -149,10 +150,10 @@ export const SettingsPage: React.FC = () => {
     if (loading) return <div>Завантаження...</div>;
 
     return (
-        <div className="max-w-xl mx-auto">
+        <div className="max-w-5xl mx-auto space-y-6">
             <h1 className="text-2xl font-bold mb-6 text-gray-900">Налаштування</h1>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <form onSubmit={handleSaveRate} className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -185,7 +186,7 @@ export const SettingsPage: React.FC = () => {
                 </form>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <form onSubmit={handleSaveSocial} className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -221,7 +222,7 @@ export const SettingsPage: React.FC = () => {
                 </form>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
                 <form onSubmit={handleSaveContactInfo} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -323,6 +324,10 @@ export const SettingsPage: React.FC = () => {
                         {savingTelegramSettings ? 'Збереження...' : 'Зберегти Telegram налаштування'}
                     </button>
                 </form>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+                <AdminSeoSettings />
             </div>
         </div>
     );

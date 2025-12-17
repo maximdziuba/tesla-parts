@@ -93,9 +93,9 @@ const AdminSeoSettings: React.FC = () => {
                             <button
                                 onClick={() => handleSave(record.slug)}
                                 disabled={saving[record.slug]}
-                                className="bg-tesla-red text-white px-4 py-2 rounded-md hover:bg-red-700 transition w-28"
+                                className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition disabled:opacity-50"
                             >
-                                {saving[record.slug] ? <Loader size={20} className="animate-spin mx-auto" /> : 'Save'}
+                                {saving[record.slug] ? <Loader size={20} className="animate-spin mx-auto" /> : 'Зберегти'}
                             </button>
                         </div>
                     </div>
