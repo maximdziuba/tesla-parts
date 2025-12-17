@@ -16,6 +16,7 @@ interface HeaderProps {
     instagram: string;
     telegram: string;
   };
+  phoneNumber: string;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -29,6 +30,7 @@ const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onSearch,
   socialLinks,
+  phoneNumber,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,6 +82,11 @@ const Header: React.FC<HeaderProps> = ({
           </nav>
           
           <div className="flex items-center gap-4">
+            {phoneNumber && (
+                <a href={`tel:${phoneNumber}`} className="hover:text-white transition">
+                    {phoneNumber}
+                </a>
+            )}
             <div className="flex items-center gap-2">
               {socialLinks.instagram && (
                 <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-tesla-red tra nsition"><Instagram size={16} /></a>
@@ -104,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Second Row: Main Nav, Logo, Cart */}
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-2 md:py-4">
         <div className="flex items-center justify-between gap-4">
           
           {/* Logo */}
@@ -210,7 +217,7 @@ const Header: React.FC<HeaderProps> = ({
               <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
             </form>
             <div className="flex flex-col gap-2 font-medium text-lg">
-              {sortedCategories.slice(0, 4).map(cat => (
+              {sortedCategories.map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => { onNavigate(cat.name); setIsMenuOpen(false); }}
@@ -219,21 +226,7 @@ const Header: React.FC<HeaderProps> = ({
                   {cat.name}
                 </button>
               ))}
-              {sortedCategories.length > 4 && (
-                <>
-                  <h3 className="text-left py-2 border-b border-gray-100">Усі категорії</h3>
-                  {sortedCategories.slice(4).map(cat => (
-                    <button
-                      key={cat.id}
-                      onClick={() => { onNavigate(cat.name); setIsMenuOpen(false); }}
-                      className="text-left py-2 border-b border-gray-100 pl-4"
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                </>
-              )}
-              <button onClick={() => { onNavigate('checkout'); setIsMenuOpen(false); }} className="text-left py-2 text-tesla-red">Оформити замовлення</button>
+
             </div>
           </div>
         )}

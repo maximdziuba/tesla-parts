@@ -380,6 +380,7 @@ const App: React.FC = () => {
         onNavigate={handleNavigate}
         onSearch={handleSearch}
         socialLinks={socialLinks}
+        phoneNumber={contactInfo.phone}
       />
 
       <main className="flex-grow container mx-auto px-4 py-8">

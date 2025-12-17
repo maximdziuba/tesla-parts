@@ -13,13 +13,13 @@ const SubcategoryCard: React.FC<SubcategoryCardProps> = ({ subcategory, onClick 
             onClick={onClick}
             className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer group overflow-hidden flex items-center p-6"
         >
-            <div className="w-48 h-48 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden mr-6 flex items-center justify-center">
+            <div className="w-48 h-[108px] bg-gray-100 flex-shrink-0 overflow-hidden mr-6 flex items-center justify-center">
                 {subcategory.image ? (
                     <img 
                         src={subcategory.image} 
                         alt={subcategory.name} 
-                        // Keeping object-contain and adding padding so logos look nice inside the larger box
-                        className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform" 
+                        // Keeping object-cover to fill the space
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400">
