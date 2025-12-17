@@ -139,32 +139,6 @@ export const PagesManager: React.FC = () => {
                             />
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Розташування</label>
-                            <select
-                                value={newPage.location}
-                                onChange={e => setNewPage({ ...newPage, location: e.target.value })}
-                                className="w-full border rounded-md px-3 py-2"
-                            >
-                                <option value="header">Хедер</option>
-                                <option value="footer">Футер</option>
-                                <option value="both">Обидва</option>
-                                <option value="none">Немає</option>
-                            </select>
-                        </div>
-                        <div className="flex items-end">
-                            <label className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={newPage.is_published}
-                                    onChange={e => setNewPage({ ...newPage, is_published: e.target.checked })}
-                                    className="h-4 w-4"
-                                />
-                                <span className="text-sm text-gray-700">Опубліковано</span>
-                            </label>
-                        </div>
-                    </div>
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Контент</label>
                         <textarea

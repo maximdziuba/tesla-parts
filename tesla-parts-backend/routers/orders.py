@@ -6,6 +6,7 @@ from database import get_session
 from models import Order, OrderItem
 from schemas import OrderCreate, OrderRead
 from services.telegram import send_telegram_notification
+from services.pricing import get_exchange_rate
 from dependencies import get_current_admin # Import for authentication
 from pydantic import BaseModel
 
@@ -16,6 +17,17 @@ class UpdateTtnRequest(BaseModel):
 
 @router.post("/")
 def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
+    rate = get_exchange_rate(session)
+
+    def _item_price_usd(item):
+        if item.priceUSD and item.priceUSD > 0:
+            return item.priceUSD
+        if item.priceUAH and rate:
+            return item.priceUAH / rate
+        return item.priceUAH or 0
+
+    total_usd = sum(_item_price_usd(item) * item.quantity for item in order_data.items)
+
     order = Order(
         customer_first_name=order_data.customer.firstName,
         customer_last_name=order_data.customer.lastName,
@@ -23,7 +35,7 @@ def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, ses
         delivery_city=order_data.delivery.city,
         delivery_branch=order_data.delivery.branch,
         payment_method=order_data.paymentMethod,
-        totalUAH=order_data.totalUAH,
+        totalUSD=round(total_usd, 2),
         ttn=order_data.ttn # Add TTN here
     )
     session.add(order)
@@ -31,11 +43,12 @@ def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, ses
     session.refresh(order)
 
     for item in order_data.items:
+        price_usd = _item_price_usd(item)
         order_item = OrderItem(
             order_id=order.id,
             product_id=item.id,
             quantity=item.quantity,
-            price_at_purchase=item.priceUAH
+            price_at_purchase=round(price_usd, 2)
         )
         session.add(order_item)
     
@@ -61,4 +74,7 @@ def update_order_ttn(order_id: int, ttn_data: UpdateTtnRequest, session: Session
 @router.get("/", response_model=List[OrderRead], dependencies=[Depends(get_current_admin)]) # Protect get_orders
 def get_orders(session: Session = Depends(get_session)):
     orders = session.exec(select(Order).options(selectinload(Order.items))).all()
+    rate = get_exchange_rate(session)
+    for order in orders:
+        order.totalUAH = round((order.totalUSD or 0) * rate, 2)
     return orders

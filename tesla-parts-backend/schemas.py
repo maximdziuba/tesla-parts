@@ -74,7 +74,6 @@ class SubcategoryTransferRequest(BaseModel):
 
 class OrderCreate(BaseModel):
     items: List[CartItem]
-    totalUAH: float
     customer: Customer
     delivery: Delivery
     paymentMethod: str
@@ -88,6 +87,7 @@ class OrderItemRead(BaseModel):
 class OrderRead(BaseModel):
     id: int
     status: str
+    totalUSD: float
     totalUAH: float
     customer_first_name: str
     customer_last_name: str

@@ -69,7 +69,7 @@ class Order(SQLModel, table=True):
     delivery_city: str
     delivery_branch: str
     payment_method: str
-    totalUAH: float
+    totalUSD: float
     created_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = Field(default="new")
     ttn: Optional[str] = None # Added TTN field
