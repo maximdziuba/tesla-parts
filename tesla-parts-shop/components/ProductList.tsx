@@ -45,7 +45,7 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
   return (
     <div className="py-8">
       {title && <h2 className="text-2xl font-bold mb-6 text-tesla-dark border-l-4 border-tesla-red pl-4">{title}</h2>}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 sm:gap-6">
         {products.map((product) => (
           <div
             key={product.id}
