@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Routes, Route, useNavigate, useLocation, useMatch, useParams, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import ProductList from './components/ProductList';
@@ -37,6 +38,32 @@ const getProductSubcategoryIds = (product: Product): number[] => {
   return product.subcategory_id ? [product.subcategory_id] : [];
 };
 
+const STATIC_PAGE_SLUGS = new Set(['about', 'delivery', 'returns', 'faq', 'contacts']);
+
+const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-');
+
+const categoryContainsSubcategory = (subs: Subcategory[] | undefined, targetId: number): boolean => {
+  if (!subs) return false;
+  for (const sub of subs) {
+    if (sub.id === targetId) {
+      return true;
+    }
+    if (sub.subcategories && categoryContainsSubcategory(sub.subcategories, targetId)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const findCategorySlugForSubcategory = (categories: Category[], targetId: number): string | null => {
+  for (const category of categories) {
+    if (categoryContainsSubcategory(category.subcategories, targetId)) {
+      return slugify(category.name);
+    }
+  }
+  return null;
+};
+
 const getInitialCart = (): CartItem[] => {
   if (typeof window === 'undefined') return [];
   try {
@@ -64,11 +91,12 @@ const getProductUsdPrice = (product: Product, rate: number): number => {
 };
 
 const App: React.FC = () => {
-  // Navigation State
-  const [currentView, setCurrentView] = useState('home'); // home, checkout, success, or category name
+  const navigate = useNavigate();
+  const location = useLocation();
+  const categoryMatchWithSub = useMatch('/category/:slug/sub/:subId');
+  const categoryMatchBase = useMatch('/category/:slug');
+  const categoryMatch = categoryMatchWithSub ?? categoryMatchBase;
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   // Data State
   const [products, setProducts] = useState<Product[]>([]);
@@ -81,6 +109,12 @@ const App: React.FC = () => {
   const [currency, setCurrency] = useState<Currency>(Currency.UAH);
   const [uahPerUsd, setUahPerUsd] = useState(DEFAULT_EXCHANGE_RATE_UAH_PER_USD);
   const [socialLinks, setSocialLinks] = useState({ instagram: '', telegram: '' });
+  const [contactInfo, setContactInfo] = useState({
+    email: '',
+    phone: '',
+    footerDescription: '',
+    footerText: '',
+  });
 
   useEffect(() => {
     try {
@@ -125,6 +159,32 @@ const App: React.FC = () => {
     fetchRate();
   }, []);
 
+  useEffect(() => {
+    const loadContactInfo = async () => {
+      const fetchSetting = async (key: string) => {
+        try {
+          const value = await api.getSetting(key);
+          return value || '';
+        } catch {
+          return '';
+        }
+      };
+      const [email, phone, footerDescription, footerText] = await Promise.all([
+        fetchSetting('contact_email'),
+        fetchSetting('contact_phone'),
+        fetchSetting('footer_description'),
+        fetchSetting('footer_text'),
+      ]);
+      setContactInfo({
+        email,
+        phone,
+        footerDescription,
+        footerText,
+      });
+    };
+    loadContactInfo();
+  }, []);
+
   // Cart Logic
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -161,89 +221,150 @@ const App: React.FC = () => {
   }, [cart, uahPerUsd]);
   const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
 
-  // Navigation Logic
+  const previousPathRef = React.useRef<string | null>(null);
+  const lastPathRef = React.useRef(location.pathname + location.search);
+
+  useEffect(() => {
+    if (location.pathname !== '/search') {
+      setSearchQuery('');
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const current = location.pathname + location.search;
+    if (current !== lastPathRef.current) {
+      previousPathRef.current = lastPathRef.current;
+      lastPathRef.current = current;
+    }
+  }, [location.pathname, location.search]);
+
   const handleNavigate = (view: string) => {
-    setCurrentView(view);
-    setSearchQuery('');
-    setSelectedSubcategory(null); // Reset subcategory when changing view
-    setSelectedProduct(null);
+    if (view !== 'search') {
+      setSearchQuery('');
+    }
     window.scrollTo(0, 0);
+
+    if (view === 'home') {
+      navigate('/');
+      return;
+    }
+    if (view === 'checkout') {
+      navigate('/checkout');
+      return;
+    }
+    if (view === 'success') {
+      navigate('/success');
+      return;
+    }
+    if (view === 'search') {
+      navigate('/search');
+      return;
+    }
+    if (STATIC_PAGE_SLUGS.has(view)) {
+      navigate(`/info/${view}`);
+      return;
+    }
+    const slug = slugify(view);
+    navigate(`/category/${slug}`);
   };
 
   const handleProductClick = (product: Product) => {
-    setSelectedProduct(product);
-    setCurrentView('product-detail');
     window.scrollTo(0, 0);
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleProductBack = (product: Product) => {
+    if (previousPathRef.current) {
+      navigate(previousPathRef.current);
+      return;
+    }
+
+    const subcategoryIds = getProductSubcategoryIds(product);
+    if (subcategoryIds.length > 0) {
+      const targetSubId = subcategoryIds[0];
+      const categorySlug = findCategorySlugForSubcategory(categories, targetSubId);
+      if (categorySlug) {
+        navigate(`/category/${categorySlug}/sub/${targetSubId}`);
+        return;
+      }
+    }
+
+    const primaryCategory = getPrimaryCategory(product.category);
+    if (primaryCategory) {
+      handleNavigate(primaryCategory);
+    } else {
+      handleNavigate('home');
+    }
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setCurrentView('search');
-    setSelectedSubcategory(null);
     window.scrollTo(0, 0);
+    navigate('/search');
   };
-
-  // Filter Products
-  const filteredProducts = useMemo(() => {
-    let filtered = products;
-
-    if (currentView === 'home') {
-      // Show all or popular
-    } else if (currentView === 'search') {
-      const lowerQuery = searchQuery.toLowerCase();
-
-      // Helper to find all subcategory IDs that match the query code (or whose parent matches)
-      const matchingSubcategoryIds = new Set<number>();
-
-      const traverseAndCollect = (subs: Subcategory[], collect: boolean) => {
-        for (const sub of subs) {
-          const matches = sub.code?.toLowerCase().includes(lowerQuery);
-          const shouldCollect = collect || matches;
-
-          if (shouldCollect) {
-            matchingSubcategoryIds.add(sub.id);
-          }
-
-          if (sub.subcategories) {
-            traverseAndCollect(sub.subcategories, shouldCollect || false);
-          }
-        }
-      };
-
-      // Traverse all categories to find matching subcategories
-      categories.forEach(cat => {
-        if (cat.subcategories) {
-          traverseAndCollect(cat.subcategories, false);
-        }
-      });
-
-      filtered = filtered.filter(p => {
-        const productSubIds = getProductSubcategoryIds(p);
-        return (
-          p.name.toLowerCase().includes(lowerQuery) ||
-          (p.detail_number && p.detail_number.toLowerCase().includes(lowerQuery)) ||
-          (p.cross_number && p.cross_number.toLowerCase().includes(lowerQuery)) ||
-          productSubIds.some(id => matchingSubcategoryIds.has(id))
-        );
-      });
-    } else {
-      // Category View
-      filtered = filtered.filter(p => productMatchesCategory(p, currentView));
-    }
-
-    if (selectedSubcategory) {
-      filtered = filtered.filter(p => getProductSubcategoryIds(p).includes(selectedSubcategory));
-    }
-
-    return filtered;
-  }, [products, currentView, searchQuery, selectedSubcategory, categories]);
 
   const sortedCategories = useMemo(
     () => [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
     [categories]
   );
 
-  const currentCategory = sortedCategories.find(c => c.name === currentView);
+  const currentCategorySlug = categoryMatch?.params?.slug;
+  const currentCategory = useMemo(() => {
+    if (!currentCategorySlug) return undefined;
+    return sortedCategories.find(c => slugify(c.name) === currentCategorySlug);
+  }, [sortedCategories, currentCategorySlug]);
+
+  const searchResults = useMemo(() => {
+    const lowerQuery = searchQuery.toLowerCase();
+    const matchingSubcategoryIds = new Set<number>();
+
+    const traverseAndCollect = (subs: Subcategory[], collect: boolean) => {
+      for (const sub of subs) {
+        const matches = sub.code?.toLowerCase().includes(lowerQuery);
+        const shouldCollect = collect || !!matches;
+
+        if (shouldCollect) {
+          matchingSubcategoryIds.add(sub.id);
+        }
+
+        if (sub.subcategories) {
+          traverseAndCollect(sub.subcategories, shouldCollect);
+        }
+      }
+    };
+
+    categories.forEach(cat => {
+      if (cat.subcategories) {
+        traverseAndCollect(cat.subcategories, false);
+      }
+    });
+
+    return products.filter(p => {
+      const productSubIds = getProductSubcategoryIds(p);
+      return (
+        p.name.toLowerCase().includes(lowerQuery) ||
+        (p.detail_number && p.detail_number.toLowerCase().includes(lowerQuery)) ||
+        (p.cross_number && p.cross_number.toLowerCase().includes(lowerQuery)) ||
+        productSubIds.some(id => matchingSubcategoryIds.has(id))
+      );
+    });
+  }, [products, searchQuery, categories]);
+
+  const categoryRouteElement = currentCategory ? (
+    <CategoryView
+      category={currentCategory}
+      products={products}
+      currency={currency}
+      uahPerUsd={uahPerUsd}
+      addToCart={addToCart}
+      handleProductClick={handleProductClick}
+      loading={loading}
+    />
+  ) : loading ? (
+    <LoadingSpinner />
+  ) : (
+    <Navigate to="/" replace />
+  );
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-tesla-dark bg-[#f8fafc]">
@@ -261,213 +382,77 @@ const App: React.FC = () => {
       />
 
       <main className="flex-grow container mx-auto px-4 py-8">
-
-        {/* VIEW: SUCCESS */}
-        {currentView === 'success' && (
-          <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6">
-              <CheckCircle size={40} />
-            </div>
-            <h1 className="text-3xl font-bold mb-4">Замовлення успішно оформлено!</h1>
-            <p className="text-gray-600 mb-8 text-center max-w-md">
-              Дякуємо за покупку. Наш менеджер зв'яжеться з вами найближчим часом для підтвердження деталей.
-            </p>
-            <button
-              onClick={() => handleNavigate('home')}
-              className="bg-tesla-dark text-white px-8 py-3 rounded-md hover:bg-gray-800 transition"
-            >
-              На головну
-            </button>
-          </div>
-        )}
-
-        {/* VIEW: CHECKOUT */}
-        {currentView === 'checkout' && (
-          <Checkout
-            cartItems={cart}
-            currency={currency}
-            uahPerUsd={uahPerUsd}
-            totalUAH={cartTotalUAH}
-            onSuccess={() => {
-              clearCart();
-              handleNavigate('success');
-            }}
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <HomeView
+                loading={loading}
+                products={products}
+                currency={currency}
+                uahPerUsd={uahPerUsd}
+                addToCart={addToCart}
+                handleProductClick={handleProductClick}
+                showHero={!searchQuery}
+                onSelectCategory={handleNavigate}
+              />
+            }
           />
-        )}
-
-        {/* VIEW: PRODUCT DETAIL */}
-        {currentView === 'product-detail' && selectedProduct && (
-          <ProductPage
-            product={selectedProduct}
-            currency={currency}
-            uahPerUsd={uahPerUsd}
-            onAddToCart={addToCart}
-            onBack={() => {
-              // Go back to category if product has one, else home
-              const primaryCategory = getPrimaryCategory(selectedProduct.category);
-              handleNavigate(primaryCategory || 'home');
-            }}
+          <Route
+            path="/search"
+            element={
+              <SearchView
+                loading={loading}
+                products={searchResults}
+                currency={currency}
+                uahPerUsd={uahPerUsd}
+                addToCart={addToCart}
+                handleProductClick={handleProductClick}
+                searchQuery={searchQuery}
+              />
+            }
           />
-        )}
-
-        {/* VIEW: CONTENT (Home, Search, Category) */}
-        {!['success', 'checkout', 'about', 'delivery', 'returns', 'faq', 'contacts', 'product-detail'].includes(currentView) && (
-          <>
-            {currentView === 'home' && !searchQuery && (
-              <Hero onSelectCategory={handleNavigate} />
-            )}
-
-            <div className="mt-8">
-              {currentView === 'search' && (
-                <div className="mb-6">
-                  <h1 className="text-2xl font-bold">Результати пошуку: "{searchQuery}"</h1>
-                </div>
-              )}
-
-              {/* Category Header & Subcategories */}
-              {currentCategory && (
-                <div className="mb-8">
-                  <div className="flex items-center gap-4 mb-6">
-                    {selectedSubcategory && (
-                      <button
-                        onClick={() => {
-                          // Find parent of current subcategory or go back to root
-                          const findParent = (subs: Subcategory[], targetId: number, parentId: number | null = null): number | null => {
-                            for (const sub of subs) {
-                              if (sub.id === targetId) return parentId;
-                              if (sub.subcategories) {
-                                const found = findParent(sub.subcategories, targetId, sub.id);
-                                if (found !== undefined) return found;
-                              }
-                            }
-                            return undefined as any;
-                          };
-
-                          let parentId: number | null = null;
-                          const traverse = (subs: Subcategory[], target: number, currentParent: number | null) => {
-                            for (const s of subs) {
-                              if (s.id === target) {
-                                parentId = currentParent;
-                                return;
-                              }
-                              if (s.subcategories) traverse(s.subcategories, target, s.id);
-                            }
-                          };
-                          traverse(currentCategory.subcategories, selectedSubcategory, null);
-                          setSelectedSubcategory(parentId);
-                        }}
-                        className="text-gray-500 hover:text-tesla-red transition"
-                      >
-                        ← Назад
-                      </button>
-                    )}
-                    <h1 className="text-3xl font-bold">
-                      {selectedSubcategory
-                        ? (() => {
-                          // Find name of selected subcategory
-                          let name = '';
-                          const findName = (subs: Subcategory[]) => {
-                            for (const s of subs) {
-                              if (s.id === selectedSubcategory) { name = s.name; return; }
-                              if (s.subcategories) findName(s.subcategories);
-                            }
-                          };
-                          findName(currentCategory.subcategories);
-                          return name;
-                        })()
-                        : currentCategory.name
-                      }
-                    </h1>
-                  </div>
-
-                  {/* Determine what to show: Subcategories or Products */}
-                  {(() => {
-                    // Find current subcategory object
-                    let currentSub: Subcategory | null = null;
-                    if (selectedSubcategory) {
-                      const findSub = (subs: Subcategory[]) => {
-                        for (const s of subs) {
-                          if (s.id === selectedSubcategory) { currentSub = s; return; }
-                          if (s.subcategories) findSub(s.subcategories);
-                        }
-                      };
-                      findSub(currentCategory.subcategories);
-                    }
-
-                    // If no subcategory selected, show root subcategories
-                    // If subcategory selected and has children, show children
-                    // If subcategory selected and NO children, show products
-
-                    const subcategoriesToShow = selectedSubcategory
-                      ? (currentSub?.subcategories || [])
-                      : currentCategory.subcategories;
-
-                    const showProducts = selectedSubcategory && (!currentSub?.subcategories || currentSub.subcategories.length === 0);
-
-                    if (showProducts) {
-                      return (
-                        <ProductList
-                          products={filteredProducts}
-                          currency={currency}
-                          uahPerUsd={uahPerUsd}
-                          onAddToCart={addToCart}
-                          onProductClick={handleProductClick}
-                        />
-                      );
-                    } else {
-                      return (
-                        <>
-                          {/* Subcategory Cards Grid */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {subcategoriesToShow.map(sub => (
-                              <SubcategoryCard
-                                key={sub.id}
-                                subcategory={sub}
-                                onClick={() => setSelectedSubcategory(sub.id)}
-                              />
-                            ))}
-                          </div>
-                          {subcategoriesToShow.length === 0 && (
-                            <p className="text-gray-500 italic">В цій категорії поки немає підкатегорій.</p>
-                          )}
-                        </>
-                      );
-                    }
-                  })()}
-                </div>
-              )}
-
-              {loading ? (
-                <div className="flex justify-center py-20">
-                  <div className="w-8 h-8 border-4 border-tesla-red border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              ) : (
-                <>
-                  {/* Show ProductList only for Home or Search */}
-                  {(currentView === 'home' || currentView === 'search') && (
-                    <ProductList
-                      title={currentView === 'home' ? 'Популярні товари' : undefined}
-                      products={filteredProducts}
-                      currency={currency}
-                      uahPerUsd={uahPerUsd}
-                      onAddToCart={addToCart}
-                      onProductClick={handleProductClick}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* Static Pages */}
-        {['about', 'delivery', 'returns', 'faq', 'contacts'].includes(currentView) && (
-          <StaticPage
-            slug={currentView}
-            onBack={() => handleNavigate('home')}
+          <Route path="/category/:slug" element={categoryRouteElement} />
+          <Route path="/category/:slug/sub/:subId" element={categoryRouteElement} />
+          <Route
+            path="/product/:productId"
+            element={
+              <ProductDetailRoute
+                products={products}
+                currency={currency}
+                uahPerUsd={uahPerUsd}
+                onAddToCart={addToCart}
+                onNavigateBack={handleProductBack}
+                onNavigateHome={() => handleNavigate('home')}
+                loading={loading}
+              />
+            }
           />
-        )}
-
+          <Route
+            path="/checkout"
+            element={
+              <Checkout
+                cartItems={cart}
+                currency={currency}
+                uahPerUsd={uahPerUsd}
+                totalUAH={cartTotalUAH}
+                onSuccess={() => {
+                  clearCart();
+                  navigate('/success');
+                }}
+              />
+            }
+          />
+          <Route
+            path="/success"
+            element={<SuccessView onNavigateHome={() => handleNavigate('home')} />}
+          />
+          <Route
+            path="/info/:slug"
+            element={<StaticPageRoute onNavigateHome={() => handleNavigate('home')} />}
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
 
       <footer className="bg-tesla-dark text-gray-400 py-12 mt-auto">
@@ -476,7 +461,9 @@ const App: React.FC = () => {
             <div className="text-white text-xl font-bold mb-4 flex items-center gap-2">
             <TeslaPartsCenterLogo onNavigate={handleNavigate} />
             </div>
-            <p className="text-sm">Ваш надійний партнер у світі запчастин для електромобілів.</p>
+            <p className="text-sm">
+              {contactInfo.footerDescription || 'Ваш надійний партнер у світі запчастин для електромобілів.'}
+            </p>
           </div>
           <div>
             <h3 className="text-white font-bold mb-4">Навігація</h3>
@@ -496,8 +483,12 @@ const App: React.FC = () => {
           </div>
           <div>
             <h3 className="text-white font-bold mb-4">Контакти</h3>
-            <p className="text-sm mb-2">+38 (099) 123-45-67</p>
-            <p className="text-sm mb-2">info@teslaparts.ua</p>
+            <p className="text-sm mb-2">
+              {contactInfo.phone || '+38 (099) 123-45-67'}
+            </p>
+            <p className="text-sm mb-2">
+              {contactInfo.email || 'info@teslaparts.ua'}
+            </p>
             <div className="flex gap-4 mt-4">
               {socialLinks.instagram && (
                 <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">IG</a>
@@ -509,7 +500,7 @@ const App: React.FC = () => {
           </div>
         </div>
         <div className="container mx-auto px-4 mt-8 pt-8 border-t border-gray-800 text-center text-xs">
-          © 2024 Tesla Parts Center. Всі права захищені.
+          {contactInfo.footerText || '© 2024 Tesla Parts Center. Всі права захищені.'}
         </div>
       </footer>
 
@@ -523,11 +514,317 @@ const App: React.FC = () => {
         onRemoveItem={removeItem}
         onCheckout={() => {
           setIsCartOpen(false);
-          handleNavigate('checkout');
+          navigate('/checkout');
         }}
       />
     </div>
   );
+};
+
+const LoadingSpinner = () => (
+  <div className="flex justify-center py-20">
+    <div className="w-8 h-8 border-4 border-tesla-red border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
+
+interface SuccessViewProps {
+  onNavigateHome: () => void;
+}
+
+const SuccessView: React.FC<SuccessViewProps> = ({ onNavigateHome }) => (
+  <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
+    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6">
+      <CheckCircle size={40} />
+    </div>
+    <h1 className="text-3xl font-bold mb-4">Замовлення успішно оформлено!</h1>
+    <p className="text-gray-600 mb-8 text-center max-w-md">
+      Дякуємо за покупку. Наш менеджер зв'яжеться з вами найближчим часом для підтвердження деталей.
+    </p>
+    <button
+      onClick={onNavigateHome}
+      className="bg-tesla-dark text-white px-8 py-3 rounded-md hover:bg-gray-800 transition"
+    >
+      На головну
+    </button>
+  </div>
+);
+
+interface HomeViewProps {
+  loading: boolean;
+  products: Product[];
+  currency: Currency;
+  uahPerUsd: number;
+  addToCart: (product: Product) => void;
+  handleProductClick: (product: Product) => void;
+  showHero: boolean;
+  onSelectCategory: (category: string) => void;
+}
+
+const HomeView: React.FC<HomeViewProps> = ({
+  loading,
+  products,
+  currency,
+  uahPerUsd,
+  addToCart,
+  handleProductClick,
+  showHero,
+  onSelectCategory,
+}) => (
+  <>
+    {showHero && <Hero onSelectCategory={onSelectCategory} />}
+    <div className="mt-8">
+      {loading ? (
+        <LoadingSpinner />
+      ) : (
+        <ProductList
+          title="Популярні товари"
+          products={products}
+          currency={currency}
+          uahPerUsd={uahPerUsd}
+          onAddToCart={addToCart}
+          onProductClick={handleProductClick}
+        />
+      )}
+    </div>
+  </>
+);
+
+interface SearchViewProps {
+  loading: boolean;
+  products: Product[];
+  currency: Currency;
+  uahPerUsd: number;
+  addToCart: (product: Product) => void;
+  handleProductClick: (product: Product) => void;
+  searchQuery: string;
+}
+
+const SearchView: React.FC<SearchViewProps> = ({
+  loading,
+  products,
+  currency,
+  uahPerUsd,
+  addToCart,
+  handleProductClick,
+  searchQuery,
+}) => (
+  <div className="mt-8">
+    <div className="mb-6">
+      <h1 className="text-2xl font-bold">Результати пошуку: "{searchQuery}"</h1>
+    </div>
+    {loading ? (
+      <LoadingSpinner />
+    ) : (
+      <ProductList
+        products={products}
+        currency={currency}
+        uahPerUsd={uahPerUsd}
+        onAddToCart={addToCart}
+        onProductClick={handleProductClick}
+      />
+    )}
+  </div>
+);
+
+interface CategoryViewProps {
+  category: Category;
+  products: Product[];
+  currency: Currency;
+  uahPerUsd: number;
+  addToCart: (product: Product) => void;
+  handleProductClick: (product: Product) => void;
+  loading: boolean;
+}
+
+const CategoryView: React.FC<CategoryViewProps> = ({
+  category,
+  products,
+  currency,
+  uahPerUsd,
+  addToCart,
+  handleProductClick,
+  loading,
+}) => {
+  const { subId } = useParams<{ subId?: string }>();
+  const navigate = useNavigate();
+  const categorySlug = slugify(category.name);
+  const selectedSubcategory = subId ? Number(subId) : null;
+
+  const categoryProducts = useMemo(() => {
+    let filtered = products.filter(p => productMatchesCategory(p, category.name));
+    if (selectedSubcategory) {
+      filtered = filtered.filter(p => getProductSubcategoryIds(p).includes(selectedSubcategory));
+    }
+    return filtered;
+  }, [products, category.name, selectedSubcategory]);
+
+  const findSubcategory = (subs: Subcategory[], targetId: number): Subcategory | null => {
+    for (const sub of subs) {
+      if (sub.id === targetId) {
+        return sub;
+      }
+      if (sub.subcategories) {
+        const found = findSubcategory(sub.subcategories, targetId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const currentSubcategory = selectedSubcategory
+    ? findSubcategory(category.subcategories, selectedSubcategory)
+    : null;
+
+  useEffect(() => {
+    if (selectedSubcategory && !currentSubcategory) {
+      navigate(`/category/${categorySlug}`, { replace: true });
+    }
+  }, [selectedSubcategory, currentSubcategory, navigate, categorySlug]);
+
+  const handleBack = () => {
+    if (!selectedSubcategory) return;
+    const findParent = (subs: Subcategory[], target: number, parent: number | null = null): number | null => {
+      for (const sub of subs) {
+        if (sub.id === target) {
+          return parent;
+        }
+        if (sub.subcategories) {
+          const result = findParent(sub.subcategories, target, sub.id);
+          if (result !== null && result !== undefined) {
+            return result;
+          }
+        }
+      }
+      return null;
+    };
+    const parentId = findParent(category.subcategories, selectedSubcategory, null);
+    if (parentId) {
+      navigate(`/category/${categorySlug}/sub/${parentId}`);
+    } else {
+      navigate(`/category/${categorySlug}`);
+    }
+  };
+
+  const getSelectedSubcategoryName = () => {
+    if (!selectedSubcategory) return category.name;
+    const found = findSubcategory(category.subcategories, selectedSubcategory);
+    return found?.name || category.name;
+  };
+
+  const subcategoriesToShow = selectedSubcategory
+    ? currentSubcategory?.subcategories || []
+    : category.subcategories;
+
+  const showProducts =
+    !!selectedSubcategory && (!currentSubcategory?.subcategories || currentSubcategory.subcategories.length === 0);
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center gap-4 mb-6 flex-wrap">
+        <button onClick={() => navigate('/')} className="text-gray-500 hover:text-tesla-red transition">
+          ← Назад до головної
+        </button>
+        {selectedSubcategory && (
+          <button onClick={handleBack} className="text-gray-500 hover:text-tesla-red transition">
+            ← Назад
+          </button>
+        )}
+        <h1 className="text-3xl font-bold">{getSelectedSubcategoryName()}</h1>
+      </div>
+
+      {showProducts ? (
+        loading ? (
+          <LoadingSpinner />
+        ) : (
+          <ProductList
+            products={categoryProducts}
+            currency={currency}
+            uahPerUsd={uahPerUsd}
+            onAddToCart={addToCart}
+            onProductClick={handleProductClick}
+          />
+        )
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {subcategoriesToShow.map(sub => (
+              <SubcategoryCard
+                key={sub.id}
+                subcategory={sub}
+                onClick={() => navigate(`/category/${categorySlug}/sub/${sub.id}`)}
+              />
+            ))}
+          </div>
+          {subcategoriesToShow.length === 0 && (
+            <p className="text-gray-500 italic">В цій категорії поки немає підкатегорій.</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+interface ProductDetailRouteProps {
+  products: Product[];
+  currency: Currency;
+  uahPerUsd: number;
+  onAddToCart: (product: Product) => void;
+  onNavigateBack: (product: Product) => void;
+  onNavigateHome: () => void;
+  loading: boolean;
+}
+
+const ProductDetailRoute: React.FC<ProductDetailRouteProps> = ({
+  products,
+  currency,
+  uahPerUsd,
+  onAddToCart,
+  onNavigateBack,
+  onNavigateHome,
+  loading,
+}) => {
+  const { productId } = useParams();
+  const product = useMemo(() => products.find(p => p.id === productId), [products, productId]);
+
+  if (loading && !product) {
+    return <LoadingSpinner />;
+  }
+
+  if (!product) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <p className="text-gray-600 mb-4">Товар не знайдено.</p>
+        <button
+          onClick={onNavigateHome}
+          className="bg-tesla-dark text-white px-6 py-2 rounded-md hover:bg-gray-800 transition"
+        >
+          На головну
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <ProductPage
+      product={product}
+      currency={currency}
+      uahPerUsd={uahPerUsd}
+      onAddToCart={onAddToCart}
+      onBack={() => onNavigateBack(product)}
+    />
+  );
+};
+
+interface StaticPageRouteProps {
+  onNavigateHome: () => void;
+}
+
+const StaticPageRoute: React.FC<StaticPageRouteProps> = ({ onNavigateHome }) => {
+  const { slug } = useParams();
+  if (!slug) {
+    return <Navigate to="/" replace />;
+  }
+  return <StaticPage slug={slug} onBack={onNavigateHome} />;
 };
 
 export default App;

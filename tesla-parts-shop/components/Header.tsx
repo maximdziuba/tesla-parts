@@ -111,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({
           {/* Logo */}
           <TeslaPartsCenterLogo onNavigate={onNavigate} />
 
-          {/* Desktop Search & Menu */}
+          {/* Desktop Categories Menu */}
           <div className="hidden md:flex items-center flex-1 max-w-2xl px-8 gap-6">
              {/* Category Links */}
             <div className="flex gap-4 font-medium text-tesla-dark whitespace-nowrap">
@@ -146,9 +146,12 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Search Bar */}
-            <form onSubmit={handleSearchSubmit} className="flex-1 relative">
+          {/* Cart & Checkout */}
+          <div className="flex items-center gap-4">
+            {/* Desktop Search Bar aligned near cart */}
+            <form onSubmit={handleSearchSubmit} className="hidden md:block relative w-64">
               <input
                 type="text"
                 placeholder="Пошук запчастин..."
@@ -158,10 +161,7 @@ const Header: React.FC<HeaderProps> = ({
               />
               <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
             </form>
-          </div>
 
-          {/* Cart & Checkout */}
-          <div className="flex items-center gap-4">
             <div 
               onClick={onCartClick}
               className="flex items-center gap-3 cursor-pointer group"

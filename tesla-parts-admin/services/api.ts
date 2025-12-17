@@ -292,6 +292,15 @@ export const ApiService = {
     return res.json();
   },
 
+  updateOrderTtn: async (orderId: number, ttn: string): Promise<void> => {
+    const res = await _authenticatedFetch(`${API_URL}/orders/${orderId}/ttn`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ ttn }),
+    });
+    if (!res.ok) throw new Error('Failed to update order TTN');
+  },
+
   getCategories: async (): Promise<Category[]> => {
     const res = await _authenticatedFetch(`${API_URL}/categories/`, { headers: getHeaders() });
     if (!res.ok) throw new Error('Failed to fetch categories');

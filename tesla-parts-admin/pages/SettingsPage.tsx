@@ -11,12 +11,18 @@ export const SettingsPage: React.FC = () => {
     const [botToken, setBotToken] = useState('');
     const [chatId, setChatId] = useState('');
     const [savingTelegramSettings, setSavingTelegramSettings] = useState(false);
+    const [contactEmail, setContactEmail] = useState('');
+    const [contactPhone, setContactPhone] = useState('');
+    const [footerDescription, setFooterDescription] = useState('');
+    const [footerText, setFooterText] = useState('');
+    const [savingContactInfo, setSavingContactInfo] = useState(false);
 
 
     useEffect(() => {
         loadRate();
         loadSocialLinks();
         loadTelegramSettings();
+        loadContactInfo();
     }, []);
 
     const loadRate = async () => {
@@ -38,6 +44,27 @@ export const SettingsPage: React.FC = () => {
         } catch (e) {
             console.error("Failed to load social links", e);
         }
+    };
+
+    const loadContactInfo = async () => {
+        const fetchValue = async (key: string) => {
+            try {
+                const setting = await ApiService.getSetting(key);
+                return setting.value || '';
+            } catch {
+                return '';
+            }
+        };
+        const [emailValue, phoneValue, footerDescValue, footerTextValue] = await Promise.all([
+            fetchValue('contact_email'),
+            fetchValue('contact_phone'),
+            fetchValue('footer_description'),
+            fetchValue('footer_text'),
+        ]);
+        setContactEmail(emailValue);
+        setContactPhone(phoneValue);
+        setFooterDescription(footerDescValue);
+        setFooterText(footerTextValue);
     };
 
     const loadTelegramSettings = async () => {
@@ -82,6 +109,25 @@ export const SettingsPage: React.FC = () => {
             setSavingSocial(false);
         }
     }
+
+    const handleSaveContactInfo = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingContactInfo(true);
+        try {
+            await Promise.all([
+                ApiService.updateSetting('contact_email', contactEmail),
+                ApiService.updateSetting('contact_phone', contactPhone),
+                ApiService.updateSetting('footer_description', footerDescription),
+                ApiService.updateSetting('footer_text', footerText),
+            ]);
+            alert('Контактні дані збережено!');
+        } catch (e) {
+            console.error("Failed to save contact info", e);
+            alert('Помилка при збереженні контактних даних');
+        } finally {
+            setSavingContactInfo(false);
+        }
+    };
 
     const handleSaveTelegramSettings = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -171,6 +217,71 @@ export const SettingsPage: React.FC = () => {
                         className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition disabled:opacity-50"
                     >
                         {savingSocial ? 'Збереження...' : 'Зберегти посилання'}
+                    </button>
+                </form>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-6">
+                <form onSubmit={handleSaveContactInfo} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Email
+                            </label>
+                            <input
+                                type="email"
+                                value={contactEmail}
+                                onChange={e => setContactEmail(e.target.value)}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                placeholder="info@teslaparts.ua"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Телефон
+                            </label>
+                            <input
+                                type="text"
+                                value={contactPhone}
+                                onChange={e => setContactPhone(e.target.value)}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                placeholder="+38 (099) 123-45-67"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Опис під логотипом (footer)
+                        </label>
+                        <textarea
+                            value={footerDescription}
+                            onChange={e => setFooterDescription(e.target.value)}
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                            rows={3}
+                            placeholder="Короткий текст під логотипом магазину"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Текст футера (copyright)
+                        </label>
+                        <input
+                            type="text"
+                            value={footerText}
+                            onChange={e => setFooterText(e.target.value)}
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                            placeholder="© 2024 Tesla Parts Center. Всі права захищені."
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={savingContactInfo}
+                        className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition disabled:opacity-50"
+                    >
+                        {savingContactInfo ? 'Збереження...' : 'Зберегти контактні дані'}
                     </button>
                 </form>
             </div>

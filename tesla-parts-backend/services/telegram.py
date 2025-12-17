@@ -16,7 +16,10 @@ def send_telegram_notification(order: Order):
             print("Telegram credentials not set, skipping notification")
             return
 
-        message = f"<b>Нове замовлення #{order.id} </b>\n"
+        created = order.created_at.strftime("%d.%m.%Y %H:%M") if order.created_at else ""
+        message = f"<b>Нове замовлення #{order.id}</b>\n"
+        if created:
+            message += f"<b>Створено</b>: {created}\n"
         message += f"<b>Покупець</b>: {order.customer_first_name} {order.customer_last_name}\n"
         message += f"<b>Телефон</b>: {order.customer_phone}\n"
         message += f"<b>Сума</b>: {order.totalUAH} UAH\n"

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List
+from datetime import datetime
 
 class ProductBase(BaseModel):
     id: str
@@ -95,6 +96,7 @@ class OrderRead(BaseModel):
     delivery_branch: str
     payment_method: str
     ttn: str | None = None # Added TTN field
+    created_at: datetime
     items: List[OrderItemRead]
 
 
