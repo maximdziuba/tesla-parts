@@ -59,6 +59,11 @@ const Header: React.FC<HeaderProps> = ({
     onSearch(searchQuery);
   };
 
+  const handleSearchChange = (value: string) => {
+    onSearchQueryChange(value);
+    onSearch(value);
+  };
+
   const formatPrice = (amount: number) => {
     return new Intl.NumberFormat('uk-UA', { 
       style: 'currency', 
@@ -168,16 +173,10 @@ const Header: React.FC<HeaderProps> = ({
                   placeholder="Пошук запчастин..."
                   className="w-full bg-gray-100 border-none rounded-full py-2 px-4 pl-10 focus:ring-2 focus:ring-tesla-red focus:bg-white transition outline-none"
                   value={searchQuery}
-                  onChange={(e) => onSearchQueryChange(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                 />
                 <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
               </div>
-              <button
-                type="submit"
-                className="bg-tesla-red hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition text-sm shadow-sm"
-              >
-                Шукати
-              </button>
             </form>
 
             <div 
@@ -251,17 +250,11 @@ const Header: React.FC<HeaderProps> = ({
                   placeholder="Пошук..."
                   className="w-full bg-gray-100 rounded-lg py-3 px-4 pl-10"
                   value={searchQuery}
-                  onChange={(e) => onSearchQueryChange(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   autoFocus
                 />
                 <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
               </div>
-              <button
-                type="submit"
-                className="bg-tesla-red hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium transition text-sm shadow-sm"
-              >
-                Шукати
-              </button>
               <button
                 type="button"
                 onClick={() => setIsMobileSearchOpen(false)}
