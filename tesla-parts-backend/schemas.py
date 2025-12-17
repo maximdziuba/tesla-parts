@@ -45,6 +45,7 @@ class SubcategoryRead(BaseModel):
     image: str | None = None
     category_id: int
     parent_id: int | None = None
+    sort_order: int | None = None
     products: List[ProductRead] = []
     subcategories: List["SubcategoryRead"] = []
 
@@ -70,6 +71,7 @@ class SubcategoryCreate(BaseModel):
     image: str | None = None
     category_id: int
     parent_id: int | None = None
+    sort_order: int | None = None
 
 
 class SubcategoryTransferRequest(BaseModel):

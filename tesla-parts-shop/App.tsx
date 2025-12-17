@@ -65,6 +65,34 @@ const findCategorySlugForSubcategory = (categories: Category[], targetId: number
   return null;
 };
 
+const compareBySortOrder = <T extends { sort_order?: number | null; id?: number }>(a: T, b: T) => {
+  const orderDiff = (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  if (orderDiff !== 0) return orderDiff;
+  if (a.id !== undefined && b.id !== undefined) {
+    return a.id - b.id;
+  }
+  return 0;
+};
+
+const sortSubcategoryTreeData = (subs?: Subcategory[]): Subcategory[] => {
+  if (!subs) return [];
+  return [...subs]
+    .sort(compareBySortOrder)
+    .map(sub => ({
+      ...sub,
+      subcategories: sortSubcategoryTreeData(sub.subcategories),
+    }));
+};
+
+const sortCategoryTreeData = (cats: Category[]): Category[] => {
+  return [...cats]
+    .sort(compareBySortOrder)
+    .map(cat => ({
+      ...cat,
+      subcategories: sortSubcategoryTreeData(cat.subcategories),
+    }));
+};
+
 const getInitialCart = (): CartItem[] => {
   if (typeof window === 'undefined') return [];
   try {
@@ -135,7 +163,7 @@ const App: React.FC = () => {
           api.getSocialLinks(),
         ]);
         setProducts(productsData);
-        setCategories(categoriesData);
+        setCategories(sortCategoryTreeData(categoriesData));
         setSocialLinks(socialLinksData);
       } catch (e) {
         console.error("Failed to load data", e);
@@ -325,10 +353,7 @@ const App: React.FC = () => {
     navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
-  const sortedCategories = useMemo(
-    () => [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
-    [categories]
-  );
+  const sortedCategories = useMemo(() => [...categories].sort(compareBySortOrder), [categories]);
 
   const currentCategorySlug = categoryMatch?.params?.slug;
   const currentCategory = useMemo(() => {
@@ -763,9 +788,12 @@ const CategoryView: React.FC<CategoryViewProps> = ({
     return found?.name || category.name;
   };
 
-  const subcategoriesToShow = selectedSubcategory
-    ? currentSubcategory?.subcategories || []
-    : category.subcategories;
+  const subcategoriesToShow = useMemo(() => {
+    const base = selectedSubcategory
+      ? currentSubcategory?.subcategories || []
+      : category.subcategories;
+    return sortSubcategoryTreeData(base);
+  }, [selectedSubcategory, currentSubcategory, category]);
 
   const showProducts =
     !!selectedSubcategory && (!currentSubcategory?.subcategories || currentSubcategory.subcategories.length === 0);

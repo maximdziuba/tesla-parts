@@ -32,6 +32,21 @@ DEFAULT_STATIC_SEO = {
 }
 
 
+def _ensure_sort_order_column(engine: Engine, table_name: str):
+    inspector = inspect(engine)
+    columns = inspector.get_columns(table_name)
+    column_names = {col["name"] for col in columns}
+    if "sort_order" in column_names:
+        print(f'{table_name} table already has "sort_order" column.')
+        return
+
+    stmt = f'ALTER TABLE "{table_name}" ADD COLUMN "sort_order" INTEGER DEFAULT 0'
+    with engine.begin() as conn:
+        print(f"Executing: {stmt}")
+        conn.execute(text(stmt))
+    print(f'{table_name} sort_order column ensured.')
+
+
 def ensure_category_seo_columns(engine: Engine):
     inspector = inspect(engine)
     columns = inspector.get_columns("category")
@@ -119,6 +134,8 @@ def run_migration():
     print(f"Connecting to database: {DATABASE_URL}")
     engine = create_engine(DATABASE_URL)
 
+    _ensure_sort_order_column(engine, "category")
+    _ensure_sort_order_column(engine, "subcategory")
     ensure_category_seo_columns(engine)
     ensure_static_seo_table(engine)
     seed_static_seo(engine)

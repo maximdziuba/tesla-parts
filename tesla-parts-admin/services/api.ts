@@ -370,15 +370,27 @@ export const ApiService = {
     return res.json();
   },
 
-  createSubcategory: async (categoryId: number, name: string, code?: string, parentId?: number, file?: File): Promise<Subcategory> => {
+  createSubcategory: async (
+    categoryId: number,
+    name: string,
+    code?: string,
+    parentId?: number,
+    file?: File,
+    sortOrder?: number
+  ): Promise<Subcategory> => {
     const formData = new FormData();
     formData.append('name', name);
     formData.append('category_id', categoryId.toString());
     if (code) formData.append('code', code);
-    if (parentId) formData.append('parent_id', parentId.toString());
+    if (parentId !== undefined && parentId !== null) {
+      formData.append('parent_id', parentId.toString());
+    }
     
     if (file) {
       formData.append('file', file);
+    }
+    if (sortOrder !== undefined && sortOrder !== null) {
+      formData.append('sort_order', sortOrder.toString());
     }
 
     const res = await _authenticatedFetch(`${API_URL}/categories/${categoryId}/subcategories/`, {
@@ -390,14 +402,26 @@ export const ApiService = {
     return res.json();
   },
 
-  updateSubcategory: async (id: number, name: string, code?: string, parentId?: number, file?: File): Promise<Subcategory> => {
+  updateSubcategory: async (
+    id: number,
+    name: string,
+    code?: string,
+    parentId?: number,
+    file?: File,
+    sortOrder?: number
+  ): Promise<Subcategory> => {
     const formData = new FormData();
     formData.append('name', name);
     if (code) formData.append('code', code);
-    if (parentId !== undefined) formData.append('parent_id', parentId.toString());
+    if (parentId !== undefined && parentId !== null) {
+      formData.append('parent_id', parentId.toString());
+    }
     
     if (file) {
       formData.append('file', file);
+    }
+    if (sortOrder !== undefined && sortOrder !== null) {
+      formData.append('sort_order', sortOrder.toString());
     }
 
     const res = await _authenticatedFetch(`${API_URL}/categories/subcategories/${id}`, {

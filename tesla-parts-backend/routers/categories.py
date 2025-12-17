@@ -30,6 +30,30 @@ def _get_next_category_sort_order(session: Session) -> int:
     return int(result) + 1
 
 
+def _get_next_subcategory_sort_order(
+    session: Session, category_id: int, parent_id: Optional[int]
+) -> int:
+    stmt = select(func.max(Subcategory.sort_order)).where(
+        Subcategory.category_id == category_id
+    )
+    if parent_id is None:
+        stmt = stmt.where(Subcategory.parent_id.is_(None))
+    else:
+        stmt = stmt.where(Subcategory.parent_id == parent_id)
+    result = session.exec(stmt).first()
+    if result is None:
+        return 0
+    if isinstance(result, tuple):
+        result = result[0]
+    if result is None:
+        return 0
+    return int(result) + 1
+
+
+def _sort_subcategories(subs: List[Subcategory]) -> List[Subcategory]:
+    return sorted(subs, key=lambda s: ((s.sort_order or 0), s.id or 0))
+
+
 def _split_categories(value: Optional[str]) -> List[str]:
     if not value:
         return []
@@ -159,7 +183,7 @@ def get_categories(session: Session = Depends(get_session)):
         sub_data["products"] = [_serialize_product(prod, rate) for prod in products]
         
         # Handle children subcategories
-        children = [s for s in all_subs if s.parent_id == sub.id]
+        children = _sort_subcategories([s for s in all_subs if s.parent_id == sub.id])
         sub_data["subcategories"] = [build_subcategory_tree(child, all_subs) for child in children]
         
         return SubcategoryRead(**sub_data)
@@ -170,7 +194,7 @@ def get_categories(session: Session = Depends(get_session)):
         cat_data = cat.model_dump()
         
         # Filter for top-level subcategories (no parent)
-        root_subs = [s for s in cat.subcategories if s.parent_id is None]
+        root_subs = _sort_subcategories([s for s in cat.subcategories if s.parent_id is None])
         
         # Build tree for each root subcategory
         # We pass cat.subcategories (all subs in this category) to find children
@@ -255,6 +279,7 @@ def _clone_subcategory_tree(
         image=source_subcategory.image,
         category_id=target_category_id,
         parent_id=parent_id,
+        sort_order=source_subcategory.sort_order,
     )
     session.add(new_subcategory)
     session.flush()  # Get ID for children
@@ -285,6 +310,7 @@ def _load_subcategories_for_category(
     return session.exec(
         select(Subcategory)
         .where(Subcategory.category_id == category_id)
+        .order_by(Subcategory.sort_order, Subcategory.id)
         .options(selectinload(Subcategory.products))
     ).all()
 
@@ -296,7 +322,7 @@ def _serialize_subcategory_tree(
     products = _get_products_for_subcategory(session, root.id)
     sub_data["products"] = [_serialize_product(product, rate) for product in products]
 
-    children = [sub for sub in all_subs if sub.parent_id == root.id]
+    children = _sort_subcategories([sub for sub in all_subs if sub.parent_id == root.id])
     sub_data["subcategories"] = [
         _serialize_subcategory_tree(child, all_subs, session, rate)
         for child in children
@@ -377,10 +403,11 @@ async def create_category(
 async def create_subcategory(
     category_id: int,
     name: str = Form(...),
-    code: str = Form(None),
-    parent_id: int = Form(None),
-    image: str = Form(None),
+    code: Optional[str] = Form(None),
+    parent_id: Optional[int] = Form(None),
+    image: Optional[str] = Form(None),
     file: UploadFile = File(None),
+    sort_order: Optional[int] = Form(None),
     session: Session = Depends(get_session)
 ):
     # Handle file upload
@@ -388,12 +415,20 @@ async def create_subcategory(
     if file and file.filename:
         image_url = await image_uploader.upload_image(file, folder="tesla-parts/subcategories")
 
+    parent_value = parent_id if parent_id is not None else None
+    order_value = (
+        sort_order
+        if sort_order is not None
+        else _get_next_subcategory_sort_order(session, category_id, parent_value)
+    )
+
     db_subcategory = Subcategory(
         name=name,
         code=code,
         category_id=category_id,
-        parent_id=parent_id,
-        image=image_url
+        parent_id=parent_value,
+        image=image_url,
+        sort_order=order_value,
     )
     session.add(db_subcategory)
     session.commit()
@@ -440,10 +475,11 @@ async def update_category(
 async def update_subcategory(
     subcategory_id: int,
     name: str = Form(...),
-    code: str = Form(None),
-    parent_id: int = Form(None),
-    image: str = Form(None),
+    code: Optional[str] = Form(None),
+    parent_id: Optional[int] = Form(None),
+    image: Optional[str] = Form(None),
     file: UploadFile = File(None),
+    sort_order: Optional[int] = Form(None),
     session: Session = Depends(get_session)
 ):
     subcategory = session.get(Subcategory, subcategory_id)
@@ -458,6 +494,8 @@ async def update_subcategory(
     # Let's assume we send current value if not changing.
     if parent_id is not None:
         subcategory.parent_id = parent_id
+    if sort_order is not None:
+        subcategory.sort_order = sort_order
         
     # Handle file upload
     if file and file.filename:

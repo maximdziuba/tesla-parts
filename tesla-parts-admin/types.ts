@@ -5,6 +5,7 @@ export interface Subcategory {
   image?: string;
   category_id: number;
   parent_id?: number | null;
+  sort_order?: number;
   subcategories?: Subcategory[];
 }
 

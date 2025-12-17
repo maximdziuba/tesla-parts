@@ -22,8 +22,8 @@ interface SubcategoryItemProps {
     categories: Category[];
     level?: number;
     onDelete: (id: number) => void;
-    onCreate: (categoryId: number, name: string, code: string, parentId: number, file?: File) => void;
-    onEdit: (id: number, name: string, code: string, parentId?: number, file?: File) => void;
+    onCreate: (categoryId: number, name: string, code?: string, parentId?: number, file?: File, sortOrder?: number) => void;
+    onEdit: (id: number, name: string, code: string, parentId?: number, file?: File, sortOrder?: number) => void;
     onTransfer: (id: number, targetCategoryId: number, targetParentId: number | undefined, mode: 'move' | 'copy') => Promise<void>;
 }
 
@@ -56,6 +56,33 @@ const flattenSubcategoriesForSelect = (
     return result;
 };
 
+const sortSubcategoriesTree = (subs: Subcategory[] | undefined): Subcategory[] => {
+    if (!subs) return [];
+    return [...subs]
+        .sort((a, b) => {
+            const orderDiff = (a.sort_order ?? 0) - (b.sort_order ?? 0);
+            if (orderDiff !== 0) return orderDiff;
+            return a.id - b.id;
+        })
+        .map(sub => ({
+            ...sub,
+            subcategories: sortSubcategoriesTree(sub.subcategories),
+        }));
+};
+
+const sortCategoriesData = (cats: Category[]): Category[] => {
+    return [...cats]
+        .sort((a, b) => {
+            const orderDiff = (a.sort_order ?? 0) - (b.sort_order ?? 0);
+            if (orderDiff !== 0) return orderDiff;
+            return a.id - b.id;
+        })
+        .map(cat => ({
+            ...cat,
+            subcategories: sortSubcategoriesTree(cat.subcategories),
+        }));
+};
+
 const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
     subcategory,
     categoryId,
@@ -78,11 +105,17 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
     const [newName, setNewName] = useState('');
     const [newCode, setNewCode] = useState('');
     const [newFile, setNewFile] = useState<File | null>(null);
+    const [newSortOrder, setNewSortOrder] = useState('');
 
     // Edit State
     const [editName, setEditName] = useState(subcategory.name);
     const [editCode, setEditCode] = useState(subcategory.code || '');
     const [editFile, setEditFile] = useState<File | null>(null);
+    const [editSortOrder, setEditSortOrder] = useState(
+        subcategory.sort_order !== undefined && subcategory.sort_order !== null
+            ? subcategory.sort_order.toString()
+            : ''
+    );
 
     useEffect(() => {
         setTransferCategoryId(categoryId);
@@ -91,6 +124,14 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
     useEffect(() => {
         setTransferParentId(subcategory.parent_id ?? '');
     }, [subcategory.parent_id]);
+
+    useEffect(() => {
+        setEditSortOrder(
+            subcategory.sort_order !== undefined && subcategory.sort_order !== null
+                ? subcategory.sort_order.toString()
+                : ''
+        );
+    }, [subcategory.sort_order]);
 
     const descendantIds = useMemo(() => new Set([subcategory.id, ...collectDescendantIds(subcategory)]), [subcategory]);
 
@@ -102,17 +143,20 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
 
     const handleAddChild = () => {
         if (!newName.trim()) return;
-        onCreate(categoryId, newName, newCode, subcategory.id, newFile || undefined);
+        const sortValue = newSortOrder.trim() === '' ? undefined : Number(newSortOrder);
+        onCreate(categoryId, newName, newCode, subcategory.id, newFile || undefined, sortValue);
         setNewName('');
         setNewCode('');
         setNewFile(null);
+        setNewSortOrder('');
         setIsAddingChild(false);
         setIsExpanded(true);
     };
 
     const handleSaveEdit = () => {
         if (!editName.trim()) return;
-        onEdit(subcategory.id, editName, editCode, subcategory.parent_id ?? undefined, editFile || undefined);
+        const sortValue = editSortOrder.trim() === '' ? undefined : Number(editSortOrder);
+        onEdit(subcategory.id, editName, editCode, subcategory.parent_id ?? undefined, editFile || undefined, sortValue);
         setEditFile(null);
         setIsEditing(false);
     };
@@ -159,6 +203,13 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                                 onChange={e => setEditCode(e.target.value)}
                                 className="border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red w-20"
                                 placeholder="Код"
+                            />
+                            <input
+                                type="number"
+                                value={editSortOrder}
+                                onChange={e => setEditSortOrder(e.target.value)}
+                                className="border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red w-20"
+                                placeholder="Порядок"
                             />
                             <div className="flex items-center gap-2">
                                 {subcategory.image && (
@@ -208,6 +259,7 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                             )}
                             <span className="font-medium">{subcategory.name}</span>
                             {subcategory.code && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Код: {subcategory.code}</span>}
+                            <span className="text-xs text-gray-400">#{subcategory.sort_order ?? 0}</span>
                         </>
                     )}
                 </div>
@@ -263,6 +315,13 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                         onChange={e => setNewCode(e.target.value)}
                         className="w-20 border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red"
                         placeholder="Код"
+                    />
+                    <input
+                        type="number"
+                        value={newSortOrder}
+                        onChange={e => setNewSortOrder(e.target.value)}
+                        className="w-20 border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red"
+                        placeholder="Порядок"
                     />
 
                     {/* Image Input Group */}
@@ -401,6 +460,7 @@ const CategoryList: React.FC = () => {
     const [newSubcategoryNames, setNewSubcategoryNames] = useState<{ [key: number]: string }>({});
     const [newSubcategoryCodes, setNewSubcategoryCodes] = useState<{ [key: number]: string }>({});
     const [newSubcategoryFiles, setNewSubcategoryFiles] = useState<{ [key: number]: File | null }>({});
+    const [newSubcategorySortOrders, setNewSubcategorySortOrders] = useState<{ [key: number]: string }>({});
 
     useEffect(() => {
         loadCategories();
@@ -409,7 +469,7 @@ const CategoryList: React.FC = () => {
     const loadCategories = async () => {
         try {
             const data = await ApiService.getCategories();
-            setCategories(data);
+            setCategories(sortCategoriesData(data));
         } catch (e) {
             console.error("Failed to load categories", e);
         } finally {
@@ -486,15 +546,23 @@ const CategoryList: React.FC = () => {
         }
     };
 
-    const handleCreateSubcategory = async (categoryId: number, name: string, code?: string, parentId?: number, file?: File) => {
+    const handleCreateSubcategory = async (
+        categoryId: number,
+        name: string,
+        code?: string,
+        parentId?: number,
+        file?: File,
+        sortOrder?: number
+    ) => {
         if (!name?.trim()) return;
 
         try {
-            await ApiService.createSubcategory(categoryId, name, code, parentId, file);
+            await ApiService.createSubcategory(categoryId, name, code, parentId, file, sortOrder);
             if (!parentId) {
                 setNewSubcategoryNames(prev => ({ ...prev, [categoryId]: '' }));
                 setNewSubcategoryCodes(prev => ({ ...prev, [categoryId]: '' }));
                 setNewSubcategoryFiles(prev => ({ ...prev, [categoryId]: null }));
+                setNewSubcategorySortOrders(prev => ({ ...prev, [categoryId]: '' }));
             }
             loadCategories();
         } catch (e) {
@@ -503,18 +571,27 @@ const CategoryList: React.FC = () => {
     };
 
     const triggerRootSubcategoryCreate = (category: Category) => {
+        const sortValue = newSubcategorySortOrders[category.id];
         handleCreateSubcategory(
             category.id,
             newSubcategoryNames[category.id],
             newSubcategoryCodes[category.id],
             undefined,
-            newSubcategoryFiles[category.id] || undefined
+            newSubcategoryFiles[category.id] || undefined,
+            sortValue && sortValue.trim() !== '' ? Number(sortValue) : undefined
         );
     };
 
-    const handleUpdateSubcategory = async (id: number, name: string, code: string, parentId?: number, file?: File) => {
+    const handleUpdateSubcategory = async (
+        id: number,
+        name: string,
+        code: string,
+        parentId?: number,
+        file?: File,
+        sortOrder?: number
+    ) => {
         try {
-            await ApiService.updateSubcategory(id, name, code, parentId, file);
+            await ApiService.updateSubcategory(id, name, code, parentId, file, sortOrder);
             loadCategories();
         } catch (e) {
             alert("Failed to update subcategory");
@@ -804,6 +881,16 @@ const CategoryList: React.FC = () => {
                                             onChange={e => setNewSubcategoryCodes(prev => ({ ...prev, [category.id]: e.target.value }))}
                                             className="w-24 border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-tesla-red outline-none"
                                             placeholder="Код (11)"
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') triggerRootSubcategoryCreate(category);
+                                            }}
+                                        />
+                                        <input
+                                            type="number"
+                                            value={newSubcategorySortOrders[category.id] || ''}
+                                            onChange={e => setNewSubcategorySortOrders(prev => ({ ...prev, [category.id]: e.target.value }))}
+                                            className="w-24 border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-tesla-red outline-none"
+                                            placeholder="Порядок"
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter') triggerRootSubcategoryCreate(category);
                                             }}

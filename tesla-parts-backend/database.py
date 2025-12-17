@@ -24,6 +24,7 @@ def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
     if is_sqlite():
         _ensure_category_sort_order_column()
+        _ensure_subcategory_sort_order_column()
         _ensure_product_cross_number_column()
         _ensure_category_seo_columns()
     
@@ -65,3 +66,11 @@ def _ensure_category_seo_columns():
         if "meta_description" not in columns:
             conn.execute(text("ALTER TABLE category ADD COLUMN meta_description VARCHAR"))
         conn.commit()
+
+def _ensure_subcategory_sort_order_column():
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info('subcategory')")).fetchall()
+        columns = {row[1] for row in result}
+        if "sort_order" not in columns:
+            conn.execute(text("ALTER TABLE subcategory ADD COLUMN sort_order INTEGER DEFAULT 0"))
+            conn.commit()

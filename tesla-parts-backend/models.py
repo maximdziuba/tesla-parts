@@ -24,6 +24,7 @@ class Subcategory(SQLModel, table=True):
     image: Optional[str] = None
     category_id: int = Field(foreign_key="category.id")
     parent_id: Optional[int] = Field(default=None, foreign_key="subcategory.id")
+    sort_order: int = Field(default=0, index=True)
     
     category: Category = Relationship(back_populates="subcategories")
     parent: Optional["Subcategory"] = Relationship(back_populates="children", sa_relationship_kwargs={"remote_side": "Subcategory.id"})
