@@ -75,6 +75,11 @@ def update_order_ttn(order_id: int, ttn_data: UpdateTtnRequest, session: Session
 def get_orders(session: Session = Depends(get_session)):
     orders = session.exec(select(Order).options(selectinload(Order.items))).all()
     rate = get_exchange_rate(session)
+    
+    orders_with_uah = []
     for order in orders:
-        order.totalUAH = round((order.totalUSD or 0) * rate, 2)
-    return orders
+        order_read = OrderRead.model_validate(order, from_attributes=True)
+        order_read.totalUAH = round((order.totalUSD or 0) * rate, 2)
+        orders_with_uah.append(order_read)
+        
+    return orders_with_uah

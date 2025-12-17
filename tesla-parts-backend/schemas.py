@@ -88,7 +88,7 @@ class OrderRead(BaseModel):
     id: int
     status: str
     totalUSD: float
-    totalUAH: float
+    totalUAH: float = 0.0
     customer_first_name: str
     customer_last_name: str
     customer_phone: str
