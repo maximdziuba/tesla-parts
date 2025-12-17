@@ -31,7 +31,7 @@ def migrate_order_total_usd(engine: Engine):
                 print("Column 'totalUAH' found. Removing it from the 'order' table.")
                 # Note: Dropping columns in SQLite requires a more complex procedure
                 # involving recreating the table. This script will only work for
-                // PostgreSQL or other backends that support DROP COLUMN directly.
+                # PostgreSQL or other backends that support DROP COLUMN directly.
                 # For SQLite, the user might need to recreate the table manually.
                 if engine.dialect.name == 'postgresql':
                     connection.execute(text('ALTER TABLE "order" DROP COLUMN totalUAH'))
