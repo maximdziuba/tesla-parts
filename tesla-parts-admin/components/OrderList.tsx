@@ -46,6 +46,8 @@ export const OrderList: React.FC = () => {
   const handleUpdateTtn = async (orderId: number) => {
     try {
       await ApiService.updateOrderTtn(orderId, editingTtnValue);
+      await ApiService.updateOrderStatus(orderId, 'processed');
+
       setOrders(prevOrders => prevOrders.map(order =>
         order.id === orderId 
           ? { ...order, ttn: editingTtnValue, status: 'processed' } 
@@ -54,8 +56,8 @@ export const OrderList: React.FC = () => {
       setEditingTtnOrderId(null);
       setEditingTtnValue('');
     } catch (e) {
-      console.error("Failed to update TTN", e);
-      alert("Failed to update TTN");
+      console.error("Failed to update order", e);
+      alert("Failed to update order details");
     }
   };
 

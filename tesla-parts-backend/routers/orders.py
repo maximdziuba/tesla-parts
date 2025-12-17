@@ -15,6 +15,9 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 class UpdateTtnRequest(BaseModel):
     ttn: Optional[str] = None
 
+class UpdateStatusRequest(BaseModel):
+    status: str
+
 @router.post("/")
 def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
     rate = get_exchange_rate(session)
@@ -72,6 +75,18 @@ def update_order_ttn(order_id: int, ttn_data: UpdateTtnRequest, session: Session
     session.commit()
     session.refresh(order)
     return {"message": "TTN updated successfully", "order_id": order.id, "ttn": order.ttn}
+
+@router.put("/{order_id}/status", dependencies=[Depends(get_current_admin)])
+def update_order_status(order_id: int, status_data: UpdateStatusRequest, session: Session = Depends(get_session)):
+    order = session.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    order.status = status_data.status
+    session.add(order)
+    session.commit()
+    session.refresh(order)
+    return {"message": "Status updated successfully", "order_id": order.id, "status": order.status}
 
 @router.get("/", response_model=List[OrderRead], dependencies=[Depends(get_current_admin)]) # Protect get_orders
 def get_orders(session: Session = Depends(get_session)):
