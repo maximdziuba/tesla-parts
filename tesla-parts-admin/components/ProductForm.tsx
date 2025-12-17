@@ -85,7 +85,7 @@ export const ProductForm: React.FC = () => {
                 setKeptImages(product.images);
             } else if (product.image && product.image !== PLACEHOLDER_IMAGE_URL) {
                 setKeptImages([product.image]);
-            } else {
+            } else {11
                 setKeptImages([]);
             }
 

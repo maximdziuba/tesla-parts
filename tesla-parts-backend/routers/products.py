@@ -242,10 +242,11 @@ async def update_product(
     # If it's None, we assume no changes to existing gallery unless files are added.
     # However, Form(None) for list might be tricky. Let's assume frontend sends it if it wants to manage images.
     if kept_images is not None:
+        normalized_kept = [url for url in kept_images if url]
         # Get current images
         current_images = session.exec(select(ProductImage).where(ProductImage.product_id == product_id)).all()
         for img in current_images:
-            if img.url not in kept_images:
+            if img.url not in normalized_kept:
                 session.delete(img)
     
     # Handle new file uploads

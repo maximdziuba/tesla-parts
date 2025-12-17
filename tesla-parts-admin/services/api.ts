@@ -253,10 +253,18 @@ export const ApiService = {
       formData.append('detail_number', product.detail_number);
     }
 
-    if (product.kept_images) {
-      product.kept_images.forEach((url: string) => {
-        formData.append('kept_images', url);
-      });
+    if (product.kept_images !== undefined) {
+      const keptList: string[] = Array.isArray(product.kept_images)
+        ? product.kept_images.filter((url: string) => Boolean(url))
+        : [];
+
+      if (keptList.length === 0) {
+        formData.append('kept_images', '');
+      } else {
+        keptList.forEach((url: string) => {
+          formData.append('kept_images', url);
+        });
+      }
     }
 
     const res = await _authenticatedFetch(`${API_URL}/products/${id}`, {
