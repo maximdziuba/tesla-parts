@@ -191,19 +191,6 @@ export const PagesManager: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Розташування</label>
-                                        <select
-                                            value={editingPage.location}
-                                            onChange={e => setEditingPage({ ...editingPage, location: e.target.value })}
-                                            className="w-full border rounded-md px-3 py-2"
-                                        >
-                                            <option value="header">Хедер</option>
-                                            <option value="footer">Футер</option>
-                                            <option value="both">Обидва</option>
-                                            <option value="none">Немає</option>
-                                        </select>
-                                    </div>
                                     <div className="flex items-end">
                                         <label className="flex items-center gap-2">
                                             <input

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
 import { Order } from '../types';
-import { Search, Truck, CreditCard, Pencil, Check, X } from 'lucide-react'; // Import Pencil, Check, X
+import { Search, Truck, CreditCard, Pencil, Check, X } from 'lucide-react';
 
 export const OrderList: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTtnOrderId, setEditingTtnOrderId] = useState<number | null>(null);
   const [editingTtnValue, setEditingTtnValue] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -23,11 +25,31 @@ export const OrderList: React.FC = () => {
     fetchOrders();
   }, []);
 
+  const filteredAndSortedOrders = React.useMemo(() => {
+    const filtered = orders.filter(order => {
+      const query = searchQuery.toLowerCase();
+      if (!query) return true;
+
+      const customerName = `${order.customer_first_name} ${order.customer_last_name}`.toLowerCase();
+      const ttn = (order.ttn || '').toLowerCase();
+      
+      return customerName.includes(query) || ttn.includes(query);
+    });
+
+    return [...filtered].sort((a, b) => {
+      const dateA = new Date(a.created_at).getTime();
+      const dateB = new Date(b.created_at).getTime();
+      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+  }, [orders, sortOrder, searchQuery]);
+
   const handleUpdateTtn = async (orderId: number) => {
     try {
       await ApiService.updateOrderTtn(orderId, editingTtnValue);
       setOrders(prevOrders => prevOrders.map(order =>
-        order.id === orderId ? { ...order, ttn: editingTtnValue } : order
+        order.id === orderId 
+          ? { ...order, ttn: editingTtnValue, status: 'processed' } 
+          : order
       ));
       setEditingTtnOrderId(null);
       setEditingTtnValue('');
@@ -37,19 +59,44 @@ export const OrderList: React.FC = () => {
     }
   };
 
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'new':
+        return { text: 'Нове', className: 'bg-yellow-100 text-yellow-800' };
+      case 'processed':
+        return { text: 'Оброблено', className: 'bg-green-100 text-green-800' };
+      default:
+        return { text: status, className: 'bg-gray-100 text-gray-800' };
+    }
+  };
+
   if (loading) return <div className="p-8 text-center">Завантаження...</div>;
 
   return (
     <div className="space-y-6">
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <h2 className="text-lg font-bold text-gray-800 mb-4">Керування Замовленнями</h2>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Пошук за ID або Ім'ям..."
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-          />
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Пошук за TTN або Ім'ям..."
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
+              className="py-2 px-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+            >
+              <option value="newest">Спочатку нові</option>
+              <option value="oldest">Спочатку старі</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -64,11 +111,13 @@ export const OrderList: React.FC = () => {
                 <th className="px-6 py-4">Сума</th>
                 <th className="px-6 py-4">Оплата</th>
                 <th className="px-6 py-4">Статус</th>
-                <th className="px-6 py-4">ТТН</th> {/* New TTN column */}
+                <th className="px-6 py-4">ТТН</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {orders.map((order) => (
+              {filteredAndSortedOrders.map((order) => {
+                const statusDisplay = getStatusDisplay(order.status);
+                return (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">{order.id}</div>
@@ -98,9 +147,8 @@ export const OrderList: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold
-                      ${order.status === 'new' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {order.status === 'new' ? 'Нове' : order.status}
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusDisplay.className}`}>
+                      {statusDisplay.text}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
@@ -137,10 +185,10 @@ export const OrderList: React.FC = () => {
                     )}
                   </td>
                 </tr>
-              ))}
-              {orders.length === 0 && (
+              )})}
+              {filteredAndSortedOrders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500"> {/* Updated colspan */}
+                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                     Замовлень немає.
                   </td>
                 </tr>
