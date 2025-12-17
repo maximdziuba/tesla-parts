@@ -41,12 +41,12 @@ export const api = {
 
     createOrder: async (orderData: OrderData) => {
         // Transform frontend OrderData to backend schema if needed
-        // Backend expects: items, totalUAH, customer, delivery, paymentMethod
+        // Backend expects: items, totalUSD, customer, delivery, paymentMethod
         // Frontend OrderData matches this structure mostly.
 
         const payload = {
             items: orderData.items,
-            totalUAH: orderData.totalUAH,
+            totalUSD: orderData.totalUSD,
             customer: orderData.customer,
             delivery: orderData.delivery,
             paymentMethod: orderData.paymentMethod

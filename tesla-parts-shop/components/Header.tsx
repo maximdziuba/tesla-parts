@@ -4,7 +4,7 @@ import { Category, Currency } from '../types';
 import TeslaPartsCenterLogo from './ShopLogo';
 interface HeaderProps {
   cartCount: number;
-  cartTotalUAH: number;
+  cartTotalUSD: number;
   currency: Currency;
   uahPerUsd: number;
   categories: Category[];
@@ -20,7 +20,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ 
   cartCount, 
-  cartTotalUAH, 
+  cartTotalUSD, 
   currency, 
   uahPerUsd,
   categories,
@@ -60,9 +60,8 @@ const Header: React.FC<HeaderProps> = ({
     }).format(amount);
   };
   const displayCartTotal = (() => {
-    if (currency === Currency.UAH) return cartTotalUAH;
     const rate = uahPerUsd > 0 ? uahPerUsd : 1;
-    return cartTotalUAH / rate;
+    return currency === Currency.UAH ? cartTotalUSD * rate : cartTotalUSD;
   })();
 
   const sortedCategories = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));

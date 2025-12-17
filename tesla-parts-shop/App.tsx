@@ -212,13 +212,14 @@ const App: React.FC = () => {
 
   const clearCart = () => setCart([]);
 
-  const cartTotalUAH = useMemo(() => {
+  const cartTotalUSD = useMemo(() => {
     const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
     return cart.reduce((sum, item) => {
       const priceUSD = getProductUsdPrice(item, effectiveRate);
-      return sum + priceUSD * effectiveRate * item.quantity;
+      return sum + priceUSD * item.quantity;
     }, 0);
   }, [cart, uahPerUsd]);
+
   const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
 
   const previousPathRef = React.useRef<string | null>(null);
@@ -370,7 +371,7 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col font-sans text-tesla-dark bg-[#f8fafc]">
       <Header
         cartCount={cartCount}
-        cartTotalUAH={cartTotalUAH}
+        cartTotalUSD={cartTotalUSD}
         currency={currency}
         uahPerUsd={uahPerUsd}
         categories={sortedCategories}
@@ -435,7 +436,7 @@ const App: React.FC = () => {
                 cartItems={cart}
                 currency={currency}
                 uahPerUsd={uahPerUsd}
-                totalUAH={cartTotalUAH}
+                totalUSD={cartTotalUSD}
                 onSuccess={() => {
                   clearCart();
                   navigate('/success');

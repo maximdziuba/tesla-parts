@@ -26,7 +26,9 @@ def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, ses
             return item.priceUAH / rate
         return item.priceUAH or 0
 
-    total_usd = sum(_item_price_usd(item) * item.quantity for item in order_data.items)
+    total_usd = order_data.totalUSD
+    if total_usd is None or total_usd <= 0:
+        total_usd = sum(_item_price_usd(item) * item.quantity for item in order_data.items)
 
     order = Order(
         customer_first_name=order_data.customer.firstName,
@@ -77,9 +79,29 @@ def get_orders(session: Session = Depends(get_session)):
     rate = get_exchange_rate(session)
     
     orders_with_uah = []
+    updated = False
     for order in orders:
+        raw_total_usd = order.totalUSD
+        total_usd = float(raw_total_usd) if raw_total_usd is not None else 0.0
+
+        if total_usd <= 0:
+            legacy_total = 0.0
+            for item in order.items:
+                price = item.price_at_purchase or 0
+                legacy_total += (price / rate if rate else price) * item.quantity
+            total_usd = round(legacy_total, 2)
+
+        total_usd = round(total_usd, 2)
+
+        if raw_total_usd != total_usd:
+            order.totalUSD = total_usd
+            updated = True
+
         order_read = OrderRead.model_validate(order, from_attributes=True)
-        order_read.totalUAH = round((order.totalUSD or 0) * rate, 2)
+        order_read.totalUAH = round(total_usd * rate, 2) if rate else 0.0
         orders_with_uah.append(order_read)
+
+    if updated:
+        session.commit()
         
     return orders_with_uah

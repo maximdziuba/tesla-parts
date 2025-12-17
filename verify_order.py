@@ -10,14 +10,15 @@ payload = {
             "id": "prod-123",
             "name": "Test Product",
             "category": "Model 3",
-            "priceUAH": 100,
+            "priceUAH": 400,
+            "priceUSD": 10,
             "image": "http://example.com/img.jpg",
             "description": "Desc",
             "inStock": True,
             "quantity": 2
         }
     ],
-    "totalUAH": 200,
+    "totalUSD": 20,
     "customer": {
         "firstName": "John",
         "lastName": "Doe",

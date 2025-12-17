@@ -37,8 +37,8 @@ def test_create_product(session: Session):
     product_data = {
         "name": "Test Product",
         "category": "Test",
-        "priceUAH": 100.0,
-        "priceUSD": 0.0,
+        "priceUAH": 400.0,
+        "priceUSD": 10.0,
         "image": "http://example.com/image.png",
         "description": "Test Description",
         "inStock": True,
@@ -71,8 +71,19 @@ def test_create_order(session: Session):
     product_id = response.json()["id"]
 
     order_data = {
-        "items": [{"id": product_id, "name": "Test Product", "category": "Test", "priceUAH": 100.0, "priceUSD": 0, "image": "...", "description": "...", "inStock": True, "quantity": 2, "cross_number": ""}],
-        "totalUAH": 200.0,
+        "items": [{
+            "id": product_id,
+            "name": "Test Product",
+            "category": "Test",
+            "priceUAH": 400.0,
+            "priceUSD": 10.0,
+            "image": "...",
+            "description": "...",
+            "inStock": True,
+            "quantity": 2,
+            "cross_number": ""
+        }],
+        "totalUSD": 20.0,
         "customer": {"firstName": "John", "lastName": "Doe", "phone": "1234567890"},
         "delivery": {"city": "Kyiv", "branch": "1"},
         "paymentMethod": "card"

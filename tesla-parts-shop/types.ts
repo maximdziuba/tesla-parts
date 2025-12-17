@@ -59,7 +59,7 @@ export enum PaymentMethod {
 
 export interface OrderData {
   items: CartItem[];
-  totalUAH: number;
+  totalUSD: number;
   customer: {
     firstName: string;
     lastName: string;

@@ -74,6 +74,7 @@ class SubcategoryTransferRequest(BaseModel):
 
 class OrderCreate(BaseModel):
     items: List[CartItem]
+    totalUSD: float | None = None
     customer: Customer
     delivery: Delivery
     paymentMethod: str

@@ -10,10 +10,10 @@ interface CheckoutProps {
   currency: Currency;
   uahPerUsd: number;
   onSuccess: () => void;
-  totalUAH: number;
+  totalUSD: number;
 }
 
-const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onSuccess, totalUAH }) => {
+const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onSuccess, totalUSD }) => {
   // --- Form State ---
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -103,7 +103,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
 
     const order: OrderData = {
       items: cartItems,
-      totalUAH,
+      totalUSD: Number(totalUSD.toFixed(2)),
       customer: { firstName, lastName, phone },
       delivery: { 
         city: deliveryData.city, 
@@ -141,7 +141,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
     const amount = currency === Currency.USD ? priceUSD : priceUSD * effectiveRate;
     return formatAmount(amount);
   };
-  const totalDisplayAmount = currency === Currency.UAH ? totalUAH : (effectiveRate > 0 ? totalUAH / effectiveRate : totalUAH);
+  const totalUAH = totalUSD * effectiveRate;
+  const totalDisplayAmount = currency === Currency.UAH ? totalUAH : totalUSD;
 
   if (cartItems.length === 0) {
     return <div className="p-8 text-center text-gray-500">Кошик порожній</div>;

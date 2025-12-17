@@ -48,6 +48,7 @@ export interface Order {
   delivery_city: string;
   delivery_branch: string;
   payment_method: string;
+  totalUSD: number;
   totalUAH: number;
   created_at: string;
   status: string;

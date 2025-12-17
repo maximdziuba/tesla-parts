@@ -49,7 +49,7 @@ export const Dashboard: React.FC = () => {
           ApiService.getProducts()
         ]);
 
-        const totalRevenue = ordersData.reduce((acc, order) => acc + order.totalUAH, 0);
+        const totalRevenue = ordersData.reduce((acc, order) => acc + (order.totalUAH ?? 0), 0);
         const pending = ordersData.filter(o => o.status === 'new').length;
         // Mock stock logic since backend doesn't track quantity yet, assume inStock=true is > 0
         const lowStock = productsData.filter(p => !p.inStock).length;
@@ -209,7 +209,7 @@ export const Dashboard: React.FC = () => {
                       {order.status === 'new' ? 'Нове' : order.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4">{order.totalUAH} ₴</td>
+                  <td className="px-6 py-4">{(order.totalUAH ?? 0).toFixed(2)} ₴</td>
                 </tr>
               ))}
             </tbody>

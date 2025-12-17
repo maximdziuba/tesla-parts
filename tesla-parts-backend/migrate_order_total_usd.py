@@ -20,25 +20,49 @@ def migrate_order_total_usd(engine: Engine):
             # 1. Add totalUSD column if it doesn't exist
             if 'totalUSD' not in column_names:
                 print("Column 'totalUSD' not found. Adding it to the 'order' table.")
-                # FIX: Added quotes around "totalUSD" to preserve case sensitivity
                 connection.execute(text('ALTER TABLE "order" ADD COLUMN "totalUSD" REAL'))
                 print("Column 'totalUSD' added successfully.")
+                column_names.add('totalUSD')
             else:
                 print("Column 'totalUSD' already exists.")
 
+            # Fetch current exchange rate from settings (fallback to 40)
+            exchange_rate = 40.0
+            try:
+                result = connection.execute(text("SELECT value FROM settings WHERE key = 'exchange_rate'")).fetchone()
+                if result and result[0]:
+                    exchange_rate = float(result[0])
+                    if exchange_rate <= 0:
+                        exchange_rate = 40.0
+            except Exception as rate_error:
+                print(f"Warning: could not fetch exchange rate, using default 40.0. Details: {rate_error}")
+
             # 2. Remove totalUAH column if it exists
             if 'totalUAH' in column_names:
-                print("Column 'totalUAH' found. Removing it from the 'order' table.")
-                
+                print("Column 'totalUAH' found. Migrating values to 'totalUSD'.")
+                if 'totalUSD' in column_names:
+                    connection.execute(
+                        text(
+                            'UPDATE "order" SET "totalUSD" = COALESCE("totalUSD", 0) '
+                            'WHERE "totalUSD" IS NOT NULL'
+                        )
+                    )
+                    connection.execute(
+                        text(
+                            'UPDATE "order" '
+                            'SET "totalUSD" = CASE '
+                            'WHEN "totalUSD" IS NULL OR "totalUSD" = 0 THEN '
+                            'COALESCE("totalUAH", 0) / :rate '
+                            'ELSE "totalUSD" END '
+                            'WHERE "totalUAH" IS NOT NULL'
+                        ),
+                        {"rate": exchange_rate if exchange_rate else 40.0},
+                    )
+
                 if engine.dialect.name == 'postgresql':
-                    # FIX: Added quotes around "totalUAH" to preserve case sensitivity
                     connection.execute(text('ALTER TABLE "order" DROP COLUMN "totalUAH"'))
-                    print("Column 'totalUAH' removed successfully.")
+                    print('Column "totalUAH" removed successfully.')
                 else:
-                    # FIX: Corrected comment syntax (removed //)
-                    # Note: Dropping columns in SQLite requires a more complex procedure
-                    # involving recreating the table. This script will only work for
-                    # PostgreSQL or other backends that support DROP COLUMN directly.
                     print("WARNING: SQLite does not support DROP COLUMN easily. "
                           "The 'totalUAH' column was not removed. "
                           "Please manually recreate the table if you want to remove it.")

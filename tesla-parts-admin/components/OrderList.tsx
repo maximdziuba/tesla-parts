@@ -88,7 +88,8 @@ export const OrderList: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 font-bold">
-                    $ {order.totalUSD}
+                    <div>${(order.totalUSD ?? 0).toFixed(2)}</div>
+                    <div className="text-xs text-gray-500">{(order.totalUAH ?? 0).toFixed(2)} ₴</div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-xs bg-gray-100 px-2 py-1 rounded w-fit">

@@ -23,6 +23,13 @@ def send_telegram_notification(order: Order):
         if created:
             message += f"<b>Створено</b>: {created}\n"
         total_usd = order.totalUSD or 0
+        legacy_mode = total_usd <= 0
+        if legacy_mode:
+            legacy_total = 0.0
+            for item in order.items:
+                price = item.price_at_purchase or 0
+                legacy_total += (price / rate if rate else price) * item.quantity
+            total_usd = round(legacy_total, 2)
         total_uah = round(total_usd * rate, 2)
         message += f"<b>Покупець</b>: {order.customer_first_name} {order.customer_last_name}\n"
         message += f"<b>Телефон</b>: {order.customer_phone}\n"
@@ -34,6 +41,8 @@ def send_telegram_notification(order: Order):
         for item in order.items:
             product = session.get(Product, item.product_id)
             usd_price = item.price_at_purchase or 0
+            if legacy_mode:
+                usd_price = usd_price / rate if rate else usd_price
             uah_price = round(usd_price * rate, 2)
             if product:
                 detail_number = product.detail_number or "N/A"
