@@ -8,11 +8,12 @@ import Checkout from './components/Checkout';
 import SubcategoryCard from './components/SubcategoryCard';
 import ProductPage from './components/ProductPage';
 import StaticPage from './components/StaticPage';
-import { Product, Currency, CartItem, Category, Subcategory } from './types';
+import { Product, Currency, CartItem, Category, Subcategory, StaticSeoRecord } from './types';
 import { api } from './services/api';
 import { CheckCircle } from 'lucide-react';
 import TeslaPartsCenterLogo from './components/ShopLogo';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from './constants';
+import SeoHead from './components/SeoHead';
 
 const CART_STORAGE_KEY = 'tesla-parts-cart';
 
@@ -115,6 +116,7 @@ const App: React.FC = () => {
     footerDescription: '',
     footerText: '',
   });
+  const [staticSeo, setStaticSeo] = useState<Record<string, StaticSeoRecord>>({});
 
   useEffect(() => {
     try {
@@ -183,6 +185,22 @@ const App: React.FC = () => {
       });
     };
     loadContactInfo();
+  }, []);
+
+  useEffect(() => {
+    const loadStaticSeo = async () => {
+      try {
+        const records = await api.getStaticSeo();
+        const map: Record<string, StaticSeoRecord> = {};
+        records.forEach(record => {
+          map[record.slug] = record;
+        });
+        setStaticSeo(map);
+      } catch (e) {
+        console.error("Failed to load SEO metadata", e);
+      }
+    };
+    loadStaticSeo();
   }, []);
 
   // Cart Logic
@@ -391,20 +409,21 @@ const App: React.FC = () => {
       <main className="flex-grow container mx-auto px-4 py-8">
         <Routes>
           <Route
-            path="/"
-            element={
-              <HomeView
-                loading={loading}
-                products={products}
-                currency={currency}
-                uahPerUsd={uahPerUsd}
-                addToCart={addToCart}
-                handleProductClick={handleProductClick}
-                showHero={!searchQuery}
-                onSelectCategory={handleNavigate}
-              />
-            }
-          />
+          path="/"
+          element={
+            <HomeView
+              loading={loading}
+              products={products}
+              currency={currency}
+              uahPerUsd={uahPerUsd}
+              addToCart={addToCart}
+              handleProductClick={handleProductClick}
+              showHero={!searchQuery}
+              onSelectCategory={handleNavigate}
+              seoRecord={staticSeo['home']}
+            />
+          }
+        />
           <Route
             path="/search"
             element={
@@ -412,13 +431,14 @@ const App: React.FC = () => {
                 loading={loading}
                 products={searchResults}
                 currency={currency}
-                uahPerUsd={uahPerUsd}
-                addToCart={addToCart}
-                handleProductClick={handleProductClick}
-                searchQuery={searchQuery}
-              />
-            }
-          />
+              uahPerUsd={uahPerUsd}
+              addToCart={addToCart}
+              handleProductClick={handleProductClick}
+              searchQuery={searchQuery}
+              seoRecord={staticSeo['search']}
+            />
+          }
+        />
           <Route path="/category/:slug" element={categoryRouteElement} />
           <Route path="/category/:slug/sub/:subId" element={categoryRouteElement} />
           <Route
@@ -456,7 +476,7 @@ const App: React.FC = () => {
           />
           <Route
             path="/info/:slug"
-            element={<StaticPageRoute onNavigateHome={() => handleNavigate('home')} />}
+            element={<StaticPageRoute onNavigateHome={() => handleNavigate('home')} seoRecords={staticSeo} />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -565,6 +585,7 @@ interface HomeViewProps {
   handleProductClick: (product: Product) => void;
   showHero: boolean;
   onSelectCategory: (category: string) => void;
+  seoRecord?: StaticSeoRecord;
 }
 
 const HomeView: React.FC<HomeViewProps> = ({
@@ -576,25 +597,36 @@ const HomeView: React.FC<HomeViewProps> = ({
   handleProductClick,
   showHero,
   onSelectCategory,
-}) => (
-  <>
-    {showHero && <Hero onSelectCategory={onSelectCategory} />}
-    <div className="mt-8">
-      {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <ProductList
-          title="Популярні товари"
-          products={products}
-          currency={currency}
-          uahPerUsd={uahPerUsd}
-          onAddToCart={addToCart}
-          onProductClick={handleProductClick}
-        />
-      )}
-    </div>
-  </>
-);
+  seoRecord,
+}) => {
+  const fallbackTitle = 'Tesla Parts Center | Магазин запчастин для Tesla';
+  const fallbackDescription = 'Популярні запчастини Tesla з гарантією якості та швидкою доставкою по Україні.';
+  return (
+    <>
+      <SeoHead
+        title={seoRecord?.meta_title}
+        description={seoRecord?.meta_description}
+        fallbackTitle={fallbackTitle}
+        fallbackDescription={fallbackDescription}
+      />
+      {showHero && <Hero onSelectCategory={onSelectCategory} />}
+      <div className="mt-8">
+        {loading ? (
+          <LoadingSpinner />
+        ) : (
+          <ProductList
+            title="Популярні товари"
+            products={products}
+            currency={currency}
+            uahPerUsd={uahPerUsd}
+            onAddToCart={addToCart}
+            onProductClick={handleProductClick}
+          />
+        )}
+      </div>
+    </>
+  );
+};
 
 interface SearchViewProps {
   loading: boolean;
@@ -604,6 +636,7 @@ interface SearchViewProps {
   addToCart: (product: Product) => void;
   handleProductClick: (product: Product) => void;
   searchQuery: string;
+  seoRecord?: StaticSeoRecord;
 }
 
 const SearchView: React.FC<SearchViewProps> = ({
@@ -614,24 +647,36 @@ const SearchView: React.FC<SearchViewProps> = ({
   addToCart,
   handleProductClick,
   searchQuery,
-}) => (
-  <div className="mt-8">
-    <div className="mb-6">
-      <h1 className="text-2xl font-bold">Результати пошуку: "{searchQuery}"</h1>
-    </div>
-    {loading ? (
-      <LoadingSpinner />
-    ) : (
-      <ProductList
-        products={products}
-        currency={currency}
-        uahPerUsd={uahPerUsd}
-        onAddToCart={addToCart}
-        onProductClick={handleProductClick}
+  seoRecord,
+}) => {
+  const normalizedQuery = searchQuery || 'запчастини';
+  const fallbackTitle = `Пошук: ${normalizedQuery} | Tesla Parts Center`;
+  const fallbackDescription = `Результати пошуку "${normalizedQuery}" у Tesla Parts Center. Знайдіть сумісні запчастини для свого авто.`;
+  return (
+    <div className="mt-8">
+      <SeoHead
+        title={seoRecord?.meta_title}
+        description={seoRecord?.meta_description}
+        fallbackTitle={fallbackTitle}
+        fallbackDescription={fallbackDescription}
       />
-    )}
-  </div>
-);
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Результати пошуку: "{searchQuery}"</h1>
+      </div>
+      {loading ? (
+        <LoadingSpinner />
+      ) : (
+        <ProductList
+          products={products}
+          currency={currency}
+          uahPerUsd={uahPerUsd}
+          onAddToCart={addToCart}
+          onProductClick={handleProductClick}
+        />
+      )}
+    </div>
+  );
+};
 
 interface CategoryViewProps {
   category: Category;
@@ -725,8 +770,20 @@ const CategoryView: React.FC<CategoryViewProps> = ({
   const showProducts =
     !!selectedSubcategory && (!currentSubcategory?.subcategories || currentSubcategory.subcategories.length === 0);
 
+  const pageHeading = getSelectedSubcategoryName();
+  const fallbackTitle = `${pageHeading} | Tesla Parts Center`;
+  const fallbackDescription = selectedSubcategory
+    ? `Запчастини підкатегорії ${pageHeading} в категорії ${category.name}.`
+    : `Категорія ${category.name}: підберіть запчастини для вашої Tesla.`;
+
   return (
     <div className="mt-8">
+      <SeoHead
+        title={category.meta_title}
+        description={category.meta_description}
+        fallbackTitle={fallbackTitle}
+        fallbackDescription={fallbackDescription}
+      />
       <div className="flex items-center gap-4 mb-6 flex-wrap">
         <button onClick={() => navigate('/')} className="text-gray-500 hover:text-tesla-red transition">
           ← Назад до головної
@@ -824,14 +881,15 @@ const ProductDetailRoute: React.FC<ProductDetailRouteProps> = ({
 
 interface StaticPageRouteProps {
   onNavigateHome: () => void;
+  seoRecords: Record<string, StaticSeoRecord>;
 }
 
-const StaticPageRoute: React.FC<StaticPageRouteProps> = ({ onNavigateHome }) => {
+const StaticPageRoute: React.FC<StaticPageRouteProps> = ({ onNavigateHome, seoRecords }) => {
   const { slug } = useParams();
   if (!slug) {
     return <Navigate to="/" replace />;
   }
-  return <StaticPage slug={slug} onBack={onNavigateHome} />;
+  return <StaticPage slug={slug} onBack={onNavigateHome} seo={seoRecords[slug]} />;
 };
 
 export default App;

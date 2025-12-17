@@ -324,7 +324,7 @@ export const ApiService = {
     return res.json();
   },
 
-  createCategory: async (name: string, file?: File, sort_order?: number): Promise<Category> => {
+  createCategory: async (name: string, file?: File, sort_order?: number, meta_title?: string, meta_description?: string): Promise<Category> => {
     const formData = new FormData();
     formData.append('name', name);
     
@@ -335,6 +335,8 @@ export const ApiService = {
     if (sort_order !== undefined && sort_order !== null) {
       formData.append('sort_order', sort_order.toString());
     }
+    formData.append('meta_title', meta_title ?? '');
+    formData.append('meta_description', meta_description ?? '');
 
     const res = await _authenticatedFetch(`${API_URL}/categories/`, {
       method: 'POST',
@@ -345,7 +347,7 @@ export const ApiService = {
     return res.json();
   },
 
-  updateCategory: async (id: number, name: string, file?: File, sort_order?: number): Promise<Category> => {
+  updateCategory: async (id: number, name: string, file?: File, sort_order?: number, meta_title?: string, meta_description?: string): Promise<Category> => {
     const formData = new FormData();
     formData.append('name', name);
     
@@ -356,6 +358,8 @@ export const ApiService = {
     if (sort_order !== undefined && sort_order !== null) {
       formData.append('sort_order', sort_order.toString());
     }
+    formData.append('meta_title', meta_title ?? '');
+    formData.append('meta_description', meta_description ?? '');
 
     const res = await _authenticatedFetch(`${API_URL}/categories/${id}`, {
       method: 'PUT',
@@ -527,6 +531,22 @@ export const ApiService = {
       body: JSON.stringify(links),
     });
     if (!res.ok) throw new Error('Failed to update social links');
+    return res.json();
+  },
+
+  getStaticSeo: async (): Promise<Array<{ id: number; slug: string; meta_title: string; meta_description: string }>> => {
+    const res = await _authenticatedFetch(`${API_URL}/seo/static`, { headers: getHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch SEO records');
+    return res.json();
+  },
+
+  updateStaticSeo: async (slug: string, payload: { meta_title?: string; meta_description?: string }): Promise<{ id: number; slug: string; meta_title: string; meta_description: string }> => {
+    const res = await _authenticatedFetch(`${API_URL}/seo/static/${slug}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to update SEO record');
     return res.json();
   },
 };

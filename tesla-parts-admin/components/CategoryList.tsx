@@ -386,12 +386,16 @@ const CategoryList: React.FC = () => {
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryFile, setNewCategoryFile] = useState<File | null>(null);
     const [newCategorySortOrder, setNewCategorySortOrder] = useState('');
+    const [newCategoryMetaTitle, setNewCategoryMetaTitle] = useState('');
+    const [newCategoryMetaDescription, setNewCategoryMetaDescription] = useState('');
 
     // Edit Category State
     const [editingCategory, setEditingCategory] = useState<number | null>(null);
     const [editCategoryName, setEditCategoryName] = useState('');
     const [editCategoryFile, setEditCategoryFile] = useState<File | null>(null);
     const [editCategorySortOrder, setEditCategorySortOrder] = useState<number | ''>(0);
+    const [editCategoryMetaTitle, setEditCategoryMetaTitle] = useState('');
+    const [editCategoryMetaDescription, setEditCategoryMetaDescription] = useState('');
 
     // New Subcategory State (Top Level)
     const [newSubcategoryNames, setNewSubcategoryNames] = useState<{ [key: number]: string }>({});
@@ -425,10 +429,18 @@ const CategoryList: React.FC = () => {
 
         try {
             const sortValue = newCategorySortOrder !== '' ? Number(newCategorySortOrder) : undefined;
-            await ApiService.createCategory(newCategoryName, newCategoryFile || undefined, sortValue);
+            await ApiService.createCategory(
+                newCategoryName,
+                newCategoryFile || undefined,
+                sortValue,
+                newCategoryMetaTitle,
+                newCategoryMetaDescription
+            );
             setNewCategoryName('');
             setNewCategoryFile(null);
             setNewCategorySortOrder('');
+            setNewCategoryMetaTitle('');
+            setNewCategoryMetaDescription('');
             loadCategories();
         } catch (e) {
             alert("Failed to create category");
@@ -450,14 +462,24 @@ const CategoryList: React.FC = () => {
         setEditCategoryName(category.name);
         setEditCategoryFile(null);
         setEditCategorySortOrder(category.sort_order ?? 0);
+        setEditCategoryMetaTitle(category.meta_title || '');
+        setEditCategoryMetaDescription(category.meta_description || '');
     };
 
     const handleUpdateCategory = async () => {
         if (!editingCategory || !editCategoryName.trim()) return;
         try {
             const sortValue = editCategorySortOrder === '' ? undefined : Number(editCategorySortOrder);
-            await ApiService.updateCategory(editingCategory, editCategoryName, editCategoryFile || undefined, sortValue);
+            await ApiService.updateCategory(
+                editingCategory,
+                editCategoryName,
+                editCategoryFile || undefined,
+                sortValue,
+                editCategoryMetaTitle,
+                editCategoryMetaDescription
+            );
             setEditingCategory(null);
+            setEditCategoryFile(null);
             loadCategories();
         } catch (e) {
             alert("Failed to update category");
@@ -542,59 +564,83 @@ const CategoryList: React.FC = () => {
                     <FolderPlus size={20} className="text-tesla-red" />
                     Додати нову категорію
                 </h2>
-                <form onSubmit={handleCreateCategory} className="flex gap-4 items-end">
-                    <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Назва категорії</label>
-                        <input
-                            type="text"
-                            value={newCategoryName}
-                            onChange={e => setNewCategoryName(e.target.value)}
-                            className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
-                            placeholder="Наприклад: Model 3"
-                            required
-                        />
+                <form onSubmit={handleCreateCategory} className="space-y-4">
+                    <div className="flex flex-wrap gap-4 items-end">
+                        <div className="flex-1 min-w-[220px]">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Назва категорії</label>
+                            <input
+                                type="text"
+                                value={newCategoryName}
+                                onChange={e => setNewCategoryName(e.target.value)}
+                                className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
+                                placeholder="Наприклад: Model 3"
+                                required
+                            />
+                        </div>
+                        <div className="w-32">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Порядок</label>
+                            <input
+                                type="number"
+                                value={newCategorySortOrder}
+                                onChange={e => setNewCategorySortOrder(e.target.value)}
+                                className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
+                                placeholder="0"
+                            />
+                        </div>
+                        <div className="flex-1 min-w-[220px]">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Зображення (опціонально)</label>
+                            <div className="flex flex-col gap-2">
+                                <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md inline-flex items-center gap-2 border border-gray-300 w-full justify-center">
+                                    <ImageIcon size={20} />
+                                    <span>Завантажити файл</span>
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        onChange={e => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                setNewCategoryFile(e.target.files[0]);
+                                            } else {
+                                                setNewCategoryFile(null);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                                {newCategoryFile && (
+                                    <span className="text-xs text-gray-500 truncate">
+                                        Обрано: {newCategoryFile.name}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <button
+                            type="submit"
+                            className="bg-gray-100 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition text-sm font-medium"
+                        >
+                            Додати
+                        </button>
                     </div>
-                    <div className="w-32">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Порядок</label>
-                        <input
-                            type="number"
-                            value={newCategorySortOrder}
-                            onChange={e => setNewCategorySortOrder(e.target.value)}
-                            className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
-                            placeholder="0"
-                        />
-                    </div>
-                    <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Зображення (опціонально)</label>
-                        <div className="flex flex-col gap-2">
-                            <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md inline-flex items-center gap-2 border border-gray-300 w-full justify-center">
-                                <ImageIcon size={20} />
-                                <span>Завантажити файл</span>
-                                <input
-                                    type="file"
-                                    className="hidden"
-                                    onChange={e => {
-                                        if (e.target.files && e.target.files[0]) {
-                                            setNewCategoryFile(e.target.files[0]);
-                                        } else {
-                                            setNewCategoryFile(null);
-                                        }
-                                    }}
-                                />
-                            </label>
-                            {newCategoryFile && (
-                                <span className="text-xs text-gray-500 truncate">
-                                    Обрано: {newCategoryFile.name}
-                                </span>
-                            )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">SEO Title</label>
+                            <input
+                                type="text"
+                                value={newCategoryMetaTitle}
+                                onChange={e => setNewCategoryMetaTitle(e.target.value)}
+                                className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
+                                placeholder="Meta title для категорії"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">SEO Description</label>
+                            <textarea
+                                value={newCategoryMetaDescription}
+                                onChange={e => setNewCategoryMetaDescription(e.target.value)}
+                                className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
+                                rows={2}
+                                placeholder="Короткий опис для пошукових систем"
+                            />
                         </div>
                     </div>
-                    <button
-                        type="submit"
-                        className="bg-gray-100 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-200 transition text-sm font-medium"
-                    >
-                        Додати
-                    </button>
                 </form>
             </div>
 
@@ -604,12 +650,13 @@ const CategoryList: React.FC = () => {
                     <div key={category.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-100">
                             {editingCategory === category.id ? (
-                                    <div className="flex items-center gap-4 flex-1">
+                                <div className="flex flex-col gap-4 flex-1">
+                                    <div className="flex flex-wrap gap-4 items-end">
                                         <input
                                             type="text"
                                             value={editCategoryName}
                                             onChange={e => setEditCategoryName(e.target.value)}
-                                            className="border rounded px-2 py-1 text-lg font-semibold outline-none focus:border-tesla-red"
+                                            className="flex-1 min-w-[180px] border rounded px-2 py-1 text-lg font-semibold outline-none focus:border-tesla-red"
                                             autoFocus
                                         />
                                         <input
@@ -619,7 +666,7 @@ const CategoryList: React.FC = () => {
                                             className="w-24 border rounded px-2 py-1 text-sm outline-none focus:border-tesla-red"
                                             placeholder="Порядок"
                                         />
-                                        <div className="flex items-center gap-2 flex-1">
+                                        <div className="flex items-center gap-2 flex-1 min-w-[220px]">
                                             {category.image && (
                                                 <img
                                                     src={category.image}
@@ -648,12 +695,37 @@ const CategoryList: React.FC = () => {
                                                 </span>
                                             )}
                                         </div>
-                                    <button onClick={handleUpdateCategory} className="text-green-600 hover:bg-green-50 p-2 rounded">
-                                        <Check size={20} />
-                                    </button>
-                                    <button onClick={() => setEditingCategory(null)} className="text-gray-400 hover:bg-gray-100 p-2 rounded">
-                                        <X size={20} />
-                                    </button>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={handleUpdateCategory} className="text-green-600 hover:bg-green-50 p-2 rounded">
+                                                <Check size={20} />
+                                            </button>
+                                            <button onClick={() => setEditingCategory(null)} className="text-gray-400 hover:bg-gray-100 p-2 rounded">
+                                                <X size={20} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">SEO Title</label>
+                                            <input
+                                                type="text"
+                                                value={editCategoryMetaTitle}
+                                                onChange={e => setEditCategoryMetaTitle(e.target.value)}
+                                                className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
+                                                placeholder="Meta title для категорії"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">SEO Description</label>
+                                            <textarea
+                                                value={editCategoryMetaDescription}
+                                                onChange={e => setEditCategoryMetaDescription(e.target.value)}
+                                                className="w-full border rounded-md px-3 py-2 focus:ring-2 focus:ring-tesla-red outline-none"
+                                                rows={2}
+                                                placeholder="Короткий опис для пошукових систем"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => toggleExpand(category.id)}>

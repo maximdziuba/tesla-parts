@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import SeoHead from './SeoHead';
+import { StaticSeoRecord } from '../types';
 
 interface StaticPageProps {
     slug: string;
     onBack: () => void;
+    seo?: StaticSeoRecord | null;
 }
 
 // Map of slugs to Ukrainian titles for fallback
@@ -15,7 +18,7 @@ const PAGE_TITLES: { [key: string]: string } = {
     contacts: 'Контакти'
 };
 
-const StaticPage: React.FC<StaticPageProps> = ({ slug, onBack }) => {
+const StaticPage: React.FC<StaticPageProps> = ({ slug, onBack, seo }) => {
     const [page, setPage] = useState<{ title: string; content: string } | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -50,8 +53,24 @@ const StaticPage: React.FC<StaticPageProps> = ({ slug, onBack }) => {
         );
     }
 
+    const fallbackTitle = `${page?.title || PAGE_TITLES[slug] || 'Tesla Parts Center'} | Tesla Parts Center`;
+    const rawContent = page?.content ? page.content.replace(/<[^>]+>/g, ' ') : '';
+    const trimmedContent = rawContent.trim();
+    const fallbackDescription =
+        trimmedContent.length === 0
+            ? 'Tesla Parts Center — інтернет-магазин запчастин для Tesla.'
+            : trimmedContent.length > 160
+                ? `${trimmedContent.slice(0, 157).trimEnd()}...`
+                : trimmedContent;
+
     return (
         <div className="py-12 max-w-2xl mx-auto">
+            <SeoHead
+                title={seo?.meta_title}
+                description={seo?.meta_description}
+                fallbackTitle={fallbackTitle}
+                fallbackDescription={fallbackDescription}
+            />
             <h1 className="text-3xl font-bold mb-6">
                 {page?.title || PAGE_TITLES[slug] || slug}
             </h1>

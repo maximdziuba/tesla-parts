@@ -2,14 +2,19 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
 interface SeoHeadProps {
-  title: string;
-  description: string;
+  title?: string | null;
+  description?: string | null;
   image?: string;
+  fallbackTitle?: string;
+  fallbackDescription?: string;
 }
 
-const SeoHead: React.FC<SeoHeadProps> = ({ title, description, image }) => {
-  const safeTitle = title?.trim() || 'Tesla Parts Center';
-  const safeDescription = description?.trim() || 'Tesla Parts Center';
+const DEFAULT_TITLE = 'Tesla Parts Center';
+const DEFAULT_DESCRIPTION = 'Tesla Parts Center пропонує запчастини та аксесуари для вашого електромобіля.';
+
+const SeoHead: React.FC<SeoHeadProps> = ({ title, description, image, fallbackTitle, fallbackDescription }) => {
+  const safeTitle = title?.trim() || fallbackTitle?.trim() || DEFAULT_TITLE;
+  const safeDescription = description?.trim() || fallbackDescription?.trim() || DEFAULT_DESCRIPTION;
 
   return (
     <Helmet>

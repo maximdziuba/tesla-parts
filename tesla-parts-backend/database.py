@@ -25,6 +25,7 @@ def create_db_and_tables():
     if is_sqlite():
         _ensure_category_sort_order_column()
         _ensure_product_cross_number_column()
+        _ensure_category_seo_columns()
     
     with Session(engine) as session:
         # Check if admin user exists, if not, create it
@@ -54,3 +55,13 @@ def _ensure_product_cross_number_column():
         if "cross_number" not in columns:
             conn.execute(text("ALTER TABLE product ADD COLUMN cross_number VARCHAR")) # Changed from VARCHAR DEFAULT ''
             conn.commit()
+
+def _ensure_category_seo_columns():
+    with engine.connect() as conn:
+        result = conn.execute(text("PRAGMA table_info('category')")).fetchall()
+        columns = {row[1] for row in result}
+        if "meta_title" not in columns:
+            conn.execute(text("ALTER TABLE category ADD COLUMN meta_title VARCHAR"))
+        if "meta_description" not in columns:
+            conn.execute(text("ALTER TABLE category ADD COLUMN meta_description VARCHAR"))
+        conn.commit()

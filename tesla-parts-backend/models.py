@@ -7,6 +7,8 @@ class Category(SQLModel, table=True):
     name: str
     image: Optional[str] = None
     sort_order: int = Field(default=0, index=True)
+    meta_title: Optional[str] = None
+    meta_description: Optional[str] = None
     
     subcategories: List["Subcategory"] = Relationship(back_populates="category")
 
@@ -103,3 +105,9 @@ class User(SQLModel, table=True):
     username: str = Field(unique=True, index=True)
     hashed_password: str
     refresh_token: Optional[str] = None # New field for refresh token
+
+class StaticPageSEO(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    slug: str = Field(unique=True, index=True)
+    meta_title: Optional[str] = None
+    meta_description: Optional[str] = None

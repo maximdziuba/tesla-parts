@@ -350,6 +350,8 @@ async def create_category(
     image: str = Form(None),
     file: UploadFile = File(None),
     sort_order: Optional[int] = Form(None),
+    meta_title: Optional[str] = Form(None),
+    meta_description: Optional[str] = Form(None),
     session: Session = Depends(get_session)
 ):
     # Handle file upload
@@ -359,7 +361,13 @@ async def create_category(
 
     order_value = sort_order if sort_order is not None else _get_next_category_sort_order(session)
 
-    db_category = Category(name=name, image=image_url, sort_order=order_value)
+    db_category = Category(
+        name=name,
+        image=image_url,
+        sort_order=order_value,
+        meta_title=meta_title or None,
+        meta_description=meta_description or None,
+    )
     session.add(db_category)
     session.commit()
     session.refresh(db_category)
@@ -399,6 +407,8 @@ async def update_category(
     image: str = Form(None),
     file: UploadFile = File(None),
     sort_order: Optional[int] = Form(None),
+    meta_title: Optional[str] = Form(None),
+    meta_description: Optional[str] = Form(None),
     session: Session = Depends(get_session)
 ):
     category = session.get(Category, category_id)
@@ -408,6 +418,10 @@ async def update_category(
     category.name = name
     if sort_order is not None:
         category.sort_order = sort_order
+    if meta_title is not None:
+        category.meta_title = meta_title or None
+    if meta_description is not None:
+        category.meta_description = meta_description or None
     
     # Handle file upload
     if file and file.filename:

@@ -16,6 +16,8 @@ export interface Category {
   name: string;
   image?: string;
   sort_order?: number;
+  meta_title?: string | null;
+  meta_description?: string | null;
   subcategories: Subcategory[];
 }
 
@@ -33,6 +35,13 @@ export interface Product {
   inStock: boolean;
   detail_number?: string;
   cross_number: string;
+  meta_title?: string | null;
+  meta_description?: string | null;
+}
+
+export interface StaticSeoRecord {
+  id: number;
+  slug: string;
   meta_title?: string | null;
   meta_description?: string | null;
 }

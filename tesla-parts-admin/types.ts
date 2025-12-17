@@ -13,6 +13,8 @@ export interface Category {
   name: string;
   image?: string;
   sort_order?: number;
+  meta_title?: string | null;
+  meta_description?: string | null;
   subcategories: Subcategory[];
 }
 

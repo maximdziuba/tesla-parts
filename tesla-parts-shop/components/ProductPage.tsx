@@ -22,8 +22,8 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
     const [added, setAdded] = useState(false);
     const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
 
-    const seoTitle = product.meta_title?.trim() || product.name;
-    const seoDescription = useMemo(() => {
+    const fallbackTitle = `${product.name} | Tesla Parts Center`;
+    const fallbackDescription = useMemo(() => {
         const trimmed = product.meta_description?.trim();
         if (trimmed) return trimmed;
         const desc = product.description?.trim();
@@ -68,6 +68,13 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
 
     return (
         <div className="max-w-6xl mx-auto animate-fade-in">
+            <SeoHead
+                title={product.meta_title}
+                description={product.meta_description}
+                fallbackTitle={fallbackTitle}
+                fallbackDescription={fallbackDescription}
+                image={seoImage}
+            />
             <button
                 onClick={onBack}
                 className="flex items-center text-gray-600 hover:text-tesla-dark mb-6 transition-colors"

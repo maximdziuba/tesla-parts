@@ -53,12 +53,16 @@ class CategoryRead(BaseModel):
     name: str
     image: str | None = None
     sort_order: int
+    meta_title: str | None = None
+    meta_description: str | None = None
     subcategories: List[SubcategoryRead] = []
 
 class CategoryCreate(BaseModel):
     name: str
     image: str | None = None
     sort_order: int | None = None
+    meta_title: str | None = None
+    meta_description: str | None = None
 
 class SubcategoryCreate(BaseModel):
     name: str
@@ -107,3 +111,15 @@ class ProductBulkDeleteRequest(BaseModel):
 class SocialLinks(BaseModel):
     instagram: str | None = None
     telegram: str | None = None
+
+class StaticPageSEOBase(BaseModel):
+    slug: str
+    meta_title: str | None = None
+    meta_description: str | None = None
+
+class StaticPageSEORead(StaticPageSEOBase):
+    id: int
+
+class StaticPageSEOUpdate(BaseModel):
+    meta_title: str | None = None
+    meta_description: str | None = None

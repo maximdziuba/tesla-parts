@@ -1,4 +1,4 @@
-import { Product, OrderData, Category } from '../types';
+import { Product, OrderData, Category, StaticSeoRecord } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
@@ -89,6 +89,12 @@ export const api = {
     getSocialLinks: async (): Promise<{ instagram: string; telegram: string }> => {
         const res = await fetch(`${API_URL}/settings/social-links`);
         if (!res.ok) throw new Error('Failed to fetch social links');
+        return res.json();
+    },
+
+    getStaticSeo: async (): Promise<StaticSeoRecord[]> => {
+        const res = await fetch(`${API_URL}/seo/static`);
+        if (!res.ok) throw new Error('Failed to fetch static SEO data');
         return res.json();
     }
 };
