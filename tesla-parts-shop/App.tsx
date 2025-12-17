@@ -226,10 +226,14 @@ const App: React.FC = () => {
   const lastPathRef = React.useRef(location.pathname + location.search);
 
   useEffect(() => {
-    if (location.pathname !== '/search') {
+    const params = new URLSearchParams(location.search);
+    const queryFromUrl = params.get('q') || '';
+    if (location.pathname === '/search') {
+      setSearchQuery(queryFromUrl);
+    } else {
       setSearchQuery('');
     }
-  }, [location.pathname]);
+  }, [location]);
 
   useEffect(() => {
     const current = location.pathname + location.search;
@@ -299,9 +303,8 @@ const App: React.FC = () => {
   };
 
   const handleSearch = (query: string) => {
-    setSearchQuery(query);
     window.scrollTo(0, 0);
-    navigate('/search');
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   const sortedCategories = useMemo(
@@ -381,6 +384,8 @@ const App: React.FC = () => {
         onSearch={handleSearch}
         socialLinks={socialLinks}
         phoneNumber={contactInfo.phone}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
       />
 
       <main className="flex-grow container mx-auto px-4 py-8">

@@ -17,6 +17,8 @@ interface HeaderProps {
     telegram: string;
   };
   phoneNumber: string;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -31,9 +33,11 @@ const Header: React.FC<HeaderProps> = ({
   onSearch,
   socialLinks,
   phoneNumber,
+  searchQuery,
+  onSearchQueryChange,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State for dropdown visibility
   const dropdownRef = useRef<HTMLDivElement>(null); // Ref for dropdown container
   
@@ -157,15 +161,23 @@ const Header: React.FC<HeaderProps> = ({
           {/* Cart & Checkout */}
           <div className="flex items-center gap-4">
             {/* Desktop Search Bar aligned near cart */}
-            <form onSubmit={handleSearchSubmit} className="hidden md:block relative w-64">
-              <input
-                type="text"
-                placeholder="Пошук запчастин..."
-                className="w-full bg-gray-100 border-none rounded-full py-2 px-4 pl-10 focus:ring-2 focus:ring-tesla-red focus:bg-white transition outline-none"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+            <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center gap-2">
+              <div className="relative flex-grow">
+                <input
+                  type="text"
+                  placeholder="Пошук запчастин..."
+                  className="w-full bg-gray-100 border-none rounded-full py-2 px-4 pl-10 focus:ring-2 focus:ring-tesla-red focus:bg-white transition outline-none"
+                  value={searchQuery}
+                  onChange={(e) => onSearchQueryChange(e.target.value)}
+                />
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+              </div>
+              <button
+                type="submit"
+                className="bg-tesla-red hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition text-sm shadow-sm"
+              >
+                Шукати
+              </button>
             </form>
 
             <div 
@@ -193,6 +205,14 @@ const Header: React.FC<HeaderProps> = ({
               Оформити
             </button>
 
+            {/* Mobile Search Toggle */}
+            <button
+              className="md:hidden text-tesla-dark"
+              onClick={() => setIsMobileSearchOpen(true)}
+            >
+              <Search size={24} />
+            </button>
+
             {/* Mobile Menu Toggle */}
             <button 
               className="md:hidden text-tesla-dark"
@@ -206,16 +226,6 @@ const Header: React.FC<HeaderProps> = ({
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden mt-4 pt-4 border-t border-gray-100 space-y-4 pb-4">
-             <form onSubmit={(e) => { handleSearchSubmit(e); setIsMenuOpen(false); }} className="relative">
-              <input
-                type="text"
-                placeholder="Пошук..."
-                className="w-full bg-gray-100 rounded-lg py-3 px-4 pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
-            </form>
             <div className="flex flex-col gap-2 font-medium text-lg">
               {sortedCategories.map(cat => (
                 <button
@@ -228,6 +238,38 @@ const Header: React.FC<HeaderProps> = ({
               ))}
 
             </div>
+          </div>
+        )}
+
+        {/* Mobile Search Overlay */}
+        {isMobileSearchOpen && (
+          <div className="md:hidden absolute top-0 left-0 w-full h-full bg-white z-20 flex items-center px-4">
+            <form onSubmit={(e) => { handleSearchSubmit(e); setIsMobileSearchOpen(false); }} className="flex items-center gap-2 w-full">
+              <div className="relative flex-grow">
+                <input
+                  type="text"
+                  placeholder="Пошук..."
+                  className="w-full bg-gray-100 rounded-lg py-3 px-4 pl-10"
+                  value={searchQuery}
+                  onChange={(e) => onSearchQueryChange(e.target.value)}
+                  autoFocus
+                />
+                <Search className="absolute left-3 top-3.5 text-gray-400" size={18} />
+              </div>
+              <button
+                type="submit"
+                className="bg-tesla-red hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium transition text-sm shadow-sm"
+              >
+                Шукати
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMobileSearchOpen(false)}
+                className="text-tesla-dark"
+              >
+                <X size={24} />
+              </button>
+            </form>
           </div>
         )}
       </div>
