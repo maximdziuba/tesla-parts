@@ -9,6 +9,7 @@ def migrate_order_total_usd(engine: Engine):
     """
     Adds the 'totalUSD' column and removes the 'totalUAH' column from the 'order' table.
     """
+    # Create an inspector to check existing columns
     inspector = inspect(engine)
     columns = inspector.get_columns('order')
     column_names = {col['name'] for col in columns}
@@ -16,27 +17,28 @@ def migrate_order_total_usd(engine: Engine):
     with engine.connect() as connection:
         transaction = connection.begin()
         try:
-            # Add totalUSD column if it doesn't exist
+            # 1. Add totalUSD column if it doesn't exist
             if 'totalUSD' not in column_names:
                 print("Column 'totalUSD' not found. Adding it to the 'order' table.")
-                # Use REAL for SQLite, which is compatible with float.
-                # For PostgreSQL, REAL is also a valid type (4-byte floating-point).
-                connection.execute(text('ALTER TABLE "order" ADD COLUMN totalUSD REAL'))
+                # FIX: Added quotes around "totalUSD" to preserve case sensitivity
+                connection.execute(text('ALTER TABLE "order" ADD COLUMN "totalUSD" REAL'))
                 print("Column 'totalUSD' added successfully.")
             else:
                 print("Column 'totalUSD' already exists.")
 
-            # Remove totalUAH column if it exists
+            # 2. Remove totalUAH column if it exists
             if 'totalUAH' in column_names:
                 print("Column 'totalUAH' found. Removing it from the 'order' table.")
-                # Note: Dropping columns in SQLite requires a more complex procedure
-                # involving recreating the table. This script will only work for
-                # PostgreSQL or other backends that support DROP COLUMN directly.
-                # For SQLite, the user might need to recreate the table manually.
+                
                 if engine.dialect.name == 'postgresql':
-                    connection.execute(text('ALTER TABLE "order" DROP COLUMN totalUAH'))
+                    # FIX: Added quotes around "totalUAH" to preserve case sensitivity
+                    connection.execute(text('ALTER TABLE "order" DROP COLUMN "totalUAH"'))
                     print("Column 'totalUAH' removed successfully.")
                 else:
+                    # FIX: Corrected comment syntax (removed //)
+                    # Note: Dropping columns in SQLite requires a more complex procedure
+                    # involving recreating the table. This script will only work for
+                    # PostgreSQL or other backends that support DROP COLUMN directly.
                     print("WARNING: SQLite does not support DROP COLUMN easily. "
                           "The 'totalUAH' column was not removed. "
                           "Please manually recreate the table if you want to remove it.")
