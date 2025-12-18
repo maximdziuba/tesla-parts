@@ -1,4 +1,4 @@
-import { Product, OrderData, Category, StaticSeoRecord } from '../types';
+import { Product, OrderData, Category, StaticSeoRecord, Page } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
@@ -73,6 +73,16 @@ export const api = {
         } catch {
             return null;
         }
+    },
+
+    getPagesBySlugs: async (slugs: string[]): Promise<Page[]> => {
+      const res = await fetch(`${API_URL}/pages/by-slugs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slugs }),
+      });
+      if (!res.ok) throw new Error('Failed to fetch pages');
+      return res.json();
     },
 
     getSetting: async (key: string): Promise<string | null> => {

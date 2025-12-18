@@ -1,6 +1,6 @@
 import React from 'react';
 import { CartItem, Currency } from '../types';
-import { X, Trash2, Plus, Minus } from 'lucide-react';
+import { X, ArrowLeft, Trash2, Plus, Minus } from 'lucide-react';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 
 interface CartDrawerProps {
@@ -35,9 +35,9 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
   };
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('uk-UA', { 
-      style: 'currency', 
-      currency: currency 
+    return new Intl.NumberFormat('uk-UA', {
+      style: 'currency',
+      currency: currency
     }).format(amount);
   };
 
@@ -55,16 +55,21 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
   return (
     <div className="fixed inset-0 z-[60] overflow-hidden">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
+
       <div className="absolute inset-y-0 right-0 max-w-md w-full flex">
         <div className="flex-1 flex flex-col bg-white shadow-xl animate-slide-in">
-          
+
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-6 border-b border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900">Кошик ({items.length})</h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
-              <X size={24} className="text-gray-500" />
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
+            <div className="flex items-center justify-between">
+              <ArrowLeft size={24} className="text-gray-500"/>  Повернутись до покупок
+              </div>
             </button>
+            <h2 className="text-lg font-bold text-gray-900">Кошик ({items.length})</h2>
+            {/* <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
+              <X size={24} className="text-gray-500" />
+            </button> */}
           </div>
 
           {/* Items */}
@@ -72,12 +77,6 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
             {items.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <p>Ваш кошик порожній</p>
-                <button 
-                  onClick={onClose}
-                  className="mt-4 text-tesla-red font-medium hover:underline"
-                >
-                  Повернутись до покупок
-                </button>
               </div>
             ) : (
               items.map((item) => (
@@ -92,7 +91,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center border rounded-md">
-                        <button 
+                        <button
                           onClick={() => onUpdateQuantity(item.id, -1)}
                           className="p-1 hover:bg-gray-100 text-gray-600 disabled:opacity-50"
                           disabled={item.quantity <= 1}
@@ -100,7 +99,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                           <Minus size={14} />
                         </button>
                         <span className="px-2 text-sm font-medium w-8 text-center">{item.quantity}</span>
-                        <button 
+                        <button
                           onClick={() => onUpdateQuantity(item.id, 1)}
                           className="p-1 hover:bg-gray-100 text-gray-600"
                         >
@@ -110,7 +109,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                       <div className="text-sm font-bold">{formatPrice(item, item.quantity)}</div>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => onRemoveItem(item.id)}
                     className="text-gray-400 hover:text-red-500 self-start p-1"
                   >
@@ -119,6 +118,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                 </div>
               ))
             )}
+
           </div>
 
           {/* Footer */}

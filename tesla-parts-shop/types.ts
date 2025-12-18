@@ -84,3 +84,12 @@ export interface OrderData {
   paymentMethod: PaymentMethod;
   createdAt: string;
 }
+
+export interface Page {
+  id: number;
+  slug: string;
+  title: string;
+  content: string;
+  is_published: boolean;
+  location: string;
+}

@@ -21,6 +21,18 @@ class PageUpdate(BaseModel):
     is_published: Optional[bool] = None
     location: Optional[str] = None
 
+class PagesRequest(BaseModel):
+    slugs: List[str]
+
+@router.post("/by-slugs", response_model=List[Page])
+def get_pages_by_slugs(req: PagesRequest, session: Session = Depends(get_session)):
+    if not req.slugs:
+        return []
+    pages = session.exec(select(Page).where(Page.slug.in_(req.slugs))).all()
+    slug_map = {page.slug: page for page in pages}
+    # Return pages in the order of requested slugs
+    return [slug_map[slug] for slug in req.slugs if slug in slug_map]
+
 @router.get("/", response_model=List[Page])
 def read_pages(
     offset: int = 0,

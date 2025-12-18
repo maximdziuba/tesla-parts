@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
-import { Plus, Pencil, Trash2, Check, X, FileText, Eye, EyeOff } from 'lucide-react';
+import { Pencil, Check, X, FileText } from 'lucide-react';
 
 interface Page {
     id: number;
@@ -16,13 +16,6 @@ export const PagesManager: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [editingPage, setEditingPage] = useState<Page | null>(null);
     const [isCreating, setIsCreating] = useState(false);
-    const [newPage, setNewPage] = useState<Partial<Page>>({
-        slug: '',
-        title: '',
-        content: '',
-        is_published: true,
-        location: 'footer'
-    });
 
     useEffect(() => {
         loadPages();
@@ -37,27 +30,6 @@ export const PagesManager: React.FC = () => {
             console.error('Failed to load pages', e);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleCreate = async () => {
-        if (!newPage.slug || !newPage.title || !newPage.content) {
-            alert('Заповніть всі обов\'язкові поля');
-            return;
-        }
-        try {
-            await ApiService.createPage({
-                slug: newPage.slug,
-                title: newPage.title,
-                content: newPage.content,
-                is_published: newPage.is_published,
-                location: newPage.location
-            });
-            setNewPage({ slug: '', title: '', content: '', is_published: true, location: 'footer' });
-            setIsCreating(false);
-            loadPages();
-        } catch (e) {
-            alert('Не вдалося створити сторінку');
         }
     };
 
@@ -78,25 +50,6 @@ export const PagesManager: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm('Ви впевнені, що хочете видалити цю сторінку?')) return;
-        try {
-            await ApiService.deletePage(id);
-            loadPages();
-        } catch (e) {
-            alert('Не вдалося видалити сторінку');
-        }
-    };
-
-    const togglePublished = async (page: Page) => {
-        try {
-            await ApiService.updatePage(page.id, { is_published: !page.is_published });
-            loadPages();
-        } catch (e) {
-            alert('Не вдалося змінити статус публікації');
-        }
-    };
-
     if (loading) {
         return <div className="text-center py-8">Завантаження...</div>;
     }
@@ -105,65 +58,7 @@ export const PagesManager: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Сторінки</h2>
-                <button
-                    onClick={() => setIsCreating(true)}
-                    className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
-                >
-                    <Plus size={20} />
-                    Нова сторінка
-                </button>
             </div>
-
-            {isCreating && (
-                <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <h3 className="font-semibold mb-4">Нова сторінка</h3>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Slug (URL)</label>
-                            <input
-                                type="text"
-                                value={newPage.slug}
-                                onChange={e => setNewPage({ ...newPage, slug: e.target.value })}
-                                className="w-full border rounded-md px-3 py-2"
-                                placeholder="about-us"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Заголовок</label>
-                            <input
-                                type="text"
-                                value={newPage.title}
-                                onChange={e => setNewPage({ ...newPage, title: e.target.value })}
-                                className="w-full border rounded-md px-3 py-2"
-                                placeholder="Про нас"
-                            />
-                        </div>
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Контент</label>
-                        <textarea
-                            value={newPage.content}
-                            onChange={e => setNewPage({ ...newPage, content: e.target.value })}
-                            className="w-full border rounded-md px-3 py-2 h-32"
-                            placeholder="Вміст сторінки..."
-                        />
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={handleCreate}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-                        >
-                            Створити
-                        </button>
-                        <button
-                            onClick={() => setIsCreating(false)}
-                            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
-                        >
-                            Скасувати
-                        </button>
-                    </div>
-                </div>
-            )}
 
             <div className="space-y-4">
                 {pages.map(page => (
@@ -171,15 +66,6 @@ export const PagesManager: React.FC = () => {
                         {editingPage?.id === page.id ? (
                             <div>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
-                                        <input
-                                            type="text"
-                                            value={editingPage.slug}
-                                            onChange={e => setEditingPage({ ...editingPage, slug: e.target.value })}
-                                            className="w-full border rounded-md px-3 py-2"
-                                        />
-                                    </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Заголовок</label>
                                         <input
@@ -240,25 +126,11 @@ export const PagesManager: React.FC = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
-                                        onClick={() => togglePublished(page)}
-                                        className={`p-2 rounded hover:bg-gray-100 ${page.is_published ? 'text-green-600' : 'text-gray-400'}`}
-                                        title={page.is_published ? 'Сховати' : 'Опублікувати'}
-                                    >
-                                        {page.is_published ? <Eye size={18} /> : <EyeOff size={18} />}
-                                    </button>
-                                    <button
                                         onClick={() => setEditingPage(page)}
                                         className="text-gray-400 hover:text-blue-500 p-2 rounded"
                                         title="Редагувати"
                                     >
                                         <Pencil size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(page.id)}
-                                        className="text-red-500 hover:bg-red-50 p-2 rounded"
-                                        title="Видалити"
-                                    >
-                                        <Trash2 size={18} />
                                     </button>
                                 </div>
                             </div>

@@ -60,7 +60,7 @@ export const Dashboard: React.FC = () => {
           pendingOrders: pending,
           lowStockItems: lowStock
         });
-        setOrders(ordersData);
+        setOrders(ordersData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
         setProducts(productsData);
       } catch (error) {
         console.error("Failed to load dashboard data");
@@ -180,40 +180,6 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Recent Orders Preview */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-gray-800">Останні Замовлення</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-gray-500 uppercase bg-gray-50">
-              <tr>
-                <th className="px-6 py-3">ID</th>
-                <th className="px-6 py-3">Клієнт</th>
-                <th className="px-6 py-3">Статус</th>
-                <th className="px-6 py-3">Сума</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.slice(0, 3).map((order) => (
-                <tr key={order.id} className="border-b hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-gray-900">{order.id}</td>
-                  <td className="px-6 py-4">{order.customer_first_name} {order.customer_last_name}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold
-                      ${order.status === 'new' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {order.status === 'new' ? 'Нове' : order.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">{(order.totalUAH ?? 0).toFixed(2)} ₴</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

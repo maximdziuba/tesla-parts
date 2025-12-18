@@ -8,7 +8,7 @@ import Checkout from './components/Checkout';
 import SubcategoryCard from './components/SubcategoryCard';
 import ProductPage from './components/ProductPage';
 import StaticPage from './components/StaticPage';
-import { Product, Currency, CartItem, Category, Subcategory, StaticSeoRecord } from './types';
+import { Product, Currency, CartItem, Category, Subcategory, StaticSeoRecord, Page } from './types';
 import { api } from './services/api';
 import { CheckCircle } from 'lucide-react';
 import TeslaPartsCenterLogo from './components/ShopLogo';
@@ -130,6 +130,7 @@ const App: React.FC = () => {
   // Data State
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [headerPages, setHeaderPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Cart & Settings
@@ -157,14 +158,17 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [productsData, categoriesData, socialLinksData] = await Promise.all([
+        const headerPageSlugs = ['about', 'delivery', 'returns', 'contacts', 'faq'];
+        const [productsData, categoriesData, socialLinksData, pagesData] = await Promise.all([
           api.getProducts(),
           api.getCategories(),
           api.getSocialLinks(),
+          api.getPagesBySlugs(headerPageSlugs),
         ]);
         setProducts(productsData);
         setCategories(sortCategoryTreeData(categoriesData));
         setSocialLinks(socialLinksData);
+        setHeaderPages(pagesData);
       } catch (e) {
         console.error("Failed to load data", e);
       } finally {
@@ -429,26 +433,27 @@ const App: React.FC = () => {
         phoneNumber={contactInfo.phone}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
+        headerPages={headerPages}
       />
 
       <main className="flex-grow container mx-auto px-4 py-8">
         <Routes>
           <Route
-          path="/"
-          element={
-            <HomeView
-              loading={loading}
-              products={products}
-              currency={currency}
-              uahPerUsd={uahPerUsd}
-              addToCart={addToCart}
-              handleProductClick={handleProductClick}
-              showHero={!searchQuery}
-              onSelectCategory={handleNavigate}
-              seoRecord={staticSeo['home']}
-            />
-          }
-        />
+            path="/"
+            element={
+              <HomeView
+                loading={loading}
+                products={products}
+                currency={currency}
+                uahPerUsd={uahPerUsd}
+                addToCart={addToCart}
+                handleProductClick={handleProductClick}
+                showHero={!searchQuery}
+                onSelectCategory={handleNavigate}
+                seoRecord={staticSeo['home']}
+              />
+            }
+          />
           <Route
             path="/search"
             element={
@@ -456,14 +461,14 @@ const App: React.FC = () => {
                 loading={loading}
                 products={searchResults}
                 currency={currency}
-              uahPerUsd={uahPerUsd}
-              addToCart={addToCart}
-              handleProductClick={handleProductClick}
-              searchQuery={searchQuery}
-              seoRecord={staticSeo['search']}
-            />
-          }
-        />
+                uahPerUsd={uahPerUsd}
+                addToCart={addToCart}
+                handleProductClick={handleProductClick}
+                searchQuery={searchQuery}
+                seoRecord={staticSeo['search']}
+              />
+            }
+          />
           <Route path="/category/:slug" element={categoryRouteElement} />
           <Route path="/category/:slug/sub/:subId" element={categoryRouteElement} />
           <Route
@@ -511,7 +516,7 @@ const App: React.FC = () => {
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="text-white text-xl font-bold mb-4 flex items-center gap-2">
-            <TeslaPartsCenterLogo onNavigate={handleNavigate} />
+              <TeslaPartsCenterLogo onNavigate={handleNavigate} />
             </div>
             <p className="text-sm">
               {contactInfo.footerDescription || 'Ваш надійний партнер у світі запчастин для електромобілів.'}
@@ -583,23 +588,29 @@ interface SuccessViewProps {
   onNavigateHome: () => void;
 }
 
-const SuccessView: React.FC<SuccessViewProps> = ({ onNavigateHome }) => (
-  <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6">
-      <CheckCircle size={40} />
+const SuccessView: React.FC<SuccessViewProps> = ({ onNavigateHome }) => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center pt-20 pb-8 animate-fade-in">
+      <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6">
+        <CheckCircle size={40} />
+      </div>
+      <h1 className="text-3xl font-bold mb-4">Замовлення успішно оформлено!</h1>
+      <p className="text-gray-600 mb-8 text-center max-w-md">
+        Дякуємо за покупку. Наш менеджер зв'яжеться з вами найближчим часом для підтвердження деталей.
+      </p>
+      <button
+        onClick={onNavigateHome}
+        className="bg-tesla-dark text-white px-8 py-3 rounded-md hover:bg-gray-800 transition"
+      >
+        На головну
+      </button>
     </div>
-    <h1 className="text-3xl font-bold mb-4">Замовлення успішно оформлено!</h1>
-    <p className="text-gray-600 mb-8 text-center max-w-md">
-      Дякуємо за покупку. Наш менеджер зв'яжеться з вами найближчим часом для підтвердження деталей.
-    </p>
-    <button
-      onClick={onNavigateHome}
-      className="bg-tesla-dark text-white px-8 py-3 rounded-md hover:bg-gray-800 transition"
-    >
-      На головну
-    </button>
-  </div>
-);
+  )
+};
 
 interface HomeViewProps {
   loading: boolean;

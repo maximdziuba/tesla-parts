@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PaymentMethod, CartItem, Currency, OrderData } from '../types';
 import { api } from '../services/api';
-import { Truck, CreditCard, Building, Wallet } from 'lucide-react';
+import { Truck, Building, Wallet } from 'lucide-react';
 import NovaPostWidget from '../components/NovaPostWidget'; // Ensure this path is correct
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 
@@ -31,6 +31,11 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
   } | null>(null);
 
   const [processing, setProcessing] = useState(false);
+
+  // Scrolls the view to the upper side of the screen
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // --- Handlers ---
 
@@ -308,3 +313,4 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
 };
 
 export default Checkout;
+

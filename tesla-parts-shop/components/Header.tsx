@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ShoppingCart, Search, Menu, X, Instagram, Send, ChevronDown } from 'lucide-react';
-import { Category, Currency } from '../types';
+import { Category, Currency, Page } from '../types';
 import TeslaPartsCenterLogo from './ShopLogo';
 interface HeaderProps {
   cartCount: number;
@@ -19,6 +19,7 @@ interface HeaderProps {
   phoneNumber: string;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
+  headerPages: Page[];
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -35,11 +36,14 @@ const Header: React.FC<HeaderProps> = ({
   phoneNumber,
   searchQuery,
   onSearchQueryChange,
+  headerPages,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State for dropdown visibility
+  const [isPagesDropdownOpen, setIsPagesDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null); // Ref for dropdown container
+  const pagesDropdownRef = useRef<HTMLDivElement>(null);
   
   // Close dropdown on outside click
   useEffect(() => {
@@ -47,12 +51,15 @@ const Header: React.FC<HeaderProps> = ({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
+      if (pagesDropdownRef.current && !pagesDropdownRef.current.contains(event.target as Node)) {
+        setIsPagesDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [dropdownRef]);
+  }, [dropdownRef, pagesDropdownRef]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,13 +89,31 @@ const Header: React.FC<HeaderProps> = ({
       {/* Top Row: Utilities & Info */}
       <div className="bg-tesla-dark text-gray-300 text-xs py-2 px-4 border-b border-gray-800">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
-          <nav className="flex flex-wrap gap-4 md:gap-6 justify-center md:justify-start">
-            <button onClick={() => onNavigate('about')} className="hover:text-white transition">Про магазин</button>
-            <button onClick={() => onNavigate('delivery')} className="hover:text-white transition">Доставка та оплата</button>
-            <button onClick={() => onNavigate('returns')} className="hover:text-white transition">Обмін та повернення</button>
-            <button onClick={() => onNavigate('faq')} className="hover:text-white transition">FAQ</button>
-            <button onClick={() => onNavigate('contacts')} className="hover:text-white transition">Контакти</button>
+          <nav className="hidden md:flex flex-wrap gap-4 md:gap-6 justify-center md:justify-start">
+            {headerPages.filter(page => page.is_published).map((page) => (
+              <button key={page.slug} onClick={() => onNavigate(page.slug)} className="hover:text-white transition">{page.title}</button>
+            ))}
           </nav>
+          
+          <div className="relative md:hidden" ref={pagesDropdownRef}>
+            <button onClick={() => setIsPagesDropdownOpen(!isPagesDropdownOpen)} className="flex items-center gap-1 hover:text-white transition">
+              Навігація
+              <ChevronDown size={16} />
+            </button>
+            {isPagesDropdownOpen && (
+              <div className="absolute left-0 top-full mt-2 w-48 bg-white shadow-lg rounded-md overflow-hidden z-20">
+                {headerPages.filter(page => page.is_published).map((page) => (
+                  <button
+                    key={page.slug}
+                    onClick={() => { onNavigate(page.slug); setIsPagesDropdownOpen(false); }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    {page.title}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           
           <div className="flex items-center gap-4">
             {phoneNumber && (
