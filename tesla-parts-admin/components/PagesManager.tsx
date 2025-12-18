@@ -118,7 +118,7 @@ export const PagesManager: React.FC = () => {
                                     <FileText className="text-gray-400" size={24} />
                                     <div>
                                         <h3 className="font-semibold text-gray-900">{page.title}</h3>
-                                        <p className="text-sm text-gray-500">/{page.slug} • {page.location}</p>
+                                        <p className="text-sm text-gray-500">/{page.slug}</p>
                                     </div>
                                     <span className={`text-xs px-2 py-1 rounded-full ${page.is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                                         {page.is_published ? 'Опубліковано' : 'Чернетка'}
