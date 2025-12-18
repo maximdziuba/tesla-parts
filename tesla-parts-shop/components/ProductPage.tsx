@@ -84,7 +84,7 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
 
                 // ВАЖЛИВО: Передаємо дані для Schema
                 type="product"
-                price={product.price}
+                price={product.priceUAH}
                 currency="UAH"
                 availability={product.quantity > 0} // true якщо товар є, false якщо немає
             />
