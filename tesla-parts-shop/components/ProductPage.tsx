@@ -68,12 +68,25 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
 
     return (
         <div className="max-w-6xl mx-auto animate-fade-in">
-            <SeoHead
+            {/* <SeoHead
                 title={product.meta_title}
                 description={product.meta_description}
                 fallbackTitle={fallbackTitle}
                 fallbackDescription={fallbackDescription}
-                image={seoImage}
+                image={seoImage}               
+            /> */}
+            <SeoHead
+                title={product.meta_title || product.name}
+                description={product.meta_description}
+                fallbackTitle={product.name} // Якщо немає meta_title, візьме назву
+                fallbackDescription={`Купити ${product.name} за ціною ${product.price} грн`}
+                image={product.image}
+
+                // ВАЖЛИВО: Передаємо дані для Schema
+                type="product"
+                price={product.price}
+                currency="UAH"
+                availability={product.quantity > 0} // true якщо товар є, false якщо немає
             />
             <button
                 onClick={onBack}
