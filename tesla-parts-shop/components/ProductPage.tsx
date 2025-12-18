@@ -86,7 +86,7 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
                 type="product"
                 price={product.priceUAH}
                 currency="UAH"
-                availability={product.quantity > 0} // true якщо товар є, false якщо немає
+                availability={product.inStock}
             />
             <button
                 onClick={onBack}
