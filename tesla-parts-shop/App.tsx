@@ -594,11 +594,11 @@ const SuccessView: React.FC<SuccessViewProps> = ({ onNavigateHome }) => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center pt-20 pb-8 animate-fade-in">
+    <div className="flex flex-col items-center justify-center pt-20 pb-8 min-h-[80vh] animate-fade-in">
       <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6">
         <CheckCircle size={40} />
       </div>
-      <h1 className="text-3xl font-bold mb-4">Замовлення успішно оформлено!</h1>
+      <h1 className="text-3xl font-bold text-center mb-4">Замовлення успішно оформлено!</h1>
       <p className="text-gray-600 mb-8 text-center max-w-md">
         Дякуємо за покупку. Наш менеджер зв'яжеться з вами найближчим часом для підтвердження деталей.
       </p>

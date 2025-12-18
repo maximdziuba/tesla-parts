@@ -68,13 +68,6 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
 
     return (
         <div className="max-w-6xl mx-auto animate-fade-in">
-            {/* <SeoHead
-                title={product.meta_title}
-                description={product.meta_description}
-                fallbackTitle={fallbackTitle}
-                fallbackDescription={fallbackDescription}
-                image={seoImage}               
-            /> */}
             <SeoHead
                 title={product.meta_title || product.name}
                 description={product.meta_description}
