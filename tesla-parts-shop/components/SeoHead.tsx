@@ -7,7 +7,7 @@ interface SeoHeadProps {
   image?: string;
   fallbackTitle?: string;
   fallbackDescription?: string;
-  
+
   // Нові пропси для Schema.org
   type?: 'website' | 'product'; // Тип сторінки
   price?: number;               // Ціна (для товарів)
@@ -18,11 +18,11 @@ interface SeoHeadProps {
 const DEFAULT_TITLE = 'Tesla Parts Center';
 const DEFAULT_DESCRIPTION = 'Tesla Parts Center пропонує запчастини та аксесуари для вашого електромобіля.';
 
-const SeoHead: React.FC<SeoHeadProps> = ({ 
-  title, 
-  description, 
-  image, 
-  fallbackTitle, 
+const SeoHead: React.FC<SeoHeadProps> = ({
+  title,
+  description,
+  image,
+  fallbackTitle,
   fallbackDescription,
   type = 'website', // За замовчуванням звичайна сторінка
   price,
@@ -30,8 +30,13 @@ const SeoHead: React.FC<SeoHeadProps> = ({
   availability = true
 }) => {
   const safeTitle = title?.trim() || fallbackTitle?.trim() || DEFAULT_TITLE;
-  const safeDescription = description?.trim() || fallbackDescription?.trim() || DEFAULT_DESCRIPTION;
+  let safeDescription = description?.trim() || fallbackDescription?.trim() || DEFAULT_DESCRIPTION;
+  safeDescription = safeDescription.replace('undefined', price.toString());
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+  const nextYear = new Date();
+  nextYear.setFullYear(nextYear.getFullYear() + 1);
+  const priceValidUntil = nextYear.toISOString().split('T')[0];
 
   // Логіка створення JSON-LD (Schema.org)
   let structuredData = null;
@@ -51,6 +56,8 @@ const SeoHead: React.FC<SeoHeadProps> = ({
         "@type": "Offer",
         "url": currentUrl,
         "priceCurrency": currency,
+        "priceValidUntil": priceValidUntil,
+
         "price": price, // Google вимагає цифру
         "availability": availability ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
         "itemCondition": "https://schema.org/UsedCondition" // Можна змінювати на NewCondition
