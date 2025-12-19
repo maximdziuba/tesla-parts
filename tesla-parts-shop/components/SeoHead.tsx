@@ -31,7 +31,6 @@ const SeoHead: React.FC<SeoHeadProps> = ({
 }) => {
   const safeTitle = title?.trim() || fallbackTitle?.trim() || DEFAULT_TITLE;
   let safeDescription = description?.trim() || fallbackDescription?.trim() || DEFAULT_DESCRIPTION;
-  safeDescription = safeDescription.replace('undefined', price.toString());
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   const nextYear = new Date();

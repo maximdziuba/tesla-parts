@@ -72,7 +72,7 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
                 title={product.meta_title || product.name}
                 description={product.meta_description}
                 fallbackTitle={product.name} // Якщо немає meta_title, візьме назву
-                fallbackDescription={`Купити ${product.name} за ціною ${product.price} грн`}
+                fallbackDescription={`Купити ${product.name} за ціною ${product.priceUAH} грн`}
                 image={product.image}
 
                 // ВАЖЛИВО: Передаємо дані для Schema
