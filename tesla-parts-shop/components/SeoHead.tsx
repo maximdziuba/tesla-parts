@@ -66,7 +66,7 @@ const SeoHead: React.FC<SeoHeadProps> = ({
     structuredData = {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "name": safeTitle, // Головна назва
+      "name": DEFAULT_TITLE, // Головна назва
       "alternateName": ["Tesla Parts Ukraine"], // Альтернативні назви (можна змінити)
       "url": currentUrl
     };
