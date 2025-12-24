@@ -62,6 +62,14 @@ const SeoHead: React.FC<SeoHeadProps> = ({
         "itemCondition": "https://schema.org/UsedCondition" // Можна змінювати на NewCondition
       }
     };
+  } else if (type === 'website') {
+    structuredData = {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": safeTitle, // Головна назва
+      "alternateName": ["Tesla Parts Ukraine"], // Альтернативні назви (можна змінити)
+      "url": currentUrl
+    };
   }
 
   return (
