@@ -27,9 +27,8 @@ const SubcategoryCard: React.FC<SubcategoryCardProps> = ({ subcategory, onClick 
                 )}
             </div>
 
-            {/* Додано min-w-0, щоб дозволити тексту стискатися/переноситися всередині flex-контейнера */}
-            <div className="flex-grow min-w-0">
-                <h3 className="font-bold text-2xl text-gray-900 group-hover:text-tesla-red transition-colors break-words pr-2">
+            <div className="flex-grow">
+                <h3 className="font-bold text-lg text-gray-900 group-hover:text-tesla-red transition-colors pr-2">
                     {subcategory.name}
                 </h3>
                 {subcategory.code && (
@@ -39,7 +38,6 @@ const SubcategoryCard: React.FC<SubcategoryCardProps> = ({ subcategory, onClick 
                 )}
             </div>
 
-            {/* Додано flex-shrink-0, щоб стрілка не здавлювалася */}
             <div className="text-gray-400 group-hover:text-tesla-red transition-colors flex-shrink-0 ml-2">
                 <ChevronRight size={24} />
             </div>
