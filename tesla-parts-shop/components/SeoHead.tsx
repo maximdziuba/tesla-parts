@@ -17,6 +17,7 @@ interface SeoHeadProps {
 
 const DEFAULT_TITLE = 'Tesla Parts Center';
 const DEFAULT_DESCRIPTION = 'Tesla Parts Center пропонує запчастини та аксесуари для вашого електромобіля.';
+const URL = 'https://teslapartscenter.com.ua';
 
 const SeoHead: React.FC<SeoHeadProps> = ({
   title,
@@ -68,7 +69,7 @@ const SeoHead: React.FC<SeoHeadProps> = ({
       "@type": "WebSite",
       "name": DEFAULT_TITLE, // Головна назва
       "alternateName": ["Tesla Parts Ukraine"], // Альтернативні назви (можна змінити)
-      "url": currentUrl
+      "url": URL
     };
   }
 
