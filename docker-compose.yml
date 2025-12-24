@@ -18,8 +18,12 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "443:443"  # <--- ДОДАНО: Відкриваємо порт для HTTPS
     volumes:
       - ./nginx-gateway/conf.d:/etc/nginx/conf.d:z
+      # --- ДОДАНО: Монтуємо сертифікати всередину контейнера ---
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - backend
       - shop
@@ -31,11 +35,11 @@ services:
       context: ./tesla-parts-backend
     restart: always
     volumes:
-      - ./tesla-parts-backend/static/images:/app/static/images:z # Added volume for image persistence
+      - ./tesla-parts-backend/static/images:/app/static/images:z
     environment:
       - DATABASE_URL=postgresql://tesla:teslapass@db:5432/tesladb
-      - FRONTEND_URL=http://teslapartscenter.com.ua,http://admin.teslapartscenter.com.ua
-      - BACKEND_URL=http://api.teslapartscenter.com.ua # Added backend URL for image links
+      - FRONTEND_URL=https://teslapartscenter.com.ua,https://admin.teslapartscenter.com.ua # Краще змінити на https
+      - BACKEND_URL=https://api.teslapartscenter.com.ua # Краще змінити на https
       - JWT_SECRET_KEY=super-secret-jwt-key
     depends_on:
       - db
@@ -45,8 +49,7 @@ services:
     build:
       context: ./tesla-parts-shop
       args:
-        # Вказуємо публічну адресу API
-        VITE_API_URL: http://api.teslapartscenter.com.ua
+        VITE_API_URL: https://api.teslapartscenter.com.ua # Змініть на HTTPS
     restart: always
 
   # --- Admin Frontend ---
@@ -54,8 +57,7 @@ services:
     build:
       context: ./tesla-parts-admin
       args:
-        # Вказуємо публічну адресу API
-        VITE_API_URL: http://api.teslapartscenter.com.ua
+        VITE_API_URL: https://api.teslapartscenter.com.ua # Змініть на HTTPS
     restart: always
 
 volumes:
