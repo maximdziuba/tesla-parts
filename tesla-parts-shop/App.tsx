@@ -17,6 +17,8 @@ import SeoHead from './components/SeoHead';
 
 const CART_STORAGE_KEY = 'tesla-parts-cart';
 
+// --- Helpers ---
+
 const parseProductCategories = (value?: string | null) => {
   if (!value) return [];
   return value.split(',').map(item => item.trim()).filter(Boolean);
@@ -119,6 +121,21 @@ const getProductUsdPrice = (product: Product, rate: number): number => {
   return 0;
 };
 
+// --- Image Preloader ---
+const preloadImages = async (imageUrls: (string | undefined)[]) => {
+  const promises = imageUrls.filter(Boolean).map((src) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = src!;
+      img.onload = resolve;
+      img.onerror = resolve; 
+    });
+  });
+  await Promise.all(promises);
+};
+
+// --- Main App Component ---
+
 const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -165,10 +182,18 @@ const App: React.FC = () => {
           api.getSocialLinks(),
           api.getPagesBySlugs(headerPageSlugs),
         ]);
+
         setProducts(productsData);
-        setCategories(sortCategoryTreeData(categoriesData));
+        const sortedCats = sortCategoryTreeData(categoriesData);
+        setCategories(sortedCats);
         setSocialLinks(socialLinksData);
         setHeaderPages(pagesData);
+
+        // Preload critical images
+        const heroImages = sortedCats.slice(0, 4).map(c => c.image);
+        const productImages = productsData.slice(0, 4).map(p => p.image);
+        await preloadImages([...heroImages, ...productImages]);
+
       } catch (e) {
         console.error("Failed to load data", e);
       } finally {
@@ -235,7 +260,6 @@ const App: React.FC = () => {
     loadStaticSeo();
   }, []);
 
-  // Cart Logic
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
@@ -578,6 +602,8 @@ const App: React.FC = () => {
   );
 };
 
+// --- Sub-components ---
+
 const LoadingSpinner = () => (
   <div className="flex justify-center py-20">
     <div className="w-8 h-8 border-4 border-tesla-red border-t-transparent rounded-full animate-spin"></div>
@@ -640,6 +666,11 @@ const HomeView: React.FC<HomeViewProps> = ({
 
   const popularProducts = useMemo(() => products.slice(0, 8), [products]);
 
+  // FIX: Весь контент чекає на завантаження, щоб уникнути миготіння
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   return (
     <>
       <SeoHead
@@ -650,18 +681,14 @@ const HomeView: React.FC<HomeViewProps> = ({
       />
       {showHero && <Hero onSelectCategory={onSelectCategory} />}
       <div className="mt-8">
-        {loading ? (
-          <LoadingSpinner />
-        ) : (
-          <ProductList
-            title="Популярні товари"
-            products={popularProducts}
-            currency={currency}
-            uahPerUsd={uahPerUsd}
-            onAddToCart={addToCart}
-            onProductClick={handleProductClick}
-          />
-        )}
+        <ProductList
+          title="Популярні товари"
+          products={popularProducts}
+          currency={currency}
+          uahPerUsd={uahPerUsd}
+          onAddToCart={addToCart}
+          onProductClick={handleProductClick}
+        />
       </div>
     </>
   );
@@ -839,6 +866,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
       </div>
 
       {subcategoriesToShow.length > 0 && (
+        // FIX: Адаптивна сітка (grid-cols-1 -> md:grid-cols-2 -> xl:grid-cols-3)
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
           {subcategoriesToShow.map(sub => (
             <SubcategoryCard
