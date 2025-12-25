@@ -666,7 +666,6 @@ const HomeView: React.FC<HomeViewProps> = ({
 
   const popularProducts = useMemo(() => products.slice(0, 8), [products]);
 
-  // FIX: Весь контент чекає на завантаження, щоб уникнути миготіння
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -679,7 +678,16 @@ const HomeView: React.FC<HomeViewProps> = ({
         fallbackTitle={fallbackTitle}
         fallbackDescription={fallbackDescription}
       />
-      {showHero && <Hero onSelectCategory={onSelectCategory} />}
+      
+      {showHero && (
+        // ВИПРАВЛЕННЯ: min-h-[...] резервує місце. 
+        // 280px для мобільних, 400px для планшетів, 500px для десктопів.
+        // Це запобігає "стрибку" товарів, поки Hero вантажиться.
+        <div className="w-full min-h-[280px] md:min-h-[400px] lg:min-h-[500px]">
+           <Hero onSelectCategory={onSelectCategory} />
+        </div>
+      )}
+
       <div className="mt-8">
         <ProductList
           title="Популярні товари"
