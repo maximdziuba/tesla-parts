@@ -637,6 +637,9 @@ const HomeView: React.FC<HomeViewProps> = ({
 }) => {
   const fallbackTitle = 'Tesla Parts Center | Магазин запчастин для Tesla';
   const fallbackDescription = 'Популярні запчастини Tesla з гарантією якості та швидкою доставкою по Україні.';
+
+  const popularProducts = useMemo(() => products.slice(0, 8), [products]);
+
   return (
     <>
       <SeoHead
@@ -652,7 +655,7 @@ const HomeView: React.FC<HomeViewProps> = ({
         ) : (
           <ProductList
             title="Популярні товари"
-            products={products}
+            products={popularProducts}
             currency={currency}
             uahPerUsd={uahPerUsd}
             onAddToCart={addToCart}
@@ -742,6 +745,8 @@ const CategoryView: React.FC<CategoryViewProps> = ({
     let filtered = products.filter(p => productMatchesCategory(p, category.name));
     if (selectedSubcategory) {
       filtered = filtered.filter(p => getProductSubcategoryIds(p).includes(selectedSubcategory));
+    } else {
+      filtered = filtered.filter(p => getProductSubcategoryIds(p).length === 0);
     }
     return filtered;
   }, [products, category.name, selectedSubcategory]);
@@ -807,9 +812,6 @@ const CategoryView: React.FC<CategoryViewProps> = ({
     return sortSubcategoryTreeData(base);
   }, [selectedSubcategory, currentSubcategory, category]);
 
-  const showProducts =
-    !!selectedSubcategory && (!currentSubcategory?.subcategories || currentSubcategory.subcategories.length === 0);
-
   const pageHeading = getSelectedSubcategoryName();
   const fallbackTitle = `${pageHeading} | Tesla Parts Center`;
   const fallbackDescription = selectedSubcategory
@@ -833,14 +835,27 @@ const CategoryView: React.FC<CategoryViewProps> = ({
             ← Назад
           </button>
         )}
-        <h1 className="text-3xl font-bold">{getSelectedSubcategoryName()}</h1>
+        <h1 className="text-3xl font-bold">{pageHeading}</h1>
       </div>
 
-      {showProducts ? (
-        loading ? (
-          <LoadingSpinner />
-        ) : (
+      {subcategoriesToShow.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+          {subcategoriesToShow.map(sub => (
+            <SubcategoryCard
+              key={sub.id}
+              subcategory={sub}
+              onClick={() => navigate(`/category/${categorySlug}/sub/${sub.id}`)}
+            />
+          ))}
+        </div>
+      )}
+
+      {loading ? (
+        <LoadingSpinner />
+      ) : (
+        categoryProducts.length > 0 && (
           <ProductList
+            title={subcategoriesToShow.length > 0 ? "Товари" : undefined}
             products={categoryProducts}
             currency={currency}
             uahPerUsd={uahPerUsd}
@@ -848,21 +863,10 @@ const CategoryView: React.FC<CategoryViewProps> = ({
             onProductClick={handleProductClick}
           />
         )
-      ) : (
-        <>
-         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {subcategoriesToShow.map(sub => (
-              <SubcategoryCard
-                key={sub.id}
-                subcategory={sub}
-                onClick={() => navigate(`/category/${categorySlug}/sub/${sub.id}`)}
-              />
-            ))}
-          </div>
-          {subcategoriesToShow.length === 0 && (
-            <p className="text-gray-500 italic">В цій категорії поки немає підкатегорій.</p>
-          )}
-        </>
+      )}
+
+      {!loading && subcategoriesToShow.length === 0 && categoryProducts.length === 0 && (
+        <p className="text-gray-500 italic">В цій категорії поки немає товарів чи підкатегорій.</p>
       )}
     </div>
   );
