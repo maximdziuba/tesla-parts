@@ -21,6 +21,54 @@ const createEmptyAssignment = (): CategoryAssignment => ({
 
 const PLACEHOLDER_IMAGE_URL = 'https://via.placeholder.com/300';
 
+interface SubcategorySelectorProps {
+    assignmentId: string;
+    level: number;
+    subs: Subcategory[];
+    value: string | number;
+    onChange: (assignmentId: string, level: number, value: string) => void;
+}
+
+const SubcategorySelector: React.FC<SubcategorySelectorProps> = ({
+    assignmentId,
+    level,
+    subs,
+    value,
+    onChange
+}) => {
+    // Use a local state variable for the selection as requested
+    const [currentSelection, setCurrentSelection] = useState(value);
+
+    // Synchronize local state with props when they change (e.g., when the category is reset)
+    useEffect(() => {
+        setCurrentSelection(value);
+    }, [value]);
+
+    return (
+        <div className="mt-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+                {level === 0 ? "Підкатегорія" : `Підкатегорія (рівень ${level + 1})`}
+            </label>
+            <select
+                value={currentSelection}
+                onChange={(e) => {
+                    const newValue = e.target.value;
+                    setCurrentSelection(newValue);
+                    onChange(assignmentId, level, newValue);
+                }}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+            >
+                <option value="">Оберіть підкатегорію</option>
+                {subs.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                        {sub.name}
+                    </option>
+                ))}
+            </select>
+        </div>
+    );
+};
+
 export const ProductForm: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
@@ -167,6 +215,7 @@ export const ProductForm: React.FC = () => {
         const assignments = buildAssignmentsFromIds(pendingSubcategoryIds);
         if (assignments.length) {
             setCategoryAssignments(assignments);
+            setPendingSubcategoryIds(null);
         }
     }, [pendingSubcategoryIds, categories, subcategoryPathMap]);
 
@@ -257,21 +306,14 @@ export const ProductForm: React.FC = () => {
 
             const currentSelection = assignment.subcategoryPath[level] ?? '';
             dropdowns.push(
-                <div key={`${assignment.id}-level-${level}`} className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {level === 0 ? "Підкатегорія" : `Підкатегорія (рівень ${level + 1})`}
-                    </label>
-                    <select
-                        value={currentSelection}
-                        onChange={e => handleAssignmentSubcategoryChange(assignment.id, level, e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
-                    >
-                        <option value="">Оберіть підкатегорію</option>
-                        {subs.map(sub => (
-                            <option key={sub.id} value={sub.id}>{sub.name}</option>
-                        ))}
-                    </select>
-                </div>
+                <SubcategorySelector
+                    key={`${assignment.id}-level-${level}`}
+                    assignmentId={assignment.id}
+                    level={level}
+                    subs={subs}
+                    value={currentSelection}
+                    onChange={handleAssignmentSubcategoryChange}
+                />
             );
 
             if (currentSelection) {
@@ -471,9 +513,10 @@ export const ProductForm: React.FC = () => {
                                     type="number"
                                     required
                                     min="0"
-                                    step="0.01"
+                                    step="0.1"
                                     value={formData.priceUSD}
                                     onChange={e => handleUsdChange(Number(e.target.value))}
+                                    onWheel={e => e.currentTarget.blur()}
                                     className="w-full border border-gray-300 rounded-md pl-7 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
                                 />
                             </div>
