@@ -207,7 +207,7 @@ export const ProductList: React.FC = () => {
                       {product.inStock ? 'В наявності' : 'Немає'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-medium">{product.priceUAH} ₴</td>
+                  <td className="px-6 py-4 font-medium">{product.priceUSD} $</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Link
