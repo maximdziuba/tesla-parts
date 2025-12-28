@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Routes, Route, useNavigate, useLocation, useMatch, useParams, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, useMatch, useParams, Navigate, Link } from 'react-router-dom';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import ProductList from './components/ProductList';
@@ -536,6 +536,7 @@ const App: React.FC = () => {
         </Routes>
       </main>
 
+      {/* ОНОВЛЕНИЙ ФУТЕР З ПОСИЛАННЯМИ (LINKS) ДЛЯ SEO */}
       <footer className="bg-tesla-dark text-gray-400 py-12 mt-auto">
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
@@ -550,16 +551,25 @@ const App: React.FC = () => {
             <h3 className="text-white font-bold mb-4">Навігація</h3>
             <ul className="space-y-2 text-sm">
               {sortedCategories.slice(0, 4).map(cat => (
-                <li key={cat.id}><button onClick={() => handleNavigate(cat.name)} className="hover:text-white">{cat.name}</button></li>
+                <li key={cat.id}>
+                  {/* ЗАМІНЕНО: button -> Link для індексації */}
+                  <Link 
+                    to={`/category/${slugify(cat.name)}`} 
+                    className="hover:text-white block"
+                  >
+                    {cat.name}
+                  </Link>
+                </li>
               ))}
             </ul>
           </div>
           <div>
             <h3 className="text-white font-bold mb-4">Клієнтам</h3>
             <ul className="space-y-2 text-sm">
-              <li><button onClick={() => handleNavigate('delivery')} className="hover:text-white">Доставка та оплата</button></li>
-              <li><button onClick={() => handleNavigate('returns')} className="hover:text-white">Повернення</button></li>
-              <li><button onClick={() => handleNavigate('contacts')} className="hover:text-white">Контакти</button></li>
+              {/* ЗАМІНЕНО: button -> Link для індексації */}
+              <li><Link to="/info/delivery" className="hover:text-white block">Доставка та оплата</Link></li>
+              <li><Link to="/info/returns" className="hover:text-white block">Повернення</Link></li>
+              <li><Link to="/info/contacts" className="hover:text-white block">Контакти</Link></li>
             </ul>
           </div>
           <div>
@@ -628,12 +638,13 @@ const SuccessView: React.FC<SuccessViewProps> = ({ onNavigateHome }) => {
       <p className="text-gray-600 mb-8 text-center max-w-md">
         Дякуємо за покупку. Наш менеджер зв'яжеться з вами найближчим часом для підтвердження деталей.
       </p>
-      <button
-        onClick={onNavigateHome}
-        className="bg-tesla-dark text-white px-8 py-3 rounded-md hover:bg-gray-800 transition"
+      {/* ЗАМІНЕНО: button -> Link */}
+      <Link
+        to="/"
+        className="bg-tesla-dark text-white px-8 py-3 rounded-md hover:bg-gray-800 transition inline-block text-center"
       >
         На головну
-      </button>
+      </Link>
     </div>
   )
 };
@@ -666,6 +677,7 @@ const HomeView: React.FC<HomeViewProps> = ({
 
   const popularProducts = useMemo(() => products.slice(0, 8), [products]);
 
+  // FIX: Весь контент чекає на завантаження, щоб уникнути миготіння
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -678,16 +690,11 @@ const HomeView: React.FC<HomeViewProps> = ({
         fallbackTitle={fallbackTitle}
         fallbackDescription={fallbackDescription}
       />
-      
       {showHero && (
-        // ВИПРАВЛЕННЯ: min-h-[...] резервує місце. 
-        // 280px для мобільних, 400px для планшетів, 500px для десктопів.
-        // Це запобігає "стрибку" товарів, поки Hero вантажиться.
         <div className="w-full min-h-[280px] md:min-h-[400px] lg:min-h-[500px]">
            <Hero onSelectCategory={onSelectCategory} />
         </div>
       )}
-
       <div className="mt-8">
         <ProductList
           title="Популярні товари"
@@ -810,8 +817,9 @@ const CategoryView: React.FC<CategoryViewProps> = ({
     }
   }, [selectedSubcategory, currentSubcategory, navigate, categorySlug]);
 
-  const handleBack = () => {
-    if (!selectedSubcategory) return;
+  const getBackLink = (): string => {
+    if (!selectedSubcategory) return '/';
+    
     const findParent = (subs: Subcategory[], target: number, parent: number | null = null): number | null => {
       for (const sub of subs) {
         if (sub.id === target) {
@@ -826,11 +834,12 @@ const CategoryView: React.FC<CategoryViewProps> = ({
       }
       return null;
     };
+    
     const parentId = findParent(category.subcategories, selectedSubcategory, null);
     if (parentId) {
-      navigate(`/category/${categorySlug}/sub/${parentId}`);
+      return `/category/${categorySlug}/sub/${parentId}`;
     } else {
-      navigate(`/category/${categorySlug}`);
+      return `/category/${categorySlug}`;
     }
   };
 
@@ -853,6 +862,8 @@ const CategoryView: React.FC<CategoryViewProps> = ({
     ? `Запчастини підкатегорії ${pageHeading} в категорії ${category.name}.`
     : `Категорія ${category.name}: підберіть запчастини для вашої Tesla.`;
 
+  const backLink = getBackLink();
+
   return (
     <div className="mt-8">
       <SeoHead
@@ -862,13 +873,15 @@ const CategoryView: React.FC<CategoryViewProps> = ({
         fallbackDescription={fallbackDescription}
       />
       <div className="flex items-center gap-4 mb-6 flex-wrap">
-        <button onClick={() => navigate('/')} className="text-gray-500 hover:text-tesla-red transition">
+        {/* ЗАМІНЕНО: button onClick -> Link */}
+        <Link to="/" className="text-gray-500 hover:text-tesla-red transition">
           ← Назад до головної
-        </button>
+        </Link>
         {selectedSubcategory && (
-          <button onClick={handleBack} className="text-gray-500 hover:text-tesla-red transition">
+          // ЗАМІНЕНО: button onClick -> Link (динамічний розрахунок URL)
+          <Link to={backLink} className="text-gray-500 hover:text-tesla-red transition">
             ← Назад
-          </button>
+          </Link>
         )}
         <h1 className="text-3xl font-bold">{pageHeading}</h1>
       </div>
@@ -938,12 +951,13 @@ const ProductDetailRoute: React.FC<ProductDetailRouteProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <p className="text-gray-600 mb-4">Товар не знайдено.</p>
-        <button
-          onClick={onNavigateHome}
-          className="bg-tesla-dark text-white px-6 py-2 rounded-md hover:bg-gray-800 transition"
+        {/* ЗАМІНЕНО: button -> Link */}
+        <Link
+          to="/"
+          className="bg-tesla-dark text-white px-6 py-2 rounded-md hover:bg-gray-800 transition inline-block"
         >
           На головну
-        </button>
+        </Link>
       </div>
     );
   }
