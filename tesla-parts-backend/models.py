@@ -1,6 +1,10 @@
 from typing import Optional, List
 from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+def get_kyiv_time():
+    return datetime.now(ZoneInfo("Europe/Kyiv"))
 
 class Category(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -73,7 +77,7 @@ class Order(SQLModel, table=True):
     delivery_branch: str
     payment_method: str
     totalUSD: float
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=get_kyiv_time)
     status: str = Field(default="new")
     ttn: Optional[str] = None # Added TTN field
     
