@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { Truck, Building, Wallet } from 'lucide-react';
 import NovaPostWidget from '../components/NovaPostWidget'; // Ensure this path is correct
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
+import { formatCurrency } from '../utils/currency';
 
 interface CheckoutProps {
   cartItems: CartItem[];
@@ -133,10 +134,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
 
   const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
+    return formatCurrency(amount, currency);
   };
 
   const formatItemPrice = (item: CartItem) => {

@@ -2,6 +2,7 @@ import React from 'react';
 import { CartItem, Currency } from '../types';
 import { X, ArrowLeft, Trash2, Plus, Minus } from 'lucide-react';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
+import { formatCurrency } from '../utils/currency';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -35,10 +36,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
   };
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
+    return formatCurrency(amount, currency);
   };
 
   const formatPrice = (item: CartItem, quantity = 1) => {

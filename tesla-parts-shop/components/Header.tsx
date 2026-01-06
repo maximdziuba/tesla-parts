@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ShoppingCart, Search, Menu, X, Instagram, Send, ChevronDown } from 'lucide-react';
 import { Category, Currency, Page } from '../types';
 import TeslaPartsCenterLogo from './ShopLogo';
+import { Link } from 'react-router-dom';
+import { formatCurrency } from '../utils/currency';
+
 interface HeaderProps {
   cartCount: number;
   cartTotalUSD: number;
@@ -22,6 +25,8 @@ interface HeaderProps {
   headerPages: Page[];
 }
 
+const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-');
+
 const Header: React.FC<HeaderProps> = ({ 
   cartCount, 
   cartTotalUSD, 
@@ -38,18 +43,28 @@ const Header: React.FC<HeaderProps> = ({
   onSearchQueryChange,
   headerPages,
 }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State for dropdown visibility
+  
+  // Дропдаун для десктопа (коли категорій > 4)
+  const [isDesktopDropdownOpen, setIsDesktopDropdownOpen] = useState(false);
+  
+  // Дропдаун для мобільного/планшета (замість бургера)
+  const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
+  
   const [isPagesDropdownOpen, setIsPagesDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null); // Ref for dropdown container
+  
+  const desktopDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileCategoryRef = useRef<HTMLDivElement>(null);
   const pagesDropdownRef = useRef<HTMLDivElement>(null);
   
-  // Close dropdown on outside click
+  // Закриття при кліку зовні
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
+      if (desktopDropdownRef.current && !desktopDropdownRef.current.contains(event.target as Node)) {
+        setIsDesktopDropdownOpen(false);
+      }
+      if (mobileCategoryRef.current && !mobileCategoryRef.current.contains(event.target as Node)) {
+        setIsMobileCategoryOpen(false);
       }
       if (pagesDropdownRef.current && !pagesDropdownRef.current.contains(event.target as Node)) {
         setIsPagesDropdownOpen(false);
@@ -59,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [dropdownRef, pagesDropdownRef]);
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,10 +87,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const formatPrice = (amount: number) => {
-    return new Intl.NumberFormat('uk-UA', { 
-      style: 'currency', 
-      currency: currency 
-    }).format(amount);
+    return formatCurrency(amount, currency);
   };
   const displayCartTotal = (() => {
     const rate = uahPerUsd > 0 ? uahPerUsd : 1;
@@ -91,7 +103,13 @@ const Header: React.FC<HeaderProps> = ({
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
           <nav className="hidden md:flex flex-wrap gap-4 md:gap-6 justify-center md:justify-start">
             {headerPages.filter(page => page.is_published).map((page) => (
-              <button key={page.slug} onClick={() => onNavigate(page.slug)} className="hover:text-white transition">{page.title}</button>
+              <Link 
+                key={page.slug} 
+                to={`/info/${page.slug}`}
+                className="hover:text-white transition"
+              >
+                {page.title}
+              </Link>
             ))}
           </nav>
           
@@ -103,13 +121,14 @@ const Header: React.FC<HeaderProps> = ({
             {isPagesDropdownOpen && (
               <div className="absolute left-0 top-full mt-2 w-48 bg-white shadow-lg rounded-md overflow-hidden z-20">
                 {headerPages.filter(page => page.is_published).map((page) => (
-                  <button
+                  <Link
                     key={page.slug}
-                    onClick={() => { onNavigate(page.slug); setIsPagesDropdownOpen(false); }}
+                    to={`/info/${page.slug}`}
+                    onClick={() => setIsPagesDropdownOpen(false)}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
                     {page.title}
-                  </button>
+                  </Link>
                 ))}
               </div>
             )}
@@ -151,51 +170,78 @@ const Header: React.FC<HeaderProps> = ({
           {/* Logo */}
           <TeslaPartsCenterLogo onNavigate={onNavigate} />
 
-          {/* Desktop Categories Menu */}
-          <div className="hidden md:flex items-center flex-1 max-w-2xl px-8 gap-6">
-             {/* Category Links */}
-            <div className="flex gap-4 font-medium text-tesla-dark whitespace-nowrap">
+          {/* === НАВІГАЦІЯ КАТЕГОРІЙ === */}
+          <div className="flex-1 max-w-2xl px-4 md:px-8">
+            
+            {/* 1. ВАРІАНТ ДЛЯ ВЕЛИКИХ ДЕСКТОПІВ (XL+) - Повний список */}
+            <div className="hidden xl:flex items-center gap-6 font-medium text-tesla-dark whitespace-nowrap">
               {sortedCategories.slice(0, 4).map(cat => (
-                <button
+                <Link
                   key={cat.id}
-                  onClick={() => onNavigate(cat.name)}
+                  to={`/category/${slugify(cat.name)}`}
                   className="hover:text-tesla-red transition"
                 >
                   {cat.name}
-                </button>
+                </Link>
               ))}
               {sortedCategories.length > 4 && (
-                <div className="relative" ref={dropdownRef}> {/* Add ref here */}
+                <div className="relative" ref={desktopDropdownRef}>
                   <button 
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)} // Toggle on click
+                    onClick={() => setIsDesktopDropdownOpen(!isDesktopDropdownOpen)}
                     className="flex items-center hover:text-tesla-red transition"
                   >
                     Усі категорії <ChevronDown size={16} className="ml-1" />
                   </button>
-                  <div className={`absolute left-0 top-full mt-2 w-48 bg-white shadow-lg rounded-md overflow-hidden z-10 ${isDropdownOpen ? 'block' : 'hidden'}`}> {/* Conditional class */}
+                  <div className={`absolute left-0 top-full mt-2 w-48 bg-white shadow-lg rounded-md overflow-hidden z-10 ${isDesktopDropdownOpen ? 'block' : 'hidden'}`}>
                     {sortedCategories.slice(4).map(cat => (
-                      <button
+                      <Link
                         key={cat.id}
-                        onClick={() => { onNavigate(cat.name); setIsDropdownOpen(false); }} // Close dropdown on item click
+                        to={`/category/${slugify(cat.name)}`}
+                        onClick={() => setIsDesktopDropdownOpen(false)}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         {cat.name}
-                      </button>
+                      </Link>
                     ))}
                   </div>
                 </div>
               )}
             </div>
+
+            {/* 2. ВАРІАНТ ДЛЯ МОБІЛЬНИХ/ПЛАНШЕТІВ (< XL) - Тільки кнопка "Усі категорії" */}
+            <div className="xl:hidden relative" ref={mobileCategoryRef}>
+               <button 
+                  onClick={() => setIsMobileCategoryOpen(!isMobileCategoryOpen)}
+                  className="flex items-center font-medium text-tesla-dark hover:text-tesla-red transition whitespace-nowrap"
+                >
+                  Усі категорії <ChevronDown size={16} className="ml-1" />
+                </button>
+                
+                {/* Випадаюче меню для мобілок */}
+                <div className={`absolute left-0 top-full mt-2 w-56 bg-white shadow-lg rounded-md overflow-hidden z-20 ${isMobileCategoryOpen ? 'block' : 'hidden'}`}>
+                  {sortedCategories.map(cat => (
+                    <Link
+                      key={cat.id}
+                      to={`/category/${slugify(cat.name)}`}
+                      onClick={() => setIsMobileCategoryOpen(false)}
+                      className="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-50 last:border-0"
+                    >
+                      {cat.name}
+                    </Link>
+                  ))}
+                </div>
+            </div>
+
           </div>
 
           {/* Cart & Checkout */}
           <div className="flex items-center gap-4">
-            {/* Desktop Search Bar aligned near cart */}
+            {/* Desktop Search Bar */}
             <form onSubmit={handleSearchSubmit} className="hidden md:flex items-center gap-2">
-              <div className="relative flex-grow">
+              <div className="relative flex-grow w-32 lg:w-auto">
                 <input
                   type="text"
-                  placeholder="Пошук запчастин..."
+                  placeholder="Пошук..."
                   className="w-full bg-gray-100 border-none rounded-full py-2 px-4 pl-10 focus:ring-2 focus:ring-tesla-red focus:bg-white transition outline-none"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
@@ -222,12 +268,12 @@ const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            <button 
-              onClick={() => onNavigate('checkout')}
-              className="hidden sm:block bg-tesla-red hover:bg-red-700 text-white px-5 py-2 rounded-md font-medium transition text-sm shadow-sm"
+            <Link 
+              to="/checkout"
+              className="hidden sm:block bg-tesla-red hover:bg-red-700 text-white px-5 py-2 rounded-md font-medium transition text-sm shadow-sm whitespace-nowrap"
             >
               Оформити
-            </button>
+            </Link>
 
             {/* Mobile Search Toggle */}
             <button
@@ -237,33 +283,9 @@ const Header: React.FC<HeaderProps> = ({
               <Search size={24} />
             </button>
 
-            {/* Mobile Menu Toggle */}
-            <button 
-              className="md:hidden text-tesla-dark"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            {/* БУРГЕР МЕНЮ ПРИБРАНО ПОВНІСТЮ */}
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden mt-4 pt-4 border-t border-gray-100 space-y-4 pb-4">
-            <div className="flex flex-col gap-2 font-medium text-lg">
-              {sortedCategories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => { onNavigate(cat.name); setIsMenuOpen(false); }}
-                  className="text-left py-2 border-b border-gray-100"
-                >
-                  {cat.name}
-                </button>
-              ))}
-
-            </div>
-          </div>
-        )}
 
         {/* Mobile Search Overlay */}
         {isMobileSearchOpen && (

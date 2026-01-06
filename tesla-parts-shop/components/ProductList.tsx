@@ -2,6 +2,7 @@ import React from 'react';
 import { Product, Currency } from '../types';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
+import { formatCurrency } from '../utils/currency';
 
 interface ProductListProps {
   products: Product[];
@@ -26,10 +27,7 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
   const formatPrice = (product: Product) => {
     const usd = getUsdPrice(product);
     const amount = currency === Currency.USD ? usd : usd * effectiveRate;
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
+    return formatCurrency(amount, currency);
   };
 
   if (products.length === 0) {

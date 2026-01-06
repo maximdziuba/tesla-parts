@@ -3,6 +3,7 @@ import { Product, Currency } from '../types';
 import { ShoppingCart, ArrowLeft, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 import SeoHead from './SeoHead';
+import { formatCurrency } from '../utils/currency';
 
 interface ProductPageProps {
     product: Product;
@@ -60,10 +61,7 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
                 ? product.priceUAH / effectiveRate
                 : 0);
         const amount = currency === Currency.USD ? priceUSD : priceUSD * effectiveRate;
-        return new Intl.NumberFormat('uk-UA', {
-            style: 'currency',
-            currency
-        }).format(amount);
+        return formatCurrency(amount, currency);
     };
 
     return (
