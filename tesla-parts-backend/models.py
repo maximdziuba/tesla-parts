@@ -4,7 +4,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 def get_kyiv_time():
-    return datetime.now(ZoneInfo("Europe/Kyiv"))
+    return datetime.now(ZoneInfo("Europe/Kyiv")).replace(tzinfo=None)
 
 class Category(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
