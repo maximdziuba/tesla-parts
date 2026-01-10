@@ -464,6 +464,10 @@ export const ApiService = {
       method: 'DELETE',
       headers: getHeaders(),
     });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail || 'Failed to delete category');
+    }
     return res.ok;
   },
 
@@ -472,6 +476,10 @@ export const ApiService = {
       method: 'DELETE',
       headers: getHeaders(),
     });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail || 'Failed to delete subcategory');
+    }
     return res.ok;
   },
 

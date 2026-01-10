@@ -390,13 +390,14 @@ const App: React.FC = () => {
   }, [sortedCategories, currentCategorySlug]);
 
   const searchResults = useMemo(() => {
-    const lowerQuery = searchQuery.toLowerCase();
+    const lowerQuery = searchQuery.toLowerCase().replace(/-/g, '');
     const matchingSubcategoryIds = new Set<number>();
 
     const traverseAndCollect = (subs: Subcategory[], collect: boolean) => {
       for (const sub of subs) {
-        const matches = sub.code?.toLowerCase().includes(lowerQuery);
-        const shouldCollect = collect || !!matches;
+        const normalizedCode = sub.code?.toLowerCase().replace(/-/g, '') || '';
+        const matches = normalizedCode.includes(lowerQuery);
+        const shouldCollect = collect || (lowerQuery !== '' && !!matches);
 
         if (shouldCollect) {
           matchingSubcategoryIds.add(sub.id);
@@ -416,11 +417,17 @@ const App: React.FC = () => {
 
     return products.filter(p => {
       const productSubIds = getProductSubcategoryIds(p);
+      const normalizedName = p.name.toLowerCase().replace(/-/g, '');
+      const normalizedDetail = p.detail_number ? p.detail_number.toLowerCase().replace(/-/g, '') : '';
+      const normalizedCross = p.cross_number ? p.cross_number.toLowerCase().replace(/-/g, '') : '';
+
       return (
-        p.name.toLowerCase().includes(lowerQuery) ||
-        (p.detail_number && p.detail_number.toLowerCase().includes(lowerQuery)) ||
-        (p.cross_number && p.cross_number.toLowerCase().includes(lowerQuery)) ||
-        productSubIds.some(id => matchingSubcategoryIds.has(id))
+        lowerQuery !== '' && (
+          normalizedName.includes(lowerQuery) ||
+          normalizedDetail.includes(lowerQuery) ||
+          normalizedCross.includes(lowerQuery) ||
+          productSubIds.some(id => matchingSubcategoryIds.has(id))
+        )
       );
     });
   }, [products, searchQuery, categories]);

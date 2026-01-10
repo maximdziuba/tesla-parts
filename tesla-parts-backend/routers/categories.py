@@ -581,20 +581,75 @@ def copy_subcategory(
     return _build_subcategory_response(session, new_subcategory.id, rate)
 
 
+def _has_products(session: Session, subcategory_id: int) -> bool:
+    # Check direct assignment
+    count_direct = session.exec(
+        select(func.count(Product.id)).where(Product.subcategory_id == subcategory_id)
+    ).one()
+    if count_direct > 0:
+        return True
+        
+    # Check linked assignment
+    count_linked = session.exec(
+        select(func.count(ProductSubcategoryLink.product_id)).where(ProductSubcategoryLink.subcategory_id == subcategory_id)
+    ).one()
+    if count_linked > 0:
+        return True
+        
+    return False
+
+def _collect_descendant_ids(session: Session, subcategory_id: int) -> List[int]:
+    ids = [subcategory_id]
+    children = session.exec(select(Subcategory).where(Subcategory.parent_id == subcategory_id)).all()
+    for child in children:
+        ids.extend(_collect_descendant_ids(session, child.id))
+    return ids
+
 @router.delete("/{category_id}", dependencies=[Depends(get_current_admin)])
 def delete_category(category_id: int, session: Session = Depends(get_session)):
     category = session.get(Category, category_id)
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
-    subcategory_ids = session.exec(
-        select(Subcategory.id).where(Subcategory.category_id == category_id)
+    
+    # Get all subcategories
+    subcategories = session.exec(
+        select(Subcategory).where(Subcategory.category_id == category_id)
     ).all()
+    
+    subcategory_ids = [s.id for s in subcategories]
+    
+    # Check for products in any subcategory
+    for sub_id in subcategory_ids:
+        if _has_products(session, sub_id):
+            raise HTTPException(
+                status_code=400, 
+                detail="Категорія не пуста. Видалення неможливе"
+            )
+            
     if subcategory_ids:
+        # 1. Break parent/child relationships to avoid FK constraints during deletion
+        # It is safer to update them to NULL first
+        session.exec(
+            select(Subcategory).where(Subcategory.category_id == category_id)
+        ) 
+        # Actually, simple update statement is better
+        # But SQLModel/SQLAlchemy update syntax:
+        for sub in subcategories:
+            sub.parent_id = None
+            session.add(sub)
+        session.flush()
+
+        # 2. Delete links
         session.exec(
             delete(ProductSubcategoryLink).where(
                 ProductSubcategoryLink.subcategory_id.in_(subcategory_ids)
             )
         )
+        
+        # 3. Delete subcategories
+        for sub in subcategories:
+            session.delete(sub)
+            
     session.delete(category)
     session.commit()
     return {"ok": True}
@@ -604,11 +659,38 @@ def delete_subcategory(subcategory_id: int, session: Session = Depends(get_sessi
     subcategory = session.get(Subcategory, subcategory_id)
     if not subcategory:
         raise HTTPException(status_code=404, detail="Subcategory not found")
+        
+    # Collect all descendants (including self)
+    target_ids = _collect_descendant_ids(session, subcategory_id)
+    
+    # Check products
+    for tid in target_ids:
+        if _has_products(session, tid):
+            raise HTTPException(
+                status_code=400, 
+                detail="Категорія не пуста. Видалення неможливе"
+            )
+    
+    # Safe delete
+    # 1. Break parent relationships for the tree (or just for those being deleted)
+    # Finding objects to delete
+    targets = session.exec(select(Subcategory).where(Subcategory.id.in_(target_ids))).all()
+    
+    for t in targets:
+        t.parent_id = None
+        session.add(t)
+    session.flush()
+    
+    # 2. Delete links
     session.exec(
         delete(ProductSubcategoryLink).where(
-            ProductSubcategoryLink.subcategory_id == subcategory_id
+            ProductSubcategoryLink.subcategory_id.in_(target_ids)
         )
     )
-    session.delete(subcategory)
+    
+    # 3. Delete subcategories
+    for t in targets:
+        session.delete(t)
+        
     session.commit()
     return {"ok": True}

@@ -508,12 +508,12 @@ const CategoryList: React.FC = () => {
     };
 
     const handleDeleteCategory = async (id: number) => {
-        if (!window.confirm("Are you sure? This will delete all subcategories and products in this category.")) return;
+        if (!window.confirm("Підтвердити?")) return;
         try {
             await ApiService.deleteCategory(id);
             loadCategories();
-        } catch (e) {
-            alert("Failed to delete category");
+        } catch (e: any) {
+            alert(e.message || "Не вдалося видалити категорію");
         }
     };
 
@@ -599,12 +599,12 @@ const CategoryList: React.FC = () => {
     };
 
     const handleDeleteSubcategory = async (id: number) => {
-        if (!window.confirm("Are you sure?")) return;
+        if (!window.confirm("Підтвердити?")) return;
         try {
             await ApiService.deleteSubcategory(id);
             loadCategories();
-        } catch (e) {
-            alert("Failed to delete subcategory");
+        } catch (e: any) {
+            alert(e.message || "Failed to delete subcategory");
         }
     };
 
