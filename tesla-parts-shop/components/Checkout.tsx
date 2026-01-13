@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { PaymentMethod, CartItem, Currency, OrderData } from '../types';
 import { api } from '../services/api';
-import { Truck, Building, Wallet } from 'lucide-react';
+import { Truck, Building, Wallet} from 'lucide-react';
 import NovaPostWidget from '../components/NovaPostWidget'; // Ensure this path is correct
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 import { formatCurrency } from '../utils/currency';
+import { Link } from 'react-router-dom';
 
 interface CheckoutProps {
   cartItems: CartItem[];
@@ -300,7 +301,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
               )}
             </button>
             <p className="text-xs text-gray-400 mt-4 text-center">
-              Натискаючи кнопку, ви погоджуєтесь з умовами публічної оферти
+              Натискаючи кнопку, ви погоджуєтесь з умовами <Link to={"/info/terms-of-service"} className="text-tesla-red hover:underline">публічної оферти</Link>
             </p>
           </div>
         </div>
