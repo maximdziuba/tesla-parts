@@ -29,6 +29,14 @@ DEFAULT_STATIC_SEO = {
         "meta_title": "Контакти Tesla Parts Center",
         "meta_description": "Зв’яжіться з нами для консультації або замовлення запчастин.",
     },
+    "privacy-policy": {
+        "meta_title": "Політика конфіденційності | Tesla Parts Center",
+        "meta_description": "Політика конфіденційності інтернет-магазину Tesla Parts Center.",
+    },
+    "terms-of-service": {
+        "meta_title": "Умови сервісу | Tesla Parts Center",
+        "meta_description": "Умови сервісу інтернет-магазину Tesla Parts Center.",
+    },
 }
 
 

@@ -175,7 +175,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const headerPageSlugs = ['about', 'delivery', 'returns', 'contacts', 'faq'];
+        const headerPageSlugs = ['about', 'delivery', 'returns', 'contacts', 'faq', 'terms-of-service', 'privacy-policy'];
         const [productsData, categoriesData, socialLinksData, pagesData] = await Promise.all([
           api.getProducts(),
           api.getCategories(),

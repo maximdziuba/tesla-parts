@@ -234,7 +234,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
                     <Building className="text-gray-600" />
                     <div>
                       <div className="font-medium text-gray-900">Оплата на рахунок ФОП</div>
-                      <div className="text-xs text-gray-500">Менеджер зв'яжеться для надання реквізитів</div>
+                  
                     </div>
                   </div>
                 </label>
@@ -245,7 +245,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
                     <Wallet className="text-gray-600" />
                     <div>
                       <div className="font-medium text-gray-900">Накладений платіж</div>
-                      <div className="text-xs text-gray-500">Оплата при отриманні на пошті (+ комісія перевізника)</div>
                     </div>
                   </div>
                 </label>
