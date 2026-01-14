@@ -48,14 +48,18 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
           <div
             key={product.id}
             onClick={() => onProductClick(product)}
-            className="bg-white rounded-xl shadow-sm hover:shadow-md transition border border-gray-100 overflow-hidden flex flex-col cursor-pointer group"
+            // ЗМІНА 1: hover:shadow-md -> xl:hover:shadow-md
+            // ЗМІНА 2: додано select-none
+            className="bg-white rounded-xl shadow-sm border border-gray-100 xl:hover:shadow-md transition overflow-hidden flex flex-col cursor-pointer group select-none"
+            // ЗМІНА 3: прибираємо синю підсвітку на мобільному
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <div className="relative w-full pb-[100%] bg-gray-100">
-              {/* Placeholder for real images. In a real app, use next/image or optimized img */}
               <img
                 src={product.image}
                 alt={product.name}
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                // ЗМІНА 4: group-hover -> xl:group-hover (зум тільки на ПК)
+                className="absolute inset-0 w-full h-full object-cover xl:group-hover:scale-105 transition-transform duration-300"
               />
               {!product.inStock && (
                 <div className="absolute top-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded">
@@ -72,18 +76,17 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
               {product.cross_number && (
                 <div className="text-[11px] text-gray-400 mb-1">Cross: {product.cross_number}</div>
               )}
-              <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3rem] group-hover:text-tesla-red transition-colors">{product.name}</h3>
+              
+              {/* ЗМІНА 5: active:text-tesla-red (моб) та xl:group-hover:text-tesla-red (ПК) */}
+              <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3rem] active:text-tesla-red xl:group-hover:text-tesla-red transition-colors">
+                {product.name}
+              </h3>
 
               <div className="mt-auto pt-4 flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-lg font-bold text-tesla-dark">
                     {formatPrice(product)}
                   </span>
-                  {/* {product.priceUSD && (
-                    <span className="text-sm text-gray-500">
-                      ${product.priceUSD.toFixed(2)}
-                    </span>
-                  )} */}
                 </div>
                 <button
                   onClick={(e) => {
@@ -91,8 +94,9 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
                     onAddToCart(product);
                   }}
                   disabled={!product.inStock}
+                  // ЗМІНА 6: Те саме для кнопки - active для моб, hover для ПК
                   className={`p-2 rounded-full transition ${product.inStock
-                    ? 'bg-tesla-light text-tesla-dark hover:bg-tesla-red hover:text-white'
+                    ? 'bg-tesla-light text-tesla-dark active:bg-tesla-red active:text-white xl:hover:bg-tesla-red xl:hover:text-white'
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                     }`}
                   aria-label="Додати в кошик"
