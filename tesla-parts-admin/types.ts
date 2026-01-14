@@ -7,6 +7,7 @@ export interface Subcategory {
   parent_id?: number | null;
   sort_order?: number;
   subcategories?: Subcategory[];
+  products?: Product[];
 }
 
 export interface Category {

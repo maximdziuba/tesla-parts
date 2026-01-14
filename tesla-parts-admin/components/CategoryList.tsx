@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ApiService } from '../services/api';
-import { Category, Subcategory } from '../types';
+import { Category, Subcategory, Product } from '../types';
 import {
     Plus,
     Trash2,
@@ -34,6 +34,11 @@ const collectDescendantIds = (sub: Subcategory): number[] => {
         ids.push(child.id, ...collectDescendantIds(child));
     });
     return ids;
+};
+
+const collectProductIdsInSubtree = (sub: Subcategory, ids: Set<string>) => {
+    sub.products?.forEach(p => ids.add(p.id));
+    sub.subcategories?.forEach(child => collectProductIdsInSubtree(child, ids));
 };
 
 const flattenSubcategoriesForSelect = (
@@ -116,6 +121,12 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
             ? subcategory.sort_order.toString()
             : ''
     );
+
+    const productCount = useMemo(() => {
+        const ids = new Set<string>();
+        collectProductIdsInSubtree(subcategory, ids);
+        return ids.size;
+    }, [subcategory]);
 
     useEffect(() => {
         setTransferCategoryId(categoryId);
@@ -260,6 +271,7 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                             <span className="font-medium">{subcategory.name}</span>
                             {subcategory.code && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Код: {subcategory.code}</span>}
                             <span className="text-xs text-gray-400">#{subcategory.sort_order ?? 0}</span>
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">({productCount})</span>
                         </>
                     )}
                 </div>
@@ -475,6 +487,12 @@ const CategoryList: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const getCategoryProductCount = (cat: Category) => {
+        const ids = new Set<string>();
+        cat.subcategories.forEach(sub => collectProductIdsInSubtree(sub, ids));
+        return ids.size;
     };
 
     const toggleExpand = (id: number) => {
@@ -818,6 +836,7 @@ const CategoryList: React.FC = () => {
                                     <span className="font-semibold text-lg">{category.name}</span>
                                     <span className="text-xs text-gray-400">#{category.sort_order ?? 0}</span>
                                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">{category.subcategories.length} підкатегорій</span>
+                                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">({getCategoryProductCount(category)} товарів)</span>
                                 </div>
                             )}
 

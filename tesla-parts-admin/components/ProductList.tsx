@@ -151,6 +151,15 @@ export const ProductList: React.FC = () => {
         </div>
       </div>
 
+      <div className="px-2">
+          <span className="text-sm text-gray-500">
+              Всього товарів: <span className="font-medium text-gray-900">{products.length}</span>
+              {filteredProducts.length !== products.length && (
+                  <> • Знайдено: <span className="font-medium text-gray-900">{filteredProducts.length}</span></>
+              )}
+          </span>
+      </div>
+
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
