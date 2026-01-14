@@ -13,6 +13,7 @@ interface SeoHeadProps {
   price?: number;               // Ціна (для товарів)
   currency?: string;            // Валюта (за замовчуванням UAH)
   availability?: boolean;       // Чи є в наявності
+  deliveryInfo?: string | null; // Інформація про доставку
 }
 
 const DEFAULT_TITLE = 'Tesla Parts Center';
@@ -28,10 +29,21 @@ const SeoHead: React.FC<SeoHeadProps> = ({
   type = 'website', // За замовчуванням звичайна сторінка
   price,
   currency = 'UAH',
-  availability = true
+  availability = true,
+  deliveryInfo
 }) => {
   const safeTitle = title?.trim() || fallbackTitle?.trim() || DEFAULT_TITLE;
   let safeDescription = description?.trim() || fallbackDescription?.trim() || DEFAULT_DESCRIPTION;
+
+  if (type === 'product' && deliveryInfo) {
+    // Append delivery info summary if available
+    const deliverySummary = deliveryInfo.split('\n').filter(l => l.trim().length > 0).slice(0, 3).join('. ');
+    const truncatedDelivery = deliverySummary.length > 150 ? deliverySummary.slice(0, 147) + '...' : deliverySummary;
+    if (!safeDescription.includes(truncatedDelivery.slice(0, 20))) { // Avoid duplication
+        safeDescription = `${safeDescription} ${truncatedDelivery}`;
+    }
+  }
+
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   const nextYear = new Date();

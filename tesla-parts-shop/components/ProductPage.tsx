@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Product, Currency } from '../types';
-import { ShoppingCart, ArrowLeft, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Check, ChevronLeft, ChevronRight, Truck, ShieldCheck } from 'lucide-react';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 import SeoHead from './SeoHead';
 import { formatCurrency } from '../utils/currency';
+import { api } from '../services/api';
 
 interface ProductPageProps {
     product: Product;
@@ -21,7 +22,18 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
     );
     const [selectedImage, setSelectedImage] = useState(allImages[0]);
     const [added, setAdded] = useState(false);
+    const [deliveryInfo, setDeliveryInfo] = useState<string | null>(null);
     const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
+
+    useEffect(() => {
+        const fetchDeliveryInfo = async () => {
+            const page = await api.getPage('delivery');
+            if (page && page.content) {
+                setDeliveryInfo(page.content);
+            }
+        };
+        fetchDeliveryInfo();
+    }, []);
 
     const fallbackTitle = `${product.name} | Tesla Parts Center`;
     const fallbackDescription = useMemo(() => {
@@ -78,6 +90,7 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
                 price={product.priceUAH}
                 currency="UAH"
                 availability={product.inStock}
+                deliveryInfo={deliveryInfo}
             />
             <button
                 onClick={onBack}
@@ -200,6 +213,19 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
                                     </>
                                 )}
                             </button>
+                            
+                            {/* Delivery & Payment Info */}
+                            {deliveryInfo && (
+                                <div className="mt-8 bg-gray-50 rounded-xl p-5 border border-gray-100">
+                                    <div className="flex items-center gap-2 mb-3 text-tesla-dark font-bold">
+                                        <Truck size={20} />
+                                        <h3>Доставка та оплата</h3>
+                                    </div>
+                                    <div className="prose prose-sm text-gray-600 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                        <p className="whitespace-pre-line text-xs">{deliveryInfo}</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
