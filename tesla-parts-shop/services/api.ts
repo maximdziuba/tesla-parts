@@ -2,9 +2,24 @@ import { Product, OrderData, Category, StaticSeoRecord, Page } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
+export interface ProductFilter {
+  category?: string;
+  subId?: number;
+  limit?: number;
+  offset?: number;
+  search?: string;
+}
+
 export const api = {
-    getProducts: async (): Promise<Product[]> => {
-        const res = await fetch(`${API_URL}/products/`);
+    getProducts: async (filters: ProductFilter = {}): Promise<Product[]> => {
+        const params = new URLSearchParams();
+        if (filters.category) params.append('category_slug', filters.category);
+        if (filters.subId) params.append('subcategory_id', filters.subId.toString());
+        if (filters.limit) params.append('limit', filters.limit.toString());
+        if (filters.offset) params.append('offset', filters.offset.toString());
+        if (filters.search) params.append('search', filters.search);
+
+        const res = await fetch(`${API_URL}/products/?${params.toString()}`);
         if (!res.ok) throw new Error('Failed to fetch products');
         return res.json();
     },

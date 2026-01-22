@@ -145,7 +145,6 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Data State
-  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [headerPages, setHeaderPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,14 +175,12 @@ const App: React.FC = () => {
     const loadData = async () => {
       try {
         const headerPageSlugs = ['about', 'delivery', 'returns', 'contacts', 'faq', 'terms-of-service', 'privacy-policy'];
-        const [productsData, categoriesData, socialLinksData, pagesData] = await Promise.all([
-          api.getProducts(),
+        const [categoriesData, socialLinksData, pagesData] = await Promise.all([
           api.getCategories(),
           api.getSocialLinks(),
           api.getPagesBySlugs(headerPageSlugs),
         ]);
 
-        setProducts(productsData);
         const sortedCats = sortCategoryTreeData(categoriesData);
         setCategories(sortedCats);
         setSocialLinks(socialLinksData);
@@ -191,8 +188,7 @@ const App: React.FC = () => {
 
         // Preload critical images
         const heroImages = sortedCats.slice(0, 4).map(c => c.image);
-        const productImages = productsData.slice(0, 4).map(p => p.image);
-        await preloadImages([...heroImages, ...productImages]);
+        await preloadImages(heroImages);
 
       } catch (e) {
         console.error("Failed to load data", e);
@@ -389,58 +385,13 @@ const App: React.FC = () => {
     return sortedCategories.find(c => slugify(c.name) === currentCategorySlug);
   }, [sortedCategories, currentCategorySlug]);
 
-  const searchResults = useMemo(() => {
-    const lowerQuery = searchQuery.toLowerCase().replace(/-/g, '');
-    const matchingSubcategoryIds = new Set<number>();
-
-    const traverseAndCollect = (subs: Subcategory[], collect: boolean) => {
-      for (const sub of subs) {
-        const normalizedCode = sub.code?.toLowerCase().replace(/-/g, '') || '';
-        const matches = normalizedCode.includes(lowerQuery);
-        const shouldCollect = collect || (lowerQuery !== '' && !!matches);
-
-        if (shouldCollect) {
-          matchingSubcategoryIds.add(sub.id);
-        }
-
-        if (sub.subcategories) {
-          traverseAndCollect(sub.subcategories, shouldCollect);
-        }
-      }
-    };
-
-    categories.forEach(cat => {
-      if (cat.subcategories) {
-        traverseAndCollect(cat.subcategories, false);
-      }
-    });
-
-    return products.filter(p => {
-      const productSubIds = getProductSubcategoryIds(p);
-      const normalizedName = p.name.toLowerCase().replace(/-/g, '');
-      const normalizedDetail = p.detail_number ? p.detail_number.toLowerCase().replace(/-/g, '') : '';
-      const normalizedCross = p.cross_number ? p.cross_number.toLowerCase().replace(/-/g, '') : '';
-
-      return (
-        lowerQuery !== '' && (
-          normalizedName.includes(lowerQuery) ||
-          normalizedDetail.includes(lowerQuery) ||
-          normalizedCross.includes(lowerQuery) ||
-          productSubIds.some(id => matchingSubcategoryIds.has(id))
-        )
-      );
-    });
-  }, [products, searchQuery, categories]);
-
   const categoryRouteElement = currentCategory ? (
     <CategoryView
       category={currentCategory}
-      products={products}
       currency={currency}
       uahPerUsd={uahPerUsd}
       addToCart={addToCart}
       handleProductClick={handleProductClick}
-      loading={loading}
     />
   ) : loading ? (
     <LoadingSpinner />
@@ -473,8 +424,6 @@ const App: React.FC = () => {
             path="/"
             element={
               <HomeView
-                loading={loading}
-                products={products}
                 currency={currency}
                 uahPerUsd={uahPerUsd}
                 addToCart={addToCart}
@@ -489,8 +438,6 @@ const App: React.FC = () => {
             path="/search"
             element={
               <SearchView
-                loading={loading}
-                products={searchResults}
                 currency={currency}
                 uahPerUsd={uahPerUsd}
                 addToCart={addToCart}
@@ -506,13 +453,11 @@ const App: React.FC = () => {
             path="/product/:productId"
             element={
               <ProductDetailRoute
-                products={products}
                 currency={currency}
                 uahPerUsd={uahPerUsd}
                 onAddToCart={addToCart}
                 onNavigateBack={handleProductBack}
                 onNavigateHome={() => handleNavigate('home')}
-                loading={loading}
               />
             }
           />
@@ -657,8 +602,6 @@ const SuccessView: React.FC<SuccessViewProps> = ({ onNavigateHome }) => {
 };
 
 interface HomeViewProps {
-  loading: boolean;
-  products: Product[];
   currency: Currency;
   uahPerUsd: number;
   addToCart: (product: Product) => void;
@@ -669,8 +612,6 @@ interface HomeViewProps {
 }
 
 const HomeView: React.FC<HomeViewProps> = ({
-  loading,
-  products,
   currency,
   uahPerUsd,
   addToCart,
@@ -679,10 +620,25 @@ const HomeView: React.FC<HomeViewProps> = ({
   onSelectCategory,
   seoRecord,
 }) => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPopular = async () => {
+      try {
+        const data = await api.getProducts({ limit: 8 });
+        setProducts(data);
+      } catch (e) {
+        console.error("Failed to load popular products", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPopular();
+  }, []);
+
   const fallbackTitle = 'Tesla Parts Center | Магазин запчастин для Tesla';
   const fallbackDescription = 'Популярні запчастини Tesla з гарантією якості та швидкою доставкою по Україні.';
-
-  const popularProducts = useMemo(() => products.slice(0, 8), [products]);
 
   // FIX: Весь контент чекає на завантаження, щоб уникнути миготіння
   if (loading) {
@@ -705,7 +661,7 @@ const HomeView: React.FC<HomeViewProps> = ({
       <div className="mt-8">
         <ProductList
           title="Популярні товари"
-          products={popularProducts}
+          products={products}
           currency={currency}
           uahPerUsd={uahPerUsd}
           onAddToCart={addToCart}
@@ -717,8 +673,6 @@ const HomeView: React.FC<HomeViewProps> = ({
 };
 
 interface SearchViewProps {
-  loading: boolean;
-  products: Product[];
   currency: Currency;
   uahPerUsd: number;
   addToCart: (product: Product) => void;
@@ -728,8 +682,6 @@ interface SearchViewProps {
 }
 
 const SearchView: React.FC<SearchViewProps> = ({
-  loading,
-  products,
   currency,
   uahPerUsd,
   addToCart,
@@ -737,6 +689,31 @@ const SearchView: React.FC<SearchViewProps> = ({
   searchQuery,
   seoRecord,
 }) => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!searchQuery) {
+        setProducts([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const data = await api.getProducts({ search: searchQuery });
+        setProducts(data);
+      } catch (e) {
+        console.error("Search failed", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    // Debounce could be added here, but simple fetch for now
+    const timer = setTimeout(fetchResults, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const normalizedQuery = searchQuery || 'запчастини';
   const fallbackTitle = `Пошук: ${normalizedQuery} | Tesla Parts Center`;
   const fallbackDescription = `Результати пошуку "${normalizedQuery}" у Tesla Parts Center. Знайдіть сумісні запчастини для свого авто.`;
@@ -768,37 +745,46 @@ const SearchView: React.FC<SearchViewProps> = ({
 
 interface CategoryViewProps {
   category: Category;
-  products: Product[];
   currency: Currency;
   uahPerUsd: number;
   addToCart: (product: Product) => void;
   handleProductClick: (product: Product) => void;
-  loading: boolean;
 }
 
 const CategoryView: React.FC<CategoryViewProps> = ({
   category,
-  products,
   currency,
   uahPerUsd,
   addToCart,
   handleProductClick,
-  loading,
 }) => {
   const { subId } = useParams<{ subId?: string }>();
   const navigate = useNavigate();
   const categorySlug = slugify(category.name);
   const selectedSubcategory = subId ? Number(subId) : null;
 
-  const categoryProducts = useMemo(() => {
-    let filtered = products.filter(p => productMatchesCategory(p, category.name));
-    if (selectedSubcategory) {
-      filtered = filtered.filter(p => getProductSubcategoryIds(p).includes(selectedSubcategory));
-    } else {
-      filtered = filtered.filter(p => getProductSubcategoryIds(p).length === 0);
-    }
-    return filtered;
-  }, [products, category.name, selectedSubcategory]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const filters: any = { category: categorySlug }; // use slug
+        if (selectedSubcategory) {
+          filters.subId = selectedSubcategory;
+        }
+        const data = await api.getProducts(filters);
+        setProducts(data);
+      } catch (e) {
+        console.error("Failed to fetch category products", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [categorySlug, selectedSubcategory]);
+
 
   const findSubcategory = (subs: Subcategory[], targetId: number): Subcategory | null => {
     for (const sub of subs) {
@@ -909,10 +895,10 @@ const CategoryView: React.FC<CategoryViewProps> = ({
       {loading ? (
         <LoadingSpinner />
       ) : (
-        categoryProducts.length > 0 && (
+        products.length > 0 && (
           <ProductList
             title={subcategoriesToShow.length > 0 ? "Товари" : undefined}
-            products={categoryProducts}
+            products={products}
             currency={currency}
             uahPerUsd={uahPerUsd}
             onAddToCart={addToCart}
@@ -921,7 +907,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
         )
       )}
 
-      {!loading && subcategoriesToShow.length === 0 && categoryProducts.length === 0 && (
+      {!loading && subcategoriesToShow.length === 0 && products.length === 0 && (
         <p className="text-gray-500 italic">В цій категорії поки немає товарів чи підкатегорій.</p>
       )}
     </div>
@@ -929,28 +915,42 @@ const CategoryView: React.FC<CategoryViewProps> = ({
 };
 
 interface ProductDetailRouteProps {
-  products: Product[];
   currency: Currency;
   uahPerUsd: number;
   onAddToCart: (product: Product) => void;
   onNavigateBack: (product: Product) => void;
   onNavigateHome: () => void;
-  loading: boolean;
 }
 
 const ProductDetailRoute: React.FC<ProductDetailRouteProps> = ({
-  products,
   currency,
   uahPerUsd,
   onAddToCart,
   onNavigateBack,
   onNavigateHome,
-  loading,
 }) => {
   const { productId } = useParams();
-  const product = useMemo(() => products.find(p => p.id === productId), [products, productId]);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (loading && !product) {
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!productId) return;
+      setLoading(true);
+      try {
+        const data = await api.getProduct(productId);
+        setProduct(data);
+      } catch (e) {
+        console.error("Failed to fetch product", e);
+        setProduct(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [productId]);
+
+  if (loading) {
     return <LoadingSpinner />;
   }
 

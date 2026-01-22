@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from sqlmodel import Session, select, delete
+from sqlmodel import Session, select, delete, or_, col
 from typing import List, Optional
 import shutil
 import os
+import re
 from sqlalchemy.orm import selectinload
 from database import get_session
-from models import Product, ProductImage, ProductSubcategoryLink
+from models import Product, ProductImage, ProductSubcategoryLink, Category
 from schemas import ProductCreate, ProductRead, ProductBulkDeleteRequest
 from services.image_uploader import image_uploader
 from services.pricing import get_exchange_rate, compute_price_fields
@@ -14,6 +15,17 @@ from dependencies import get_current_admin
 router = APIRouter(prefix="/products", tags=["products"])
 
 PLACEHOLDER_IMAGE_URL = "https://via.placeholder.com/300"
+
+
+def _slugify(value: str) -> str:
+    """
+    Simple slugify implementation matching frontend logic:
+    lowercase, trim, replace spaces with dashes.
+    """
+    if not value:
+        return ""
+    value = value.lower().strip()
+    return re.sub(r'\s+', '-', value)
 
 
 def _collect_subcategory_ids(product: Product) -> List[int]:
@@ -72,15 +84,73 @@ def _sync_linked_subcategories(
     session.commit()
 
 @router.get("/", response_model=List[ProductRead])
-def read_products(category: str = None, subcategory_id: int = None, session: Session = Depends(get_session)):
+def read_products(
+    category_slug: Optional[str] = None,
+    subcategory_id: Optional[int] = None,
+    search: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    session: Session = Depends(get_session)
+):
     query = select(Product).options(
         selectinload(Product.images),
         selectinload(Product.linked_subcategories),
     )
-    if category:
-        query = query.where(Product.category == category)
+
+    # 1. Filter by Category Slug
+    # We need to find the category name from the slug to support legacy 'Product.category' field
+    if category_slug:
+        # Fetch all categories to match slug (since we don't have slug column)
+        all_categories = session.exec(select(Category)).all()
+        target_category = next(
+            (c for c in all_categories if _slugify(c.name) == category_slug), 
+            None
+        )
+        
+        if target_category:
+            # Filter by legacy category name field
+            # AND/OR filter by subcategories belonging to this category
+            # For now, adhering to existing pattern using the string field as primary
+            query = query.where(Product.category == target_category.name)
+        else:
+            # If slug doesn't match any category, return empty or handle as 404? 
+            # Returning empty list is safer for list endpoint
+            return []
+
+    # 2. Filter by Subcategory ID
     if subcategory_id:
-        query = query.where(Product.subcategory_id == subcategory_id)
+        # Check both primary subcategory_id AND linked_subcategories
+        # This requires a join or a complex condition. 
+        # Simpler approach: Product.subcategory_id == id OR Product.linked_subcategories.any(id=id)
+        # But SQLModel/SQLAlchemy 'any' relationship query:
+        query = query.where(
+            or_(
+                Product.subcategory_id == subcategory_id,
+                Product.linked_subcategories.any(ProductSubcategoryLink.subcategory_id == subcategory_id)
+            )
+        )
+
+    # 3. Search Filter
+    if search:
+        search_term = f"%{search}%"
+        # Normalize search for cross/detail numbers (remove dashes/spaces) could be an improvement, 
+        # but basic ILIKE is a good start.
+        query = query.where(
+            or_(
+                col(Product.name).ilike(search_term),
+                col(Product.detail_number).ilike(search_term),
+                col(Product.cross_number).ilike(search_term),
+                col(Product.description).ilike(search_term)
+            )
+        )
+
+    # 4. Sorting
+    # Priority: In Stock (True) first, then Sort Order (if exists) or Name
+    # Product.inStock is boolean. True=1, False=0. DESC gives True first.
+    query = query.order_by(col(Product.inStock).desc(), col(Product.name).asc())
+
+    # 5. Pagination
+    query = query.offset(offset).limit(limit)
     
     products = session.exec(query).all()
     rate = get_exchange_rate(session)
