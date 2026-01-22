@@ -40,9 +40,9 @@ const Hero: React.FC<HeroProps> = ({ onSelectCategory }) => {
             />
             <div className="absolute bottom-0 left-0 p-6 z-20 text-white w-full">
               <h3 className="text-2xl font-bold mb-1">{category.name}</h3>
-              <p className="text-gray-200 text-sm mb-4 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                {category.subcategories?.length || 0} підкатегорій
-              </p>
+              {/* <p className="text-gray-200 text-sm mb-4 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0"> */}
+                {/* {category.subcategories?.length || 0} підкатегорій */}
+              {/* </p> */}
               <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider">
                 Переглянути каталог <ArrowRight size={16} />
               </div>
