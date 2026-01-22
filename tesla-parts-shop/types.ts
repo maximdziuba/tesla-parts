@@ -21,7 +21,7 @@ export interface Category {
   sort_order?: number;
   meta_title?: string | null;
   meta_description?: string | null;
-  subcategories: Subcategory[];
+  subcategories?: Subcategory[];
 }
 
 export interface Product {

@@ -764,11 +764,36 @@ const CategoryView: React.FC<CategoryViewProps> = ({
   const selectedSubcategory = subId ? Number(subId) : null;
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  
+  // State for the full category tree (with subcategories)
+  const [detailedCategory, setDetailedCategory] = useState<Category>(category);
+  const [loadingCategory, setLoadingCategory] = useState(false);
+
+  // Fetch full category details (subcategories) on mount or change
+  useEffect(() => {
+    const fetchDetails = async () => {
+      setLoadingCategory(true);
+      try {
+        const fullData = await api.getCategory(category.id);
+        // Sort the tree immediately
+        const sorted = {
+            ...fullData,
+            subcategories: sortSubcategoryTreeData(fullData.subcategories)
+        };
+        setDetailedCategory(sorted);
+      } catch (e) {
+        console.error("Failed to fetch category details", e);
+      } finally {
+        setLoadingCategory(false);
+      }
+    };
+    fetchDetails();
+  }, [category.id]);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      setLoading(true);
+      setLoadingProducts(true);
       try {
         const filters: any = { category: categorySlug }; // use slug
         if (selectedSubcategory) {
@@ -779,7 +804,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
       } catch (e) {
         console.error("Failed to fetch category products", e);
       } finally {
-        setLoading(false);
+        setLoadingProducts(false);
       }
     };
     fetchProducts();
@@ -787,6 +812,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
 
 
   const findSubcategory = (subs: Subcategory[], targetId: number): Subcategory | null => {
+    if (!subs) return null;
     for (const sub of subs) {
       if (sub.id === targetId) {
         return sub;
@@ -800,20 +826,22 @@ const CategoryView: React.FC<CategoryViewProps> = ({
   };
 
   const currentSubcategory = selectedSubcategory
-    ? findSubcategory(category.subcategories, selectedSubcategory)
+    ? findSubcategory(detailedCategory.subcategories, selectedSubcategory)
     : null;
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    if (selectedSubcategory && !currentSubcategory) {
+    // Only redirect if we have finished loading the category structure and still can't find the subcategory
+    if (!loadingCategory && selectedSubcategory && !currentSubcategory && detailedCategory.subcategories?.length > 0) {
       navigate(`/category/${categorySlug}`, { replace: true });
     }
-  }, [selectedSubcategory, currentSubcategory, navigate, categorySlug]);
+  }, [selectedSubcategory, currentSubcategory, navigate, categorySlug, loadingCategory, detailedCategory]);
 
   const getBackLink = (): string => {
     if (!selectedSubcategory) return '/';
     
     const findParent = (subs: Subcategory[], target: number, parent: number | null = null): number | null => {
+      if (!subs) return null;
       for (const sub of subs) {
         if (sub.id === target) {
           return parent;
@@ -828,7 +856,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
       return null;
     };
     
-    const parentId = findParent(category.subcategories, selectedSubcategory, null);
+    const parentId = findParent(detailedCategory.subcategories, selectedSubcategory, null);
     if (parentId) {
       return `/category/${categorySlug}/sub/${parentId}`;
     } else {
@@ -838,16 +866,19 @@ const CategoryView: React.FC<CategoryViewProps> = ({
 
   const getSelectedSubcategoryName = () => {
     if (!selectedSubcategory) return category.name;
-    const found = findSubcategory(category.subcategories, selectedSubcategory);
+    const found = findSubcategory(detailedCategory.subcategories, selectedSubcategory);
     return found?.name || category.name;
   };
 
   const subcategoriesToShow = useMemo(() => {
+    // If loading, show nothing yet to avoid flicker
+    if (loadingCategory) return [];
+    
     const base = selectedSubcategory
       ? currentSubcategory?.subcategories || []
-      : category.subcategories;
+      : detailedCategory.subcategories;
     return sortSubcategoryTreeData(base);
-  }, [selectedSubcategory, currentSubcategory, category]);
+  }, [selectedSubcategory, currentSubcategory, detailedCategory, loadingCategory]);
 
   const pageHeading = getSelectedSubcategoryName();
   const fallbackTitle = `${pageHeading} | Tesla Parts Center`;
@@ -856,6 +887,8 @@ const CategoryView: React.FC<CategoryViewProps> = ({
     : `Категорія ${category.name}: підберіть запчастини для вашої Tesla.`;
 
   const backLink = getBackLink();
+
+  const loading = loadingProducts || loadingCategory;
 
   return (
     <div className="mt-8">

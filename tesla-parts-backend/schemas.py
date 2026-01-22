@@ -125,3 +125,27 @@ class StaticPageSEORead(StaticPageSEOBase):
 class StaticPageSEOUpdate(BaseModel):
     meta_title: str | None = None
     meta_description: str | None = None
+
+
+# --- Optimized Schemas for Lazy Loading ---
+
+class SubcategoryNoProducts(BaseModel):
+    id: int
+    name: str
+    code: str | None = None
+    image: str | None = None
+    category_id: int
+    parent_id: int | None = None
+    sort_order: int | None = None
+    subcategories: List["SubcategoryNoProducts"] = []
+
+class CategoryListSchema(BaseModel):
+    id: int
+    name: str
+    image: str | None = None
+    sort_order: int
+    meta_title: str | None = None
+    meta_description: str | None = None
+
+class CategoryDetailSchema(CategoryListSchema):
+    subcategories: List[SubcategoryNoProducts] = []

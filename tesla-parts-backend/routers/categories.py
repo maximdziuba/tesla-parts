@@ -11,6 +11,9 @@ from schemas import (
     SubcategoryRead,
     SubcategoryCreate,
     SubcategoryTransferRequest,
+    CategoryListSchema,
+    CategoryDetailSchema,
+    SubcategoryNoProducts,
 )
 from services.image_uploader import image_uploader
 from services.pricing import get_exchange_rate, compute_price_fields
@@ -165,44 +168,37 @@ def _serialize_product(product: Product, rate: float) -> dict:
     prod_data["subcategory_ids"] = _collect_subcategory_ids(product)
     return prod_data
 
-@router.get("/", response_model=List[CategoryRead])
+@router.get("/", response_model=List[CategoryListSchema])
 def get_categories(session: Session = Depends(get_session)):
     categories = session.exec(
         select(Category)
         .order_by(Category.sort_order, Category.id)
-        .options(
-            selectinload(Category.subcategories)
-        )
     ).all()
-    rate = get_exchange_rate(session)
+    return categories
+
+@router.get("/{category_id}", response_model=CategoryDetailSchema)
+def get_category_details(category_id: int, session: Session = Depends(get_session)):
+    category = session.get(Category, category_id)
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+        
+    # Load subcategories without products
+    subcategories = session.exec(
+        select(Subcategory)
+        .where(Subcategory.category_id == category_id)
+        .order_by(Subcategory.sort_order, Subcategory.id)
+    ).all()
+
+    # Filter for top-level subcategories (no parent)
+    root_subs = _sort_subcategories([s for s in subcategories if s.parent_id is None])
     
-    def build_subcategory_tree(sub: Subcategory, all_subs: List[Subcategory]) -> SubcategoryRead:
-        sub_data = sub.model_dump()
-
-        products = _get_products_for_subcategory(session, sub.id)
-        sub_data["products"] = [_serialize_product(prod, rate) for prod in products]
-        
-        # Handle children subcategories
-        children = _sort_subcategories([s for s in all_subs if s.parent_id == sub.id])
-        sub_data["subcategories"] = [build_subcategory_tree(child, all_subs) for child in children]
-        
-        return SubcategoryRead(**sub_data)
-
-    # Manually map to Pydantic models to handle nested images conversion and recursive subcategories
-    result = []
-    for cat in categories:
-        cat_data = cat.model_dump()
-        
-        # Filter for top-level subcategories (no parent)
-        root_subs = _sort_subcategories([s for s in cat.subcategories if s.parent_id is None])
-        
-        # Build tree for each root subcategory
-        # We pass cat.subcategories (all subs in this category) to find children
-        cat_data["subcategories"] = [build_subcategory_tree(sub, cat.subcategories) for sub in root_subs]
-        
-        result.append(CategoryRead(**cat_data))
-        
-    return result
+    cat_data = category.model_dump()
+    cat_data["subcategories"] = [
+        _serialize_subcategory_tree_no_products(sub, subcategories) 
+        for sub in root_subs
+    ]
+    
+    return CategoryDetailSchema(**cat_data)
 
 def _validate_target_parent(
     session: Session,
@@ -328,6 +324,19 @@ def _serialize_subcategory_tree(
         for child in children
     ]
     return SubcategoryRead(**sub_data)
+
+
+def _serialize_subcategory_tree_no_products(
+    root: Subcategory, all_subs: List[Subcategory]
+) -> SubcategoryNoProducts:
+    sub_data = root.model_dump()
+    
+    children = _sort_subcategories([sub for sub in all_subs if sub.parent_id == root.id])
+    sub_data["subcategories"] = [
+        _serialize_subcategory_tree_no_products(child, all_subs)
+        for child in children
+    ]
+    return SubcategoryNoProducts(**sub_data)
 
 
 def _build_subcategory_response(

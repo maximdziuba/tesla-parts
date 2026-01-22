@@ -54,6 +54,12 @@ export const api = {
         return res.json();
     },
 
+    getCategory: async (id: number): Promise<Category> => {
+        const res = await fetch(`${API_URL}/categories/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch category details');
+        return res.json();
+    },
+
     createOrder: async (orderData: OrderData) => {
         // Transform frontend OrderData to backend schema if needed
         // Backend expects: items, totalUSD, customer, delivery, paymentMethod
