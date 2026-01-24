@@ -41,9 +41,10 @@ export const ProductList: React.FC = () => {
     }
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
+      const cleanSearch = lower.replace(/-/g, '');
       result = result.filter(p =>
         p.name.toLowerCase().includes(lower) ||
-        (p.detail_number && p.detail_number.toLowerCase().includes(lower)) ||
+        (p.detail_number && p.detail_number.toLowerCase().replace(/-/g, '').includes(cleanSearch)) ||
         (p.cross_number && p.cross_number.toLowerCase().includes(lower))
       );
     }

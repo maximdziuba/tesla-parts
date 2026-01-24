@@ -5,6 +5,7 @@ import shutil
 import os
 import re
 from sqlalchemy.orm import selectinload
+from sqlalchemy import func
 from database import get_session
 from models import Product, ProductImage, ProductSubcategoryLink, Category
 from schemas import ProductCreate, ProductRead, ProductBulkDeleteRequest
@@ -143,10 +144,11 @@ def read_products(
         search_term = f"%{search}%"
         # Normalize search for cross/detail numbers (remove dashes/spaces) could be an improvement, 
         # but basic ILIKE is a good start.
+        search_term_clean = f"%{search.replace('-', '')}%"
         query = query.where(
             or_(
                 col(Product.name).ilike(search_term),
-                col(Product.detail_number).ilike(search_term),
+                func.replace(Product.detail_number, "-", "").ilike(search_term_clean),
                 col(Product.cross_number).ilike(search_term),
                 col(Product.description).ilike(search_term)
             )
