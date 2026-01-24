@@ -166,7 +166,7 @@ export const ApiService = {
   },
 
   getProducts: async (): Promise<Product[]> => {
-    const res = await _authenticatedFetch(`${API_URL}/products/`, { headers: getHeaders() });
+    const res = await _authenticatedFetch(`${API_URL}/products/?limit=10000`, { headers: getHeaders() });
     if (!res.ok) throw new Error('Failed to fetch products');
     return res.json();
   },
@@ -319,9 +319,46 @@ export const ApiService = {
   },
 
   getCategories: async (): Promise<Category[]> => {
+    // 1. Fetch basic list to get IDs
     const res = await _authenticatedFetch(`${API_URL}/categories/`, { headers: getHeaders() });
     if (!res.ok) throw new Error('Failed to fetch categories');
-    return res.json();
+    const basicCategories: Category[] = await res.json();
+
+    // 2. Fetch full structure for each category (to get subcategories)
+    // AND Fetch all products to populate counts
+    const productsRes = await _authenticatedFetch(`${API_URL}/products/?limit=10000`, { headers: getHeaders() });
+    const allProducts: Product[] = productsRes.ok ? await productsRes.json() : [];
+
+    const categoriesDetails: Category[] = await Promise.all(
+        basicCategories.map(c => 
+            _authenticatedFetch(`${API_URL}/categories/${c.id}`, { headers: getHeaders() })
+                .then(r => r.ok ? r.json() : c)
+        )
+    );
+
+    // 3. Map products to subcategories
+    const attachProductsToTree = (subs: Subcategory[]) => {
+        subs.forEach(sub => {
+            // Find products for this subcategory (direct and linked)
+            sub.products = allProducts.filter(p => 
+                p.subcategory_id === sub.id || 
+                (p.subcategory_ids && p.subcategory_ids.includes(sub.id))
+            );
+            
+            if (sub.subcategories) {
+                attachProductsToTree(sub.subcategories);
+            }
+        });
+    };
+
+    const finalCategories = categoriesDetails.map((catDetail) => {
+         if (catDetail.subcategories) {
+             attachProductsToTree(catDetail.subcategories);
+         }
+         return catDetail;
+    });
+
+    return finalCategories;
   },
 
   createCategory: async (name: string, file?: File, sort_order?: number, meta_title?: string, meta_description?: string): Promise<Category> => {
