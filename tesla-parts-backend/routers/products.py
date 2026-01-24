@@ -111,7 +111,15 @@ def read_products(
             # Filter by legacy category name field
             # AND/OR filter by subcategories belonging to this category
             # For now, adhering to existing pattern using the string field as primary
-            query = query.where(Product.category == target_category.name)
+            # FIX 1: Use contains for partial match (comma-separated)
+            query = query.where(col(Product.category).contains(target_category.name))
+            
+            # FIX 2: If we are in "parent category view" (no subcategory_id),
+            # hide products that belong to a subcategory.
+            if not subcategory_id:
+                query = query.where(Product.subcategory_id.is_(None))
+                # Also exclude if they are linked to any subcategory
+                query = query.where(~Product.linked_subcategories.any())
         else:
             # If slug doesn't match any category, return empty or handle as 404? 
             # Returning empty list is safer for list endpoint
