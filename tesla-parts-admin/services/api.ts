@@ -185,6 +185,7 @@ export const ApiService = {
     formData.append('priceUSD', (product.priceUSD || 0).toString());
     formData.append('description', product.description);
     formData.append('inStock', product.inStock.toString());
+    formData.append('sort_order', (product.sort_order ?? 0).toString());
     formData.append('cross_number', product.cross_number);
     formData.append('meta_title', product.meta_title ?? '');
     formData.append('meta_description', product.meta_description ?? '');
@@ -228,6 +229,7 @@ export const ApiService = {
     formData.append('priceUSD', (product.priceUSD || 0).toString());
     formData.append('description', product.description);
     formData.append('inStock', product.inStock.toString());
+    formData.append('sort_order', (product.sort_order ?? 0).toString());
     formData.append('cross_number', product.cross_number);
     formData.append('meta_title', product.meta_title ?? '');
     formData.append('meta_description', product.meta_description ?? '');
@@ -355,6 +357,12 @@ export const ApiService = {
          if (catDetail.subcategories) {
              attachProductsToTree(catDetail.subcategories);
          }
+         // Find products that belong to this category name but have NO subcategory assigned
+         catDetail.products = allProducts.filter(p => 
+            p.category.includes(catDetail.name) && 
+            !p.subcategory_id && 
+            (!p.subcategory_ids || p.subcategory_ids.length === 0)
+         );
          return catDetail;
     });
 

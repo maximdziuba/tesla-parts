@@ -155,9 +155,12 @@ def read_products(
         )
 
     # 4. Sorting
-    # Priority: In Stock (True) first, then Sort Order (if exists) or Name
-    # Product.inStock is boolean. True=1, False=0. DESC gives True first.
-    query = query.order_by(col(Product.inStock).desc(), col(Product.name).asc())
+    # Priority: Sort Order (DESC), In Stock (DESC), then Name (ASC)
+    query = query.order_by(
+        col(Product.sort_order).desc(),
+        col(Product.inStock).desc(), 
+        col(Product.name).asc()
+    )
 
     # 5. Pagination
     query = query.offset(offset).limit(limit)
@@ -199,6 +202,7 @@ async def create_product(
     priceUSD: float = Form(...),
     description: str = Form(...),
     inStock: bool = Form(...),
+    sort_order: int = Form(0),
     detail_number: Optional[str] = Form(None),
     cross_number: Optional[str] = Form(None),
     meta_title: Optional[str] = Form(None),
@@ -244,6 +248,7 @@ async def create_product(
         priceUSD=priceUSD,
         description=description,
         inStock=inStock,
+        sort_order=sort_order,
         detail_number=detail_number,
         cross_number=cross_number,
         meta_title=meta_title,
@@ -288,6 +293,7 @@ async def update_product(
     priceUSD: float = Form(...),
     description: str = Form(...),
     inStock: bool = Form(...),
+    sort_order: int = Form(0),
     detail_number: Optional[str] = Form(None),
     cross_number: Optional[str] = Form(None),
     meta_title: Optional[str] = Form(None),
@@ -308,6 +314,7 @@ async def update_product(
     product.priceUSD = priceUSD
     product.description = description
     product.inStock = inStock
+    product.sort_order = sort_order
     product.detail_number = detail_number
     product.cross_number = cross_number
     product.meta_title = meta_title

@@ -18,6 +18,7 @@ export interface Category {
   meta_title?: string | null;
   meta_description?: string | null;
   subcategories: Subcategory[];
+  products?: Product[];
 }
 
 export interface Product {
@@ -31,6 +32,7 @@ export interface Product {
   images?: string[];
   description: string;
   inStock: boolean;
+  sort_order?: number;
   detail_number?: string;
   priceUSD?: number;
   cross_number: string;

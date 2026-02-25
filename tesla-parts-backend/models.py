@@ -49,6 +49,7 @@ class Product(SQLModel, table=True):
     image: str
     description: str
     inStock: bool
+    sort_order: int = Field(default=0, index=True)
     detail_number: Optional[str] = None
     cross_number: Optional[str] = None # Made optional
     meta_title: Optional[str] = None

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ApiService } from '../services/api';
 import { Category, Subcategory, Product } from '../types';
 import {
@@ -14,6 +15,9 @@ import {
     Check,
     X,
     ArrowLeftRight,
+    Package,
+    ArrowUp,
+    ArrowDown,
 } from 'lucide-react';
 
 interface SubcategoryItemProps {
@@ -25,6 +29,8 @@ interface SubcategoryItemProps {
     onCreate: (categoryId: number, name: string, code?: string, parentId?: number, file?: File, sortOrder?: number) => void;
     onEdit: (id: number, name: string, code: string, parentId?: number, file?: File, sortOrder?: number) => void;
     onTransfer: (id: number, targetCategoryId: number, targetParentId: number | undefined, mode: 'move' | 'copy') => Promise<void>;
+    onDeleteProduct: (id: string) => Promise<void>;
+    onUpdateProductSort: (product: Product, delta: number) => Promise<void>;
 }
 
 const collectDescendantIds = (sub: Subcategory): number[] => {
@@ -97,11 +103,14 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
     onCreate,
     onEdit,
     onTransfer,
+    onDeleteProduct,
+    onUpdateProductSort,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isAddingChild, setIsAddingChild] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [showTransfer, setShowTransfer] = useState(false);
+    const [showProducts, setShowProducts] = useState(false);
     const [transferCategoryId, setTransferCategoryId] = useState<number>(categoryId);
     const [transferParentId, setTransferParentId] = useState<number | ''>(subcategory.parent_id ?? '');
     const [isTransferring, setIsTransferring] = useState(false);
@@ -187,20 +196,25 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
     };
 
     const hasChildren = subcategory.subcategories && subcategory.subcategories.length > 0;
+    const hasProducts = subcategory.products && subcategory.products.length > 0;
+    const canExpand = hasChildren || hasProducts;
 
     return (
         <div className="border-l border-gray-100 ml-4">
             <div className={`flex items-center justify-between py-2 hover:bg-gray-50 rounded px-2 ${level > 0 ? 'ml-4' : ''}`}>
-                <div className="flex items-center gap-2 text-gray-700 flex-1">
-                    {hasChildren && (
-                        <button onClick={() => setIsExpanded(!isExpanded)} className="p-1 hover:bg-gray-200 rounded">
+                <div 
+                    className={`flex items-center gap-2 text-gray-700 flex-1 ${canExpand ? 'cursor-pointer' : ''}`}
+                    onClick={() => canExpand && setIsExpanded(!isExpanded)}
+                >
+                    {canExpand && (
+                        <div className="p-1 hover:bg-gray-200 rounded">
                             {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                        </button>
+                        </div>
                     )}
-                    {!hasChildren && <div className="w-6" />} {/* Spacer */}
+                    {!canExpand && <div className="w-6" />} {/* Spacer */}
 
                     {isEditing ? (
-                        <div className="flex items-center gap-2 flex-1 flex-wrap">
+                        <div className="flex items-center gap-2 flex-1 flex-wrap" onClick={e => e.stopPropagation()}>
                             <input
                                 type="text"
                                 value={editName}
@@ -270,13 +284,21 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                             )}
                             <span className="font-medium">{subcategory.name}</span>
                             {subcategory.code && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Код: {subcategory.code}</span>}
-                            <span className="text-xs text-gray-400">#{subcategory.sort_order ?? 0}</span>
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">({productCount})</span>
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                {productCount} товарів
+                            </span>
                         </>
                     )}
                 </div>
                 {!isEditing && (
                     <div className="flex items-center gap-2">
+                        <Link
+                            to={`/products/new?subcategory_id=${subcategory.id}&category_id=${categoryId}`}
+                            className="text-gray-400 hover:text-green-600 p-1"
+                            title="Додати товар"
+                        >
+                            <Package size={16} />
+                        </Link>
                         <button
                             onClick={() => setIsEditing(true)}
                             className="text-gray-400 hover:text-blue-500 p-1"
@@ -285,21 +307,30 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                             <Pencil size={16} />
                         </button>
                         <button
-                            onClick={() => setIsAddingChild(!isAddingChild)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsAddingChild(!isAddingChild);
+                            }}
                             className="text-gray-400 hover:text-tesla-red p-1"
                             title="Додати підкатегорію"
                         >
                             <Plus size={16} />
                         </button>
                         <button
-                            onClick={() => setShowTransfer(!showTransfer)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowTransfer(!showTransfer);
+                            }}
                             className="text-gray-400 hover:text-red-500 p-1"
                             title="Перемістити / копіювати"
                         >
                             <ArrowLeftRight size={16} />
                         </button>
                         <button
-                            onClick={() => onDelete(subcategory.id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(subcategory.id);
+                            }}
                             className="text-gray-400 hover:text-red-500 p-1"
                             title="Видалити"
                         >
@@ -426,22 +457,117 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                 </div>
             )}
 
-            {/* Children */}
-            {isExpanded && hasChildren && (
-                <div className="ml-2">
-                    {subcategory.subcategories?.map(child => (
-                        <SubcategoryItem
-                            key={child.id}
-                            subcategory={child}
-                            categoryId={categoryId}
-                            categories={categories}
-                            level={level + 1}
-                            onDelete={onDelete}
-                            onCreate={onCreate}
-                            onEdit={onEdit}
-                            onTransfer={onTransfer}
-                        />
-                    ))}
+            {/* Products List & Children */}
+            {isExpanded && (
+                <div className="mt-2">
+                    {/* Products List */}
+                    {hasProducts && (
+                        <div className="ml-8 mb-4 bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm">
+                            <div className="bg-gray-50 px-3 py-2 border-b border-gray-100 flex justify-between items-center">
+                                <span className="text-xs font-bold uppercase text-gray-500">Товари в підкатегорії</span>
+                                <button onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }} className="text-gray-400 hover:text-gray-600">
+                                    <X size={14} />
+                                </button>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-xs text-left">
+                                    <thead className="bg-gray-50 text-gray-500 uppercase border-b border-gray-100">
+                                        <tr>
+                                            <th className="px-3 py-2 w-12 text-center">Сорт.</th>
+                                            <th className="px-3 py-2">Товар</th>
+                                            <th className="px-3 py-2">Ціна</th>
+                                            <th className="px-3 py-2">Статус</th>
+                                            <th className="px-3 py-2 text-right">Дії</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {[...subcategory.products!]
+                                            .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0) || a.name.localeCompare(b.name))
+                                            .map((product) => (
+                                            <tr key={product.id} className="hover:bg-gray-50">
+                                                <td className="px-3 py-2">
+                                                    <div className="flex flex-col items-center">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); onUpdateProductSort(product, 1); }}
+                                                            className="text-gray-400 hover:text-tesla-red p-0.5"
+                                                            title="Вгору"
+                                                        >
+                                                            <ArrowUp size={14} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); onUpdateProductSort(product, -1); }}
+                                                            className="text-gray-400 hover:text-tesla-red p-0.5"
+                                                            title="Вниз"
+                                                        >
+                                                            <ArrowDown size={14} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <img src={product.image} alt="" className="w-8 h-8 rounded object-cover border border-gray-100" />
+                                                        <div>
+                                                            <div className="font-medium text-gray-900">{product.name}</div>
+                                                            <div className="text-[10px] text-gray-400">{product.detail_number}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-2 font-medium">{product.priceUSD} $</td>
+                                                <td className="px-3 py-2">
+                                                    <span className={`${product.inStock ? 'text-green-600' : 'text-red-600 font-bold'}`}>
+                                                        {product.inStock ? 'В наявності' : 'Немає'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <div className="flex justify-end gap-1">
+                                                        <Link
+                                                            to={`/products/edit/${product.id}`}
+                                                            className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                                                            title="Редагувати"
+                                                        >
+                                                            <Pencil size={14} />
+                                                        </Link>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (confirm('Видалити цей товар?')) {
+                                                                    onDeleteProduct(product.id);
+                                                                }
+                                                            }}
+                                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                            title="Видалити"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Children Subcategories */}
+                    {hasChildren && (
+                        <div className="ml-2">
+                            {subcategory.subcategories?.map(child => (
+                                <SubcategoryItem
+                                    key={child.id}
+                                    subcategory={child}
+                                    categoryId={categoryId}
+                                    categories={categories}
+                                    level={level + 1}
+                                    onDelete={onDelete}
+                                    onCreate={onCreate}
+                                                                onEdit={onEdit}
+                                                                onTransfer={onTransfer}
+                                                                onDeleteProduct={onDeleteProduct}
+                                                                onUpdateProductSort={onUpdateProductSort}
+                                                            />                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -623,6 +749,33 @@ const CategoryList: React.FC = () => {
             loadCategories();
         } catch (e: any) {
             alert(e.message || "Failed to delete subcategory");
+        }
+    };
+
+    const handleDeleteProduct = async (id: string) => {
+        try {
+            await ApiService.deleteProduct(id);
+            loadCategories();
+        } catch (error) {
+            alert('Не вдалося видалити товар');
+        }
+    };
+
+    const handleUpdateProductSort = async (product: Product, delta: number) => {
+        try {
+            const newSortOrder = (product.sort_order ?? 0) + delta;
+            await ApiService.updateProduct(product.id, {
+                ...product,
+                sort_order: newSortOrder,
+                // Ensure files is empty so we don't re-upload
+                files: [],
+                // Ensure kept_images includes existing images
+                kept_images: product.images && product.images.length > 0 ? product.images : [product.image]
+            });
+            loadCategories();
+        } catch (error) {
+            console.error(error);
+            alert('Не вдалося змінити порядок');
         }
     };
 
@@ -834,14 +987,20 @@ const CategoryList: React.FC = () => {
                                         />
                                     )}
                                     <span className="font-semibold text-lg">{category.name}</span>
-                                    <span className="text-xs text-gray-400">#{category.sort_order ?? 0}</span>
                                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">{category.subcategories.length} підкатегорій</span>
-                                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">({getCategoryProductCount(category)} товарів)</span>
+                                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">({getCategoryProductCount(category)} товарів всього)</span>
                                 </div>
                             )}
 
                             {!editingCategory && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 pr-4">
+                                    <Link
+                                        to={`/products/new?category_id=${category.id}`}
+                                        className="text-gray-400 hover:text-green-600 p-2 rounded transition"
+                                        title="Додати товар в категорію"
+                                    >
+                                        <Package size={18} />
+                                    </Link>
                                     <button
                                         onClick={() => startEditCategory(category)}
                                         className="text-gray-400 hover:text-blue-500 p-2 rounded transition"
@@ -862,6 +1021,94 @@ const CategoryList: React.FC = () => {
 
                         {expandedCategories.includes(category.id) && (
                             <div className="p-4 bg-white">
+                                {/* Category Products (Directly in Category, No Subcategory) */}
+                                {category.products && category.products.length > 0 && (
+                                    <div className="ml-4 mb-6 bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm">
+                                        <div className="bg-gray-50 px-3 py-2 border-b border-gray-100 flex justify-between items-center">
+                                            <span className="text-xs font-bold uppercase text-gray-500">Товари без підкатегорії</span>
+                                            <button onClick={() => toggleExpand(category.id)} className="text-gray-400 hover:text-gray-600">
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-xs text-left">
+                                                <thead className="bg-gray-50 text-gray-500 uppercase border-b border-gray-100">
+                                                    <tr>
+                                                        <th className="px-3 py-2 w-12 text-center">Сорт.</th>
+                                                        <th className="px-3 py-2">Товар</th>
+                                                        <th className="px-3 py-2">Ціна</th>
+                                                        <th className="px-3 py-2">Статус</th>
+                                                        <th className="px-3 py-2 text-right">Дії</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-50">
+                                                    {[...category.products]
+                                                        .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0) || a.name.localeCompare(b.name))
+                                                        .map((product) => (
+                                                        <tr key={product.id} className="hover:bg-gray-50">
+                                                            <td className="px-3 py-2">
+                                                                <div className="flex flex-col items-center">
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); handleUpdateProductSort(product, 1); }}
+                                                                        className="text-gray-400 hover:text-tesla-red p-0.5"
+                                                                        title="Вгору"
+                                                                    >
+                                                                        <ArrowUp size={14} />
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); handleUpdateProductSort(product, -1); }}
+                                                                        className="text-gray-400 hover:text-tesla-red p-0.5"
+                                                                        title="Вниз"
+                                                                    >
+                                                                        <ArrowDown size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-3 py-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <img src={product.image} alt="" className="w-8 h-8 rounded object-cover border border-gray-100" />
+                                                                    <div>
+                                                                        <div className="font-medium text-gray-900">{product.name}</div>
+                                                                        <div className="text-[10px] text-gray-400">{product.detail_number}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-3 py-2 font-medium">{product.priceUSD} $</td>
+                                                            <td className="px-3 py-2">
+                                                                <span className={`${product.inStock ? 'text-green-600' : 'text-red-600 font-bold'}`}>
+                                                                    {product.inStock ? 'В наявності' : 'Немає'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-3 py-2 text-right">
+                                                                <div className="flex justify-end gap-1">
+                                                                    <Link
+                                                                        to={`/products/edit/${product.id}`}
+                                                                        className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                                                                        title="Редагувати"
+                                                                    >
+                                                                        <Pencil size={14} />
+                                                                    </Link>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            if (confirm('Видалити цей товар?')) {
+                                                                                handleDeleteProduct(product.id);
+                                                                            }
+                                                                        }}
+                                                                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                                        title="Видалити"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Subcategories List */}
                                 <div className="space-y-2 mb-4 pl-4">
                                     {category.subcategories.map(sub => (
@@ -874,6 +1121,8 @@ const CategoryList: React.FC = () => {
                                             onCreate={handleCreateSubcategory}
                                             onEdit={handleUpdateSubcategory}
                                             onTransfer={handleTransferSubcategory}
+                                            onDeleteProduct={handleDeleteProduct}
+                                            onUpdateProductSort={handleUpdateProductSort}
                                         />
                                     ))}
                                     {category.subcategories.length === 0 && (

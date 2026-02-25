@@ -76,12 +76,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             active={location.pathname === '/'}
           />
           <SidebarItem
-            to="/products"
-            icon={Car}
-            label="Товари"
-            active={location.pathname === '/products'}
-          />
-          <SidebarItem
             to="/orders"
             icon={ShoppingCart}
             label="Замовлення"
@@ -92,6 +86,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             icon={Layers}
             label="Категорії"
             active={location.pathname === '/categories'}
+          />
+          <SidebarItem
+            to="/products"
+            icon={Layers}
+            label="Товари"
+            active={location.pathname === '/products'}
           />
           <SidebarItem
             to="/settings"
