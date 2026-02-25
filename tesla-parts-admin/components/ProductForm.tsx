@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ApiService } from '../services/api';
 import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { Category, Subcategory } from '../types';
 
 interface CategoryAssignment {
@@ -406,7 +405,7 @@ export const ProductForm: React.FC = () => {
             } else {
                 await ApiService.createProduct(basePayload);
             }
-            navigate('/products');
+            navigate(-1);
         } catch (e) {
             console.error(e);
             alert(isEditMode ? 'Не вдалося оновити товар' : 'Не вдалося створити товар');
@@ -418,10 +417,13 @@ export const ProductForm: React.FC = () => {
     return (
         <div className="max-w-2xl mx-auto">
             <div className="mb-6">
-                <Link to="/products" className="inline-flex items-center text-gray-600 hover:text-gray-900">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="inline-flex items-center text-gray-600 hover:text-gray-900"
+                >
                     <ArrowLeft size={20} className="mr-2" />
-                    Назад до списку
-                </Link>
+                    Назад
+                </button>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
