@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 from typing import List
 from database import create_db_and_tables, engine, get_session
+from migrate_db import migrate
 from routers import products, orders, categories, settings, pages, auth # Import auth router
 from contextlib import asynccontextmanager
 import os
@@ -57,6 +58,7 @@ def ensure_static_seo_records():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    migrate()
     ensure_static_seo_records()
     yield
 
