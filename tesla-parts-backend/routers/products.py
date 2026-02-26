@@ -202,7 +202,7 @@ async def create_product(
     priceUSD: float = Form(...),
     description: str = Form(...),
     inStock: bool = Form(...),
-    sort_order: int = Form(0),
+    sort_order: Optional[int] = Form(None),
     detail_number: Optional[str] = Form(None),
     cross_number: Optional[str] = Form(None),
     meta_title: Optional[str] = Form(None),
@@ -236,6 +236,22 @@ async def create_product(
     primary_subcategory_id = (
         normalized_subcategories[0] if normalized_subcategories else None
     )
+
+    if sort_order is None:
+        # Find current min sort_order within the group to place at bottom
+        if primary_subcategory_id:
+            query = select(func.min(Product.sort_order)).where(Product.subcategory_id == primary_subcategory_id)
+        else:
+            # For products directly in category name
+            # We assume the first category name in the list is the primary one
+            first_cat = _split_categories(category)[0] if category else None
+            if first_cat:
+                query = select(func.min(Product.sort_order)).where(col(Product.category).contains(first_cat)).where(Product.subcategory_id == None)
+            else:
+                query = select(func.min(Product.sort_order))
+        
+        min_val = session.exec(query).one()
+        sort_order = (min_val - 10) if min_val is not None else 1000
 
     rate = get_exchange_rate(session)
 

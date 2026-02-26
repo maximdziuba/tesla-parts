@@ -94,7 +94,7 @@ const Header: React.FC<HeaderProps> = ({
     return currency === Currency.UAH ? cartTotalUSD * rate : cartTotalUSD;
   })();
 
-  const sortedCategories = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const sortedCategories = [...categories].sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0));
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">

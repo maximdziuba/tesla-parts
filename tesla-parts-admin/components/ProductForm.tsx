@@ -89,7 +89,7 @@ export const ProductForm: React.FC = () => {
         priceUSD: 0,
         description: '',
         inStock: true,
-        sort_order: 0,
+        sort_order: undefined as number | undefined,
         detail_number: '',
         cross_number: '',
         meta_title: '',

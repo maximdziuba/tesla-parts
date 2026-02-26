@@ -54,7 +54,7 @@ def _get_next_subcategory_sort_order(
 
 
 def _sort_subcategories(subs: List[Subcategory]) -> List[Subcategory]:
-    return sorted(subs, key=lambda s: ((s.sort_order or 0), s.id or 0))
+    return sorted(subs, key=lambda s: (-(s.sort_order or 0), s.id or 0))
 
 
 def _split_categories(value: Optional[str]) -> List[str]:
@@ -172,7 +172,7 @@ def _serialize_product(product: Product, rate: float) -> dict:
 def get_categories(session: Session = Depends(get_session)):
     categories = session.exec(
         select(Category)
-        .order_by(Category.sort_order, Category.id)
+        .order_by(Category.sort_order.desc(), Category.id)
     ).all()
     return categories
 
@@ -186,7 +186,7 @@ def get_category_details(category_id: int, session: Session = Depends(get_sessio
     subcategories = session.exec(
         select(Subcategory)
         .where(Subcategory.category_id == category_id)
-        .order_by(Subcategory.sort_order, Subcategory.id)
+        .order_by(Subcategory.sort_order.desc(), Subcategory.id)
     ).all()
 
     # Filter for top-level subcategories (no parent)
@@ -306,7 +306,7 @@ def _load_subcategories_for_category(
     return session.exec(
         select(Subcategory)
         .where(Subcategory.category_id == category_id)
-        .order_by(Subcategory.sort_order, Subcategory.id)
+        .order_by(Subcategory.sort_order.desc(), Subcategory.id)
         .options(selectinload(Subcategory.products))
     ).all()
 
@@ -394,12 +394,14 @@ async def create_category(
     if file and file.filename:
         image_url = await image_uploader.upload_image(file, folder="tesla-parts/categories")
 
-    order_value = sort_order if sort_order is not None else _get_next_category_sort_order(session)
+    if sort_order is None:
+        min_order = session.exec(select(func.min(Category.sort_order))).one()
+        sort_order = (min_order - 10) if min_order is not None else 1000
 
     db_category = Category(
         name=name,
         image=image_url,
-        sort_order=order_value,
+        sort_order=sort_order,
         meta_title=meta_title or None,
         meta_description=meta_description or None,
     )
@@ -425,11 +427,16 @@ async def create_subcategory(
         image_url = await image_uploader.upload_image(file, folder="tesla-parts/subcategories")
 
     parent_value = parent_id if parent_id is not None else None
-    order_value = (
-        sort_order
-        if sort_order is not None
-        else _get_next_subcategory_sort_order(session, category_id, parent_value)
-    )
+    
+    if sort_order is None:
+        query = select(func.min(Subcategory.sort_order)).where(Subcategory.category_id == category_id)
+        if parent_value is None:
+            query = query.where(Subcategory.parent_id.is_(None))
+        else:
+            query = query.where(Subcategory.parent_id == parent_value)
+        
+        min_order = session.exec(query).one()
+        sort_order = (min_order - 10) if min_order is not None else 1000
 
     db_subcategory = Subcategory(
         name=name,
@@ -437,7 +444,7 @@ async def create_subcategory(
         category_id=category_id,
         parent_id=parent_value,
         image=image_url,
-        sort_order=order_value,
+        sort_order=sort_order,
     )
     session.add(db_subcategory)
     session.commit()
