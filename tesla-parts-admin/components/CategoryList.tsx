@@ -30,7 +30,7 @@ interface SubcategoryItemProps {
     onEdit: (id: number, name: string, code: string, parentId?: number, file?: File, sortOrder?: number) => void;
     onTransfer: (id: number, targetCategoryId: number, targetParentId: number | undefined, mode: 'move' | 'copy') => Promise<void>;
     onDeleteProduct: (id: string) => Promise<void>;
-    onUpdateProductSort: (product: Product, delta: number) => Promise<void>;
+    onUpdateProductSort: (product: Product, newSortOrder: number) => Promise<void>;
 }
 
 const collectDescendantIds = (sub: Subcategory): number[] => {
@@ -481,68 +481,85 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
-                                        {[...subcategory.products!]
-                                            .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0) || a.name.localeCompare(b.name))
-                                            .map((product) => (
-                                            <tr key={product.id} className="hover:bg-gray-50">
-                                                <td className="px-3 py-2">
-                                                    <div className="flex flex-col items-center">
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); onUpdateProductSort(product, 1); }}
-                                                            className="text-gray-400 hover:text-tesla-red p-0.5"
-                                                            title="Вгору"
-                                                        >
-                                                            <ArrowUp size={14} />
-                                                        </button>
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); onUpdateProductSort(product, -1); }}
-                                                            className="text-gray-400 hover:text-tesla-red p-0.5"
-                                                            title="Вниз"
-                                                        >
-                                                            <ArrowDown size={14} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <img src={product.image} alt="" className="w-8 h-8 rounded object-cover border border-gray-100" />
-                                                        <div>
-                                                            <div className="font-medium text-gray-900">{product.name}</div>
-                                                            <div className="text-[10px] text-gray-400">{product.detail_number}</div>
+                                        {(() => {
+                                            const sortedProducts = [...subcategory.products!]
+                                                .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0) || a.name.localeCompare(b.name));
+                                            
+                                            return sortedProducts.map((product, idx) => (
+                                                <tr key={product.id} className="hover:bg-gray-50">
+                                                    <td className="px-3 py-2">
+                                                        <div className="flex flex-col items-center">
+                                                            <button 
+                                                                onClick={(e) => { 
+                                                                    e.stopPropagation(); 
+                                                                    if (idx > 0) {
+                                                                        const targetOrder = (sortedProducts[idx-1].sort_order ?? 0) + 1;
+                                                                        onUpdateProductSort(product, targetOrder);
+                                                                    }
+                                                                }}
+                                                                disabled={idx === 0}
+                                                                className={`p-0.5 ${idx === 0 ? 'text-gray-200' : 'text-gray-400 hover:text-tesla-red'}`}
+                                                                title="Вгору"
+                                                            >
+                                                                <ArrowUp size={14} />
+                                                            </button>
+                                                            <button 
+                                                                onClick={(e) => { 
+                                                                    e.stopPropagation(); 
+                                                                    if (idx < sortedProducts.length - 1) {
+                                                                        const targetOrder = (sortedProducts[idx+1].sort_order ?? 0) - 1;
+                                                                        onUpdateProductSort(product, targetOrder);
+                                                                    }
+                                                                }}
+                                                                disabled={idx === sortedProducts.length - 1}
+                                                                className={`p-0.5 ${idx === sortedProducts.length - 1 ? 'text-gray-200' : 'text-gray-400 hover:text-tesla-red'}`}
+                                                                title="Вниз"
+                                                            >
+                                                                <ArrowDown size={14} />
+                                                            </button>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-3 py-2 font-medium">{product.priceUSD} $</td>
-                                                <td className="px-3 py-2">
-                                                    <span className={`${product.inStock ? 'text-green-600' : 'text-red-600 font-bold'}`}>
-                                                        {product.inStock ? 'В наявності' : 'Немає'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-3 py-2 text-right">
-                                                    <div className="flex justify-end gap-1">
-                                                        <Link
-                                                            to={`/products/edit/${product.id}`}
-                                                            className="p-1 text-blue-500 hover:bg-blue-50 rounded"
-                                                            title="Редагувати"
-                                                        >
-                                                            <Pencil size={14} />
-                                                        </Link>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (confirm('Видалити цей товар?')) {
-                                                                    onDeleteProduct(product.id);
-                                                                }
-                                                            }}
-                                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
-                                                            title="Видалити"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <img src={product.image} alt="" className="w-8 h-8 rounded object-cover border border-gray-100" />
+                                                            <div>
+                                                                <div className="font-medium text-gray-900">{product.name}</div>
+                                                                <div className="text-[10px] text-gray-400">{product.detail_number}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-2 font-medium">{product.priceUSD} $</td>
+                                                    <td className="px-3 py-2">
+                                                        <span className={`${product.inStock ? 'text-green-600' : 'text-red-600 font-bold'}`}>
+                                                            {product.inStock ? 'В наявності' : 'Немає'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right">
+                                                        <div className="flex justify-end gap-1">
+                                                            <Link
+                                                                to={`/products/edit/${product.id}`}
+                                                                className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                                                                title="Редагувати"
+                                                            >
+                                                                <Pencil size={14} />
+                                                            </Link>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (confirm('Видалити цей товар?')) {
+                                                                        onDeleteProduct(product.id);
+                                                                    }
+                                                                }}
+                                                                className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                                title="Видалити"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ));
+                                        })()}
                                     </tbody>
                                 </table>
                             </div>
@@ -761,9 +778,8 @@ const CategoryList: React.FC = () => {
         }
     };
 
-    const handleUpdateProductSort = async (product: Product, delta: number) => {
+    const handleUpdateProductSort = async (product: Product, newSortOrder: number) => {
         try {
-            const newSortOrder = (product.sort_order ?? 0) + delta;
             await ApiService.updateProduct(product.id, {
                 ...product,
                 sort_order: newSortOrder,
@@ -1042,67 +1058,84 @@ const CategoryList: React.FC = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-50">
-                                                    {[...category.products]
-                                                        .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0) || a.name.localeCompare(b.name))
-                                                        .map((product) => (
-                                                        <tr key={product.id} className="hover:bg-gray-50">
-                                                            <td className="px-3 py-2">
-                                                                <div className="flex flex-col items-center">
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); handleUpdateProductSort(product, 1); }}
-                                                                        className="text-gray-400 hover:text-tesla-red p-0.5"
-                                                                        title="Вгору"
-                                                                    >
-                                                                        <ArrowUp size={14} />
-                                                                    </button>
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); handleUpdateProductSort(product, -1); }}
-                                                                        className="text-gray-400 hover:text-tesla-red p-0.5"
-                                                                        title="Вниз"
-                                                                    >
-                                                                        <ArrowDown size={14} />
-                                                                    </button>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-3 py-2">
-                                                                <div className="flex items-center gap-2">
-                                                                    <img src={product.image} alt="" className="w-8 h-8 rounded object-cover border border-gray-100" />
-                                                                    <div>
-                                                                        <div className="font-medium text-gray-900">{product.name}</div>
-                                                                        <div className="text-[10px] text-gray-400">{product.detail_number}</div>
+                                                    {(() => {
+                                                        const sortedCatProducts = [...category.products]
+                                                            .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0) || a.name.localeCompare(b.name));
+                                                        
+                                                        return sortedCatProducts.map((product, idx) => (
+                                                            <tr key={product.id} className="hover:bg-gray-50">
+                                                                <td className="px-3 py-2">
+                                                                    <div className="flex flex-col items-center">
+                                                                        <button 
+                                                                            onClick={(e) => { 
+                                                                                e.stopPropagation(); 
+                                                                                if (idx > 0) {
+                                                                                    const targetOrder = (sortedCatProducts[idx-1].sort_order ?? 0) + 1;
+                                                                                    handleUpdateProductSort(product, targetOrder);
+                                                                                }
+                                                                            }}
+                                                                            disabled={idx === 0}
+                                                                            className={`p-0.5 ${idx === 0 ? 'text-gray-200' : 'text-gray-400 hover:text-tesla-red'}`}
+                                                                            title="Вгору"
+                                                                        >
+                                                                            <ArrowUp size={14} />
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={(e) => { 
+                                                                                e.stopPropagation(); 
+                                                                                if (idx < sortedCatProducts.length - 1) {
+                                                                                    const targetOrder = (sortedCatProducts[idx+1].sort_order ?? 0) - 1;
+                                                                                    handleUpdateProductSort(product, targetOrder);
+                                                                                }
+                                                                            }}
+                                                                            disabled={idx < sortedCatProducts.length - 1 ? false : true}
+                                                                            className={`p-0.5 ${idx === sortedCatProducts.length - 1 ? 'text-gray-200' : 'text-gray-400 hover:text-tesla-red'}`}
+                                                                            title="Вниз"
+                                                                        >
+                                                                            <ArrowDown size={14} />
+                                                                        </button>
                                                                     </div>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-3 py-2 font-medium">{product.priceUSD} $</td>
-                                                            <td className="px-3 py-2">
-                                                                <span className={`${product.inStock ? 'text-green-600' : 'text-red-600 font-bold'}`}>
-                                                                    {product.inStock ? 'В наявності' : 'Немає'}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-3 py-2 text-right">
-                                                                <div className="flex justify-end gap-1">
-                                                                    <Link
-                                                                        to={`/products/edit/${product.id}`}
-                                                                        className="p-1 text-blue-500 hover:bg-blue-50 rounded"
-                                                                        title="Редагувати"
-                                                                    >
-                                                                        <Pencil size={14} />
-                                                                    </Link>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            if (confirm('Видалити цей товар?')) {
-                                                                                handleDeleteProduct(product.id);
-                                                                            }
-                                                                        }}
-                                                                        className="p-1 text-red-500 hover:bg-red-50 rounded"
-                                                                        title="Видалити"
-                                                                    >
-                                                                        <Trash2 size={14} />
-                                                                    </button>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
+                                                                </td>
+                                                                <td className="px-3 py-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <img src={product.image} alt="" className="w-8 h-8 rounded object-cover border border-gray-100" />
+                                                                        <div>
+                                                                            <div className="font-medium text-gray-900">{product.name}</div>
+                                                                            <div className="text-[10px] text-gray-400">{product.detail_number}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-3 py-2 font-medium">{product.priceUSD} $</td>
+                                                                <td className="px-3 py-2">
+                                                                    <span className={`${product.inStock ? 'text-green-600' : 'text-red-600 font-bold'}`}>
+                                                                        {product.inStock ? 'В наявності' : 'Немає'}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-3 py-2 text-right">
+                                                                    <div className="flex justify-end gap-1">
+                                                                        <Link
+                                                                            to={`/products/edit/${product.id}`}
+                                                                            className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                                                                            title="Редагувати"
+                                                                        >
+                                                                            <Pencil size={14} />
+                                                                        </Link>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                if (confirm('Видалити цей товар?')) {
+                                                                                    handleDeleteProduct(product.id);
+                                                                                }
+                                                                            }}
+                                                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                                            title="Видалити"
+                                                                        >
+                                                                            <Trash2 size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ));
+                                                    })()}
                                                 </tbody>
                                             </table>
                                         </div>
