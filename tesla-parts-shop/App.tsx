@@ -68,7 +68,7 @@ const findCategorySlugForSubcategory = (categories: Category[], targetId: number
 };
 
 const compareBySortOrder = <T extends { sort_order?: number | null; id?: number }>(a: T, b: T) => {
-  const orderDiff = (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  const orderDiff = (b.sort_order ?? 0) - (a.sort_order ?? 0);
   if (orderDiff !== 0) return orderDiff;
   if (a.id !== undefined && b.id !== undefined) {
     return a.id - b.id;

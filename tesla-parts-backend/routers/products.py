@@ -155,9 +155,12 @@ def read_products(
         )
 
     # 4. Sorting
-    # Priority: In Stock (True) first, then Sort Order (if exists) or Name
-    # Product.inStock is boolean. True=1, False=0. DESC gives True first.
-    query = query.order_by(col(Product.inStock).desc(), col(Product.name).asc())
+    # Priority: Sort Order (DESC), In Stock (DESC), then Name (ASC)
+    query = query.order_by(
+        col(Product.sort_order).desc(),
+        col(Product.inStock).desc(), 
+        col(Product.name).asc()
+    )
 
     # 5. Pagination
     query = query.offset(offset).limit(limit)
@@ -199,6 +202,7 @@ async def create_product(
     priceUSD: float = Form(...),
     description: str = Form(...),
     inStock: bool = Form(...),
+    sort_order: Optional[int] = Form(None),
     detail_number: Optional[str] = Form(None),
     cross_number: Optional[str] = Form(None),
     meta_title: Optional[str] = Form(None),
@@ -233,6 +237,22 @@ async def create_product(
         normalized_subcategories[0] if normalized_subcategories else None
     )
 
+    if sort_order is None:
+        # Find current min sort_order within the group to place at bottom
+        if primary_subcategory_id:
+            query = select(func.min(Product.sort_order)).where(Product.subcategory_id == primary_subcategory_id)
+        else:
+            # For products directly in category name
+            # We assume the first category name in the list is the primary one
+            first_cat = _split_categories(category)[0] if category else None
+            if first_cat:
+                query = select(func.min(Product.sort_order)).where(col(Product.category).contains(first_cat)).where(Product.subcategory_id == None)
+            else:
+                query = select(func.min(Product.sort_order))
+        
+        min_val = session.exec(query).one()
+        sort_order = (min_val - 10) if min_val is not None else 1000
+
     rate = get_exchange_rate(session)
 
     product_data = Product(
@@ -244,6 +264,7 @@ async def create_product(
         priceUSD=priceUSD,
         description=description,
         inStock=inStock,
+        sort_order=sort_order,
         detail_number=detail_number,
         cross_number=cross_number,
         meta_title=meta_title,
@@ -288,6 +309,7 @@ async def update_product(
     priceUSD: float = Form(...),
     description: str = Form(...),
     inStock: bool = Form(...),
+    sort_order: int = Form(0),
     detail_number: Optional[str] = Form(None),
     cross_number: Optional[str] = Form(None),
     meta_title: Optional[str] = Form(None),
@@ -308,6 +330,7 @@ async def update_product(
     product.priceUSD = priceUSD
     product.description = description
     product.inStock = inStock
+    product.sort_order = sort_order
     product.detail_number = detail_number
     product.cross_number = cross_number
     product.meta_title = meta_title

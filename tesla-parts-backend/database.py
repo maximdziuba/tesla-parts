@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, create_engine, Session, select
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 import os
 from models import Settings, User # Import Settings and User model
 from auth import get_password_hash # Import password hashing utility
@@ -22,11 +22,14 @@ def is_sqlite():
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
-    if is_sqlite():
-        _ensure_category_sort_order_column()
-        _ensure_subcategory_sort_order_column()
-        _ensure_product_cross_number_column()
-        _ensure_category_seo_columns()
+    
+    # Run manual migrations for existing tables
+    _ensure_category_sort_order_column()
+    _ensure_subcategory_sort_order_column()
+    _ensure_product_cross_number_column()
+    _ensure_category_seo_columns()
+    _ensure_product_sort_order_column()
+    _ensure_product_subcategory_id_column()
     
     with Session(engine) as session:
         # Check if admin user exists, if not, create it
@@ -42,25 +45,25 @@ def get_session():
         yield session
 
 def _ensure_category_sort_order_column():
-    with engine.connect() as conn:
-        result = conn.execute(text("PRAGMA table_info('category')")).fetchall()
-        columns = {row[1] for row in result}
-        if "sort_order" not in columns:
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("category")]
+    if "sort_order" not in columns:
+        with engine.connect() as conn:
             conn.execute(text("ALTER TABLE category ADD COLUMN sort_order INTEGER DEFAULT 0"))
             conn.commit()
 
 def _ensure_product_cross_number_column():
-    with engine.connect() as conn:
-        result = conn.execute(text("PRAGMA table_info('product')")).fetchall()
-        columns = {row[1] for row in result}
-        if "cross_number" not in columns:
-            conn.execute(text("ALTER TABLE product ADD COLUMN cross_number VARCHAR")) # Changed from VARCHAR DEFAULT ''
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("product")]
+    if "cross_number" not in columns:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE product ADD COLUMN cross_number VARCHAR"))
             conn.commit()
 
 def _ensure_category_seo_columns():
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("category")]
     with engine.connect() as conn:
-        result = conn.execute(text("PRAGMA table_info('category')")).fetchall()
-        columns = {row[1] for row in result}
         if "meta_title" not in columns:
             conn.execute(text("ALTER TABLE category ADD COLUMN meta_title VARCHAR"))
         if "meta_description" not in columns:
@@ -68,9 +71,27 @@ def _ensure_category_seo_columns():
         conn.commit()
 
 def _ensure_subcategory_sort_order_column():
-    with engine.connect() as conn:
-        result = conn.execute(text("PRAGMA table_info('subcategory')")).fetchall()
-        columns = {row[1] for row in result}
-        if "sort_order" not in columns:
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("subcategory")]
+    if "sort_order" not in columns:
+        with engine.connect() as conn:
             conn.execute(text("ALTER TABLE subcategory ADD COLUMN sort_order INTEGER DEFAULT 0"))
+            conn.commit()
+
+def _ensure_product_sort_order_column():
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("product")]
+    if "sort_order" not in columns:
+        print("Adding 'sort_order' column to 'product' table...")
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE product ADD COLUMN sort_order INTEGER DEFAULT 0"))
+            conn.commit()
+
+def _ensure_product_subcategory_id_column():
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("product")]
+    if "subcategory_id" not in columns:
+        print("Adding 'subcategory_id' column to 'product' table...")
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE product ADD COLUMN subcategory_id INTEGER"))
             conn.commit()

@@ -36,6 +36,7 @@ export interface Product {
   images?: string[];
   description: string;
   inStock: boolean;
+  sort_order?: number;
   detail_number?: string;
   cross_number: string;
   meta_title?: string | null;

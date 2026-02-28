@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ApiService } from '../services/api';
 import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { Category, Subcategory } from '../types';
 
 interface CategoryAssignment {
@@ -71,6 +70,7 @@ const SubcategorySelector: React.FC<SubcategorySelectorProps> = ({
 
 export const ProductForm: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { id } = useParams<{ id: string }>();
     const isEditMode = !!id;
 
@@ -89,6 +89,7 @@ export const ProductForm: React.FC = () => {
         priceUSD: 0,
         description: '',
         inStock: true,
+        sort_order: undefined as number | undefined,
         detail_number: '',
         cross_number: '',
         meta_title: '',
@@ -107,10 +108,18 @@ export const ProductForm: React.FC = () => {
 
     useEffect(() => {
         if (!isEditMode) {
-            setCategoryAssignments([createEmptyAssignment()]);
-            setPendingSubcategoryIds(null);
+            const params = new URLSearchParams(location.search);
+            const subId = params.get('subcategory_id');
+            const catId = params.get('category_id');
+
+            if (subId) {
+                setPendingSubcategoryIds([Number(subId)]);
+            } else {
+                setCategoryAssignments([createEmptyAssignment()]);
+                setPendingSubcategoryIds(null);
+            }
         }
-    }, [isEditMode]);
+    }, [isEditMode, location.search]);
 
     const loadProduct = async (productId: string) => {
         try {
@@ -123,6 +132,7 @@ export const ProductForm: React.FC = () => {
                 priceUSD: product.priceUSD || 0,
                 description: product.description,
                 inStock: product.inStock,
+                sort_order: product.sort_order || 0,
                 detail_number: product.detail_number || '',
                 cross_number: product.cross_number || '',
                 meta_title: product.meta_title || '',
@@ -395,7 +405,7 @@ export const ProductForm: React.FC = () => {
             } else {
                 await ApiService.createProduct(basePayload);
             }
-            navigate('/products');
+            navigate(-1);
         } catch (e) {
             console.error(e);
             alert(isEditMode ? 'Не вдалося оновити товар' : 'Не вдалося створити товар');
@@ -407,10 +417,13 @@ export const ProductForm: React.FC = () => {
     return (
         <div className="max-w-2xl mx-auto">
             <div className="mb-6">
-                <Link to="/products" className="inline-flex items-center text-gray-600 hover:text-gray-900">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="inline-flex items-center text-gray-600 hover:text-gray-900"
+                >
                     <ArrowLeft size={20} className="mr-2" />
-                    Назад до списку
-                </Link>
+                    Назад
+                </button>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">

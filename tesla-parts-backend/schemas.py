@@ -11,6 +11,7 @@ class ProductBase(BaseModel):
     image: str
     description: str
     inStock: bool
+    sort_order: int | None = 0
     detail_number: str | None = None
     cross_number: str | None = None # Made optional
     meta_title: str | None = None
