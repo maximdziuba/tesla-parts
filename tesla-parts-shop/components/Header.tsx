@@ -100,7 +100,7 @@ const Header: React.FC<HeaderProps> = ({
     <header className="bg-white shadow-md sticky top-0 z-50">
       {/* Top Row: Utilities & Info */}
       <div className="bg-tesla-dark text-gray-300 text-xs py-2 px-4 border-b border-gray-800">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+        <div className="container mx-auto flex flex-row w-full justify-between items-center gap-2">
           <nav className="hidden md:flex flex-wrap gap-4 md:gap-6 justify-center md:justify-start">
             {headerPages.filter(page => page.is_published).map((page) => (
               <Link 
