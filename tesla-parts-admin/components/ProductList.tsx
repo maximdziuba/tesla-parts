@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
 import { Product } from '../types';
-import { Search, Plus, Filter, Trash2, Pencil } from 'lucide-react';
+import { Search, Plus, Filter, Trash2, Pencil, ArrowUpDown } from 'lucide-react';
 
 import { Link } from 'react-router-dom';
 
@@ -15,6 +15,7 @@ export const ProductList: React.FC = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('Всі');
+  const [sortBy, setSortBy] = useState<string>('default');
   const [loading, setLoading] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
@@ -35,7 +36,7 @@ export const ProductList: React.FC = () => {
   };
 
   useEffect(() => {
-    let result = products;
+    let result = [...products];
     if (categoryFilter !== 'Всі') {
       result = result.filter(p => extractCategories(p.category).includes(categoryFilter));
     }
@@ -48,8 +49,34 @@ export const ProductList: React.FC = () => {
         (p.cross_number && p.cross_number.toLowerCase().includes(lower))
       );
     }
+
+    // Sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'price-asc':
+          return (a.priceUSD || 0) - (b.priceUSD || 0);
+        case 'price-desc':
+          return (b.priceUSD || 0) - (a.priceUSD || 0);
+        case 'cross-asc':
+          return (a.cross_number || '').localeCompare(b.cross_number || '');
+        case 'cross-desc':
+          return (b.cross_number || '').localeCompare(a.cross_number || '');
+        case 'date-newest':
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        case 'date-oldest':
+          return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+        default:
+          // Backend default or preserved order
+          return 0;
+      }
+    });
+
     setFilteredProducts(result);
-  }, [searchTerm, categoryFilter, products]);
+  }, [searchTerm, categoryFilter, sortBy, products]);
 
   const handleDelete = async (id: string) => {
     if (confirm('Ви впевнені, що хочете видалити цей товар?')) {
@@ -143,6 +170,25 @@ export const ProductList: React.FC = () => {
               ))}
             </select>
             <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+          </div>
+
+          <div className="relative">
+            <select
+              className="appearance-none pl-10 pr-8 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="default">За замовчуванням</option>
+              <option value="name-asc">Назва (А-Я)</option>
+              <option value="name-desc">Назва (Я-А)</option>
+              <option value="price-asc">Ціна (дешевше)</option>
+              <option value="price-desc">Ціна (дорожче)</option>
+              <option value="cross-asc">Cross-номер (A-Z)</option>
+              <option value="cross-desc">Cross-номер (Z-A)</option>
+              <option value="date-newest">Спочатку нові</option>
+              <option value="date-oldest">Спочатку старі</option>
+            </select>
+            <ArrowUpDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
           </div>
 
           <Link to="/products/new" className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">

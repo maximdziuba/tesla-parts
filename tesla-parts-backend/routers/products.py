@@ -47,6 +47,10 @@ def _build_product_response(product: Product, rate: float) -> ProductRead:
     p_data["priceUAH"] = price_uah
     p_data["images"] = [img.url for img in product.images]
     p_data["subcategory_ids"] = _collect_subcategory_ids(product)
+    # Ensure created_at is handled as ISO format string for frontend if needed, 
+    # but Pydantic's datetime field handles this naturally.
+    if product.created_at:
+        p_data["created_at"] = product.created_at.isoformat()
     return ProductRead(**p_data)
 
 

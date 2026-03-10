@@ -30,6 +30,7 @@ def create_db_and_tables():
     _ensure_category_seo_columns()
     _ensure_product_sort_order_column()
     _ensure_product_subcategory_id_column()
+    _ensure_product_created_at_column()
     
     with Session(engine) as session:
         # Check if admin user exists, if not, create it
@@ -95,3 +96,26 @@ def _ensure_product_subcategory_id_column():
         with engine.connect() as conn:
             conn.execute(text("ALTER TABLE product ADD COLUMN subcategory_id INTEGER"))
             conn.commit()
+
+def _ensure_product_created_at_column():
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("product")]
+    if "created_at" not in columns:
+        print("Adding 'created_at' column to 'product' table...")
+        with engine.connect() as conn:
+            # Different SQL for different DB types if needed, but SQLModel.metadata.create_all handles initial creation.
+            # For migrations, we manually add it. Using a default timestamp for existing records.
+            # SQLite and PostgreSQL both support this syntax for ADD COLUMN.
+            if is_sqlite():
+                conn.execute(text("ALTER TABLE product ADD COLUMN created_at DATETIME"))
+            else:
+                conn.execute(text("ALTER TABLE product ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"))
+            conn.commit()
+
+            # For SQLite, we might need a manual update for existing records if default wasn't set correctly in ALTER
+            if is_sqlite():
+                 from datetime import datetime
+                 current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                 with engine.connect() as conn2:
+                     conn2.execute(text(f"UPDATE product SET created_at = '{current_time}' WHERE created_at IS NULL"))
+                     conn2.commit()

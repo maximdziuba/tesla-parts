@@ -16,6 +16,7 @@ class ProductBase(BaseModel):
     cross_number: str | None = None # Made optional
     meta_title: str | None = None
     meta_description: str | None = None
+    created_at: datetime | None = None
 
 
 class CartItem(ProductBase):
@@ -37,7 +38,7 @@ class ProductRead(ProductBase):
     subcategory_id: int | None = None
     subcategory_ids: List[int] = []
     images: List[str] = []
-    subcategory_ids: List[int] = []
+    created_at: datetime | None = None
 
 class SubcategoryRead(BaseModel):
     id: int

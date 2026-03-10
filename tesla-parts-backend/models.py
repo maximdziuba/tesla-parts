@@ -54,6 +54,7 @@ class Product(SQLModel, table=True):
     cross_number: Optional[str] = None # Made optional
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
+    created_at: datetime = Field(default_factory=get_kyiv_time)
     
     subcategory: Optional[Subcategory] = Relationship(back_populates="products")
     linked_subcategories: List[Subcategory] = Relationship(
