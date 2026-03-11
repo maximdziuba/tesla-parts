@@ -10,24 +10,27 @@ import {
   Car,
   Layers,
   FileText,
-  Key
+  Key,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
-import { useAuth } from '../AuthContext'; // Import useAuth
+import { useAuth } from '../AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const SidebarItem = ({ to, icon: Icon, label, active }: { to: string, icon: any, label: string, active: boolean }) => (
+const SidebarItem = ({ to, icon: Icon, label, active, collapsed }: { to: string, icon: any, label: string, active: boolean, collapsed: boolean }) => (
   <Link
     to={to}
-    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${active
+    title={collapsed ? label : undefined}
+    className={`flex items-center rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-4 py-3'} ${active
       ? 'bg-red-600 text-white'
       : 'text-gray-400 hover:bg-gray-800 hover:text-white'
       }`}
   >
-    <Icon size={20} />
-    <span className="font-medium">{label}</span>
+    <Icon size={20} className="shrink-0" />
+    {!collapsed && <span className="font-medium whitespace-nowrap overflow-hidden transition-all duration-200">{label}</span>}
   </Link>
 );
 
@@ -35,10 +38,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const { logout } = useAuth(); // Get logout function from useAuth
+  const [collapsed, setCollapsed] = React.useState(false);
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    logout(); // Call the logout function from AuthContext
+    logout();
     navigate('/login');
   };
 
@@ -58,14 +62,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transform transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+        className={`fixed inset-y-0 left-0 z-50 bg-gray-900 text-white transform transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          } ${collapsed ? 'lg:w-20' : 'lg:w-64'} w-64`}
       >
-        <div className="flex items-center gap-2 p-6 border-b border-gray-800">
-          <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
+        <div className={`flex items-center border-b border-gray-800 transition-all duration-300 ${collapsed ? 'justify-center p-4' : 'gap-2 p-6'}`}>
+          <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center shrink-0">
             <span className="font-bold text-white text-lg">T</span>
           </div>
-          <span className="text-xl font-bold tracking-tight">Tesla Admin</span>
+          {!collapsed && <span className="text-xl font-bold tracking-tight whitespace-nowrap overflow-hidden transition-all duration-300">Tesla Admin</span>}
         </div>
 
         <nav className="p-4 space-y-2">
@@ -74,52 +78,60 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             icon={LayoutDashboard}
             label="Дашборд"
             active={location.pathname === '/'}
+            collapsed={collapsed}
           />
           <SidebarItem
             to="/orders"
             icon={ShoppingCart}
             label="Замовлення"
             active={location.pathname === '/orders'}
+            collapsed={collapsed}
           />
           <SidebarItem
             to="/categories"
             icon={Layers}
             label="Категорії"
             active={location.pathname === '/categories'}
+            collapsed={collapsed}
           />
           <SidebarItem
             to="/products"
             icon={Layers}
             label="Товари"
             active={location.pathname === '/products'}
+            collapsed={collapsed}
           />
           <SidebarItem
             to="/settings"
             icon={Settings}
             label="Налаштування"
             active={location.pathname === '/settings'}
+            collapsed={collapsed}
           />
           <SidebarItem
             to="/settings/reset-password"
             icon={Key}
             label="Змінити Пароль"
             active={location.pathname === '/settings/reset-password'}
+            collapsed={collapsed}
           />
           <SidebarItem
             to="/cms"
             icon={FileText}
             label="Контент"
             active={location.pathname === '/cms'}
+            collapsed={collapsed}
           />
         </nav>
 
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-800">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white transition-colors w-full"
+            title={collapsed ? "Вийти" : undefined}
+            className={`flex items-center rounded-lg text-gray-400 hover:text-white transition-all duration-200 w-full ${collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-4 py-3'}`}
           >
-            <LogOut size={20} />
-            <span>Вийти</span>
+            <LogOut size={20} className="shrink-0" />
+            {!collapsed && <span className="whitespace-nowrap overflow-hidden">Вийти</span>}
           </button>
         </div>
       </aside>
@@ -129,15 +141,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Header */}
         <header className="bg-white shadow-sm border-b z-40">
           <div className="flex items-center justify-between px-6 py-4">
-            <button
-              className="lg:hidden p-2 rounded-md hover:bg-gray-100"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <Menu size={24} />
-            </button>
-            <h1 className="text-xl font-semibold text-gray-800">
-              {getPageTitle(location.pathname)}
-            </h1>
+            <div className="flex items-center gap-4">
+              <button
+                className="lg:hidden p-2 rounded-md hover:bg-gray-100"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                <Menu size={24} />
+              </button>
+              <button
+                className="hidden lg:flex p-2 rounded-md hover:bg-gray-100 text-gray-500 transition-colors"
+                onClick={() => setCollapsed(!collapsed)}
+              >
+                <Menu size={24} />
+              </button>
+              <h1 className="text-xl font-semibold text-gray-800">
+                {getPageTitle(location.pathname)}
+              </h1>
+            </div>
             <div className="flex items-center gap-4">
               <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-semibold text-sm border border-red-200">
                 A

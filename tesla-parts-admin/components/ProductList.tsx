@@ -129,8 +129,8 @@ export const ProductList: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <div className="relative w-full md:w-96">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="relative w-full md:w-80 lg:w-96">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input
             type="text"
@@ -141,27 +141,28 @@ export const ProductList: React.FC = () => {
           />
         </div>
 
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
           <button
             onClick={handleBulkDelete}
             disabled={selectedProducts.length === 0}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
+            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors border flex-1 sm:flex-none ${
               selectedProducts.length === 0
                 ? 'text-gray-300 border-gray-200 cursor-not-allowed'
                 : 'text-red-600 border-red-200 hover:bg-red-50'
             }`}
           >
             <Trash2 size={16} />
-            <span>Видалити вибрані</span>
+            <span className="whitespace-nowrap">Видалити вибрані</span>
             {selectedProducts.length > 0 && (
               <span className="text-xs font-semibold bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
                 {selectedProducts.length}
               </span>
             )}
           </button>
-          <div className="relative">
+          
+          <div className="relative flex-1 sm:flex-none">
             <select
-              className="appearance-none pl-10 pr-8 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full appearance-none pl-10 pr-8 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
@@ -172,9 +173,9 @@ export const ProductList: React.FC = () => {
             <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
           </div>
 
-          <div className="relative">
+          <div className="relative flex-1 sm:flex-none">
             <select
-              className="appearance-none pl-10 pr-8 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full appearance-none pl-10 pr-8 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
@@ -191,9 +192,9 @@ export const ProductList: React.FC = () => {
             <ArrowUpDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
           </div>
 
-          <Link to="/products/new" className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+          <Link to="/products/new" className="flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex-1 sm:flex-none">
             <Plus size={20} />
-            <span>Додати Товар</span>
+            <span className="whitespace-nowrap">Додати Товар</span>
           </Link>
         </div>
       </div>
