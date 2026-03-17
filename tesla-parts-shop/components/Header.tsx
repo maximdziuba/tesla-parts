@@ -4,6 +4,7 @@ import { Category, Currency, Page } from '../types';
 import TeslaPartsCenterLogo from './ShopLogo';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../utils/currency';
+import { slugify } from '../utils/slugify';
 
 interface HeaderProps {
   cartCount: number;
@@ -13,7 +14,6 @@ interface HeaderProps {
   categories: Category[];
   setCurrency: (c: Currency) => void;
   onCartClick: () => void;
-  onNavigate: (page: string) => void;
   onSearch: (query: string) => void;
   socialLinks: {
     instagram: string;
@@ -25,8 +25,6 @@ interface HeaderProps {
   headerPages: Page[];
 }
 
-const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-');
-
 const Header: React.FC<HeaderProps> = ({ 
   cartCount, 
   cartTotalUSD, 
@@ -35,7 +33,6 @@ const Header: React.FC<HeaderProps> = ({
   categories,
   setCurrency, 
   onCartClick, 
-  onNavigate,
   onSearch,
   socialLinks,
   phoneNumber,
@@ -168,7 +165,7 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between gap-4">
           
           {/* Logo */}
-          <TeslaPartsCenterLogo onNavigate={onNavigate} />
+          <TeslaPartsCenterLogo />
 
           {/* === НАВІГАЦІЯ КАТЕГОРІЙ === */}
           <div className="flex-1 max-w-2xl px-4 md:px-8">

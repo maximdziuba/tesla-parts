@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { api } from '../services/api';
 import { Category } from '../types';
+import { Link } from 'react-router-dom';
+import { slugify } from '../utils/slugify';
 
 interface HeroProps {
-  onSelectCategory: (category: string) => void;
 }
 
-const Hero: React.FC<HeroProps> = ({ onSelectCategory }) => {
+const Hero: React.FC<HeroProps> = () => {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
@@ -27,9 +28,9 @@ const Hero: React.FC<HeroProps> = ({ onSelectCategory }) => {
       <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 text-tesla-dark">Оберіть модель вашого Tesla</h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {categories.map((category) => (
-          <div
+          <Link
             key={category.id}
-            onClick={() => onSelectCategory(category.name)}
+            to={`/category/${slugify(category.name)}`}
             className="group relative h-64 md:h-96 rounded-2xl overflow-hidden cursor-pointer shadow-lg"
           >
             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-all z-10" />
@@ -47,7 +48,7 @@ const Hero: React.FC<HeroProps> = ({ onSelectCategory }) => {
                 Переглянути каталог <ArrowRight size={16} />
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
       {categories.length === 0 && (

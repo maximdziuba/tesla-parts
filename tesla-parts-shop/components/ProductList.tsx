@@ -3,17 +3,17 @@ import { Product, Currency } from '../types';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 import { formatCurrency } from '../utils/currency';
+import { Link } from 'react-router-dom';
 
 interface ProductListProps {
   products: Product[];
   currency: Currency;
   uahPerUsd: number;
   onAddToCart: (product: Product) => void;
-  onProductClick: (product: Product) => void;
   title?: string;
 }
 
-const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd, onAddToCart, onProductClick, title }) => {
+const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd, onAddToCart, title }) => {
   const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
 
   const getUsdPrice = (product: Product) => {
@@ -45,9 +45,9 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
       {title && <h2 className="text-2xl font-bold mb-6 text-tesla-dark border-l-4 border-tesla-red pl-4">{title}</h2>}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 sm:gap-6">
         {products.map((product) => (
-          <div
+          <Link
             key={product.id}
-            onClick={() => onProductClick(product)}
+            to={`/product/${product.id}`}
             // ЗМІНА 1: hover:shadow-md -> xl:hover:shadow-md
             // ЗМІНА 2: додано select-none
             className="bg-white rounded-xl shadow-sm border border-gray-100 xl:hover:shadow-md transition overflow-hidden flex flex-col cursor-pointer group select-none"
@@ -105,7 +105,7 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
                 </button>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

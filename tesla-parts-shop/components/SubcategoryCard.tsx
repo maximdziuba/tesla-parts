@@ -1,16 +1,17 @@
 import React from 'react';
 import { Subcategory } from '../types';
 import { ChevronRight, Folder } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface SubcategoryCardProps {
     subcategory: Subcategory;
-    onClick: () => void;
+    to: string;
 }
 
-const SubcategoryCard: React.FC<SubcategoryCardProps> = ({ subcategory, onClick }) => {
+const SubcategoryCard: React.FC<SubcategoryCardProps> = ({ subcategory, to }) => {
     return (
-        <div
-            onClick={onClick}
+        <Link
+            to={to}
             // ЗМІНА 1: hover:shadow-md -> xl:hover:shadow-md (тінь тільки на ПК)
             // ЗМІНА 2: додано select-none (щоб текст не виділявся при скролі)
             className="bg-white rounded-xl shadow-sm border border-gray-100 xl:hover:shadow-md transition-all cursor-pointer group overflow-hidden flex items-center p-3 sm:p-6 select-none"
@@ -51,7 +52,7 @@ const SubcategoryCard: React.FC<SubcategoryCardProps> = ({ subcategory, onClick 
             <div className="text-gray-400 active:text-tesla-red xl:group-hover:text-tesla-red transition-colors flex-shrink-0 ml-2">
                 <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-        </div>
+        </Link>
     );
 };
 

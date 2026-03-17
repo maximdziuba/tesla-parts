@@ -14,6 +14,7 @@ import { CheckCircle } from 'lucide-react';
 import TeslaPartsCenterLogo from './components/ShopLogo';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from './constants';
 import SeoHead from './components/SeoHead';
+import { slugify } from './utils/slugify';
 
 const CART_STORAGE_KEY = 'tesla-parts-cart';
 
@@ -42,8 +43,6 @@ const getProductSubcategoryIds = (product: Product): number[] => {
 };
 
 const STATIC_PAGE_SLUGS = new Set(['about', 'delivery', 'returns', 'faq', 'contacts']);
-
-const slugify = (value: string) => value.toLowerCase().trim().replace(/\s+/g, '-');
 
 const categoryContainsSubcategory = (subs: Subcategory[] | undefined, targetId: number): boolean => {
   if (!subs) return false;
@@ -313,65 +312,6 @@ const App: React.FC = () => {
     }
   }, [location.pathname, location.search]);
 
-  const handleNavigate = (view: string) => {
-    if (view !== 'search') {
-      setSearchQuery('');
-    }
-    window.scrollTo(0, 0);
-
-    if (view === 'home') {
-      navigate('/');
-      return;
-    }
-    if (view === 'checkout') {
-      navigate('/checkout');
-      return;
-    }
-    if (view === 'success') {
-      navigate('/success');
-      return;
-    }
-    if (view === 'search') {
-      navigate('/search');
-      return;
-    }
-    if (STATIC_PAGE_SLUGS.has(view)) {
-      navigate(`/info/${view}`);
-      return;
-    }
-    const slug = slugify(view);
-    navigate(`/category/${slug}`);
-  };
-
-  const handleProductClick = (product: Product) => {
-    window.scrollTo(0, 0);
-    navigate(`/product/${product.id}`);
-  };
-
-  const handleProductBack = (product: Product) => {
-    if (previousPathRef.current) {
-      navigate(previousPathRef.current);
-      return;
-    }
-
-    const subcategoryIds = getProductSubcategoryIds(product);
-    if (subcategoryIds.length > 0) {
-      const targetSubId = subcategoryIds[0];
-      const categorySlug = findCategorySlugForSubcategory(categories, targetSubId);
-      if (categorySlug) {
-        navigate(`/category/${categorySlug}/sub/${targetSubId}`);
-        return;
-      }
-    }
-
-    const primaryCategory = getPrimaryCategory(product.category);
-    if (primaryCategory) {
-      handleNavigate(primaryCategory);
-    } else {
-      handleNavigate('home');
-    }
-  };
-
   const handleSearch = (query: string) => {
     window.scrollTo(0, 0);
     navigate(`/search?q=${encodeURIComponent(query)}`);
@@ -391,7 +331,6 @@ const App: React.FC = () => {
       currency={currency}
       uahPerUsd={uahPerUsd}
       addToCart={addToCart}
-      handleProductClick={handleProductClick}
     />
   ) : loading ? (
     <LoadingSpinner />
@@ -409,7 +348,6 @@ const App: React.FC = () => {
         categories={sortedCategories}
         setCurrency={setCurrency}
         onCartClick={() => setIsCartOpen(true)}
-        onNavigate={handleNavigate}
         onSearch={handleSearch}
         socialLinks={socialLinks}
         phoneNumber={contactInfo.phone}
@@ -427,9 +365,7 @@ const App: React.FC = () => {
                 currency={currency}
                 uahPerUsd={uahPerUsd}
                 addToCart={addToCart}
-                handleProductClick={handleProductClick}
                 showHero={!searchQuery}
-                onSelectCategory={handleNavigate}
                 seoRecord={staticSeo['home']}
               />
             }
@@ -441,7 +377,6 @@ const App: React.FC = () => {
                 currency={currency}
                 uahPerUsd={uahPerUsd}
                 addToCart={addToCart}
-                handleProductClick={handleProductClick}
                 searchQuery={searchQuery}
                 seoRecord={staticSeo['search']}
               />
@@ -456,8 +391,8 @@ const App: React.FC = () => {
                 currency={currency}
                 uahPerUsd={uahPerUsd}
                 onAddToCart={addToCart}
-                onNavigateBack={handleProductBack}
-                onNavigateHome={() => handleNavigate('home')}
+                categories={categories}
+                previousPath={previousPathRef.current}
               />
             }
           />
@@ -478,11 +413,11 @@ const App: React.FC = () => {
           />
           <Route
             path="/success"
-            element={<SuccessView onNavigateHome={() => handleNavigate('home')} />}
+            element={<SuccessView />}
           />
           <Route
             path="/info/:slug"
-            element={<StaticPageRoute onNavigateHome={() => handleNavigate('home')} seoRecords={staticSeo} />}
+            element={<StaticPageRoute seoRecords={staticSeo} />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -493,7 +428,7 @@ const App: React.FC = () => {
         <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="text-white text-xl font-bold mb-4 flex items-center gap-2">
-              <TeslaPartsCenterLogo onNavigate={handleNavigate} />
+              <TeslaPartsCenterLogo />
             </div>
             <p className="text-sm">
               {contactInfo.footerDescription || 'Ваш надійний партнер у світі запчастин для електромобілів.'}
@@ -573,10 +508,9 @@ const LoadingSpinner = () => (
 );
 
 interface SuccessViewProps {
-  onNavigateHome: () => void;
 }
 
-const SuccessView: React.FC<SuccessViewProps> = ({ onNavigateHome }) => {
+const SuccessView: React.FC<SuccessViewProps> = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -605,9 +539,7 @@ interface HomeViewProps {
   currency: Currency;
   uahPerUsd: number;
   addToCart: (product: Product) => void;
-  handleProductClick: (product: Product) => void;
   showHero: boolean;
-  onSelectCategory: (category: string) => void;
   seoRecord?: StaticSeoRecord;
 }
 
@@ -615,9 +547,7 @@ const HomeView: React.FC<HomeViewProps> = ({
   currency,
   uahPerUsd,
   addToCart,
-  handleProductClick,
   showHero,
-  onSelectCategory,
   seoRecord,
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -655,7 +585,7 @@ const HomeView: React.FC<HomeViewProps> = ({
       />
       {showHero && (
         <div className="w-full min-h-[280px] md:min-h-[400px] lg:min-h-[500px]">
-           <Hero onSelectCategory={onSelectCategory} />
+           <Hero />
         </div>
       )}
       <div className="mt-8">
@@ -665,7 +595,6 @@ const HomeView: React.FC<HomeViewProps> = ({
           currency={currency}
           uahPerUsd={uahPerUsd}
           onAddToCart={addToCart}
-          onProductClick={handleProductClick}
         />
       </div>
     </>
@@ -676,7 +605,6 @@ interface SearchViewProps {
   currency: Currency;
   uahPerUsd: number;
   addToCart: (product: Product) => void;
-  handleProductClick: (product: Product) => void;
   searchQuery: string;
   seoRecord?: StaticSeoRecord;
 }
@@ -685,7 +613,6 @@ const SearchView: React.FC<SearchViewProps> = ({
   currency,
   uahPerUsd,
   addToCart,
-  handleProductClick,
   searchQuery,
   seoRecord,
 }) => {
@@ -736,8 +663,8 @@ const SearchView: React.FC<SearchViewProps> = ({
           currency={currency}
           uahPerUsd={uahPerUsd}
           onAddToCart={addToCart}
-          onProductClick={handleProductClick}
         />
+
       )}
     </div>
   );
@@ -748,7 +675,6 @@ interface CategoryViewProps {
   currency: Currency;
   uahPerUsd: number;
   addToCart: (product: Product) => void;
-  handleProductClick: (product: Product) => void;
 }
 
 const CategoryView: React.FC<CategoryViewProps> = ({
@@ -756,7 +682,6 @@ const CategoryView: React.FC<CategoryViewProps> = ({
   currency,
   uahPerUsd,
   addToCart,
-  handleProductClick,
 }) => {
   const { subId } = useParams<{ subId?: string }>();
   const navigate = useNavigate();
@@ -919,7 +844,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
             <SubcategoryCard
               key={sub.id}
               subcategory={sub}
-              onClick={() => navigate(`/category/${categorySlug}/sub/${sub.id}`)}
+              to={`/category/${categorySlug}/sub/${sub.id}`}
             />
           ))}
         </div>
@@ -935,7 +860,6 @@ const CategoryView: React.FC<CategoryViewProps> = ({
             currency={currency}
             uahPerUsd={uahPerUsd}
             onAddToCart={addToCart}
-            onProductClick={handleProductClick}
           />
         )
       )}
@@ -947,20 +871,43 @@ const CategoryView: React.FC<CategoryViewProps> = ({
   );
 };
 
+const getProductBackUrl = (product: Product, categories: Category[], previousPath: string | null): string => {
+  if (previousPath) {
+    return previousPath;
+  }
+
+  const subcategoryIds = getProductSubcategoryIds(product);
+  if (subcategoryIds.length > 0) {
+    const targetSubId = subcategoryIds[0];
+    const categorySlug = findCategorySlugForSubcategory(categories, targetSubId);
+    if (categorySlug) {
+      return `/category/${categorySlug}/sub/${targetSubId}`;
+    }
+  }
+
+  const primaryCategory = getPrimaryCategory(product.category);
+  if (primaryCategory) {
+    const slug = slugify(primaryCategory);
+    return `/category/${slug}`;
+  }
+  
+  return '/';
+};
+
 interface ProductDetailRouteProps {
   currency: Currency;
   uahPerUsd: number;
   onAddToCart: (product: Product) => void;
-  onNavigateBack: (product: Product) => void;
-  onNavigateHome: () => void;
+  categories: Category[];
+  previousPath: string | null;
 }
 
 const ProductDetailRoute: React.FC<ProductDetailRouteProps> = ({
   currency,
   uahPerUsd,
   onAddToCart,
-  onNavigateBack,
-  onNavigateHome,
+  categories,
+  previousPath,
 }) => {
   const { productId } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
@@ -1002,28 +949,29 @@ const ProductDetailRoute: React.FC<ProductDetailRouteProps> = ({
     );
   }
 
+  const backUrl = getProductBackUrl(product, categories, previousPath);
+
   return (
     <ProductPage
       product={product}
       currency={currency}
       uahPerUsd={uahPerUsd}
       onAddToCart={onAddToCart}
-      onBack={() => onNavigateBack(product)}
+      backUrl={backUrl}
     />
   );
 };
 
 interface StaticPageRouteProps {
-  onNavigateHome: () => void;
   seoRecords: Record<string, StaticSeoRecord>;
 }
 
-const StaticPageRoute: React.FC<StaticPageRouteProps> = ({ onNavigateHome, seoRecords }) => {
+const StaticPageRoute: React.FC<StaticPageRouteProps> = ({ seoRecords }) => {
   const { slug } = useParams();
   if (!slug) {
     return <Navigate to="/" replace />;
   }
-  return <StaticPage slug={slug} onBack={onNavigateHome} seo={seoRecords[slug]} />;
+  return <StaticPage slug={slug} seo={seoRecords[slug]} />;
 };
 
 export default App;

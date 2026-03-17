@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import SeoHead from './SeoHead';
 import { StaticSeoRecord } from '../types';
+import { Link } from 'react-router-dom';
 
 interface StaticPageProps {
     slug: string;
-    onBack: () => void;
     seo?: StaticSeoRecord | null;
 }
 
@@ -18,7 +18,7 @@ const PAGE_TITLES: { [key: string]: string } = {
     contacts: 'Контакти'
 };
 
-const StaticPage: React.FC<StaticPageProps> = ({ slug, onBack, seo }) => {
+const StaticPage: React.FC<StaticPageProps> = ({ slug, seo }) => {
     const [page, setPage] = useState<{ title: string; content: string } | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -86,12 +86,12 @@ const StaticPage: React.FC<StaticPageProps> = ({ slug, onBack, seo }) => {
                 </p>
             )}
 
-            <button
-                onClick={onBack}
-                className="mt-8 text-tesla-red font-medium hover:underline"
+            <Link
+                to="/"
+                className="mt-8 text-tesla-red font-medium hover:underline inline-block"
             >
                 ← Повернутись на головну
-            </button>
+            </Link>
         </div>
     );
 };

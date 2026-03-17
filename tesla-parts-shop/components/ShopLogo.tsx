@@ -1,12 +1,12 @@
 
-// import { FaTelegramPlane, FaViber, FaWhatsapp } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import teslaLogo from '../static/tesla-logo.png';
  // Assuming image_0.png is in the same directory
 
-const TeslaPartsCenterLogo = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
+const TeslaPartsCenterLogo = () => {
   return (
-    <div 
-            onClick={() => onNavigate('home')} 
+    <Link 
+            to="/" 
             className="cursor-pointer flex items-center gap-3"
           >
             <img 
@@ -19,7 +19,7 @@ const TeslaPartsCenterLogo = ({ onNavigate }: { onNavigate: (page: string) => vo
               <span className="text-black font-bold text-xl md:text-2xl leading-tight">PARTS</span>
               <span className="text-black font-bold text-xl md:text-2xl leading-tight">CENTER</span>
             </div>
-          </div>
+          </Link>
   );
 };
 
