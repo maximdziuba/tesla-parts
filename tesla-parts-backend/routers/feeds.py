@@ -9,6 +9,9 @@ from services.pricing import get_exchange_rate, compute_price_fields
 
 # Configure logging
 logger = logging.getLogger(__name__)
+GOOGLE_CATEGORY = "5613"
+GOOGLE_PRODUCT_TYPE = "Автозапчастини"
+
 
 router = APIRouter(prefix="/feed", tags=["feeds"])
 
@@ -70,6 +73,8 @@ async def get_google_merchant_feed(session: Session = Depends(get_session)):
             <g:availability>{p_availability}</g:availability>
             <g:price>{p_price}</g:price>
             <g:brand>{p_brand}</g:brand>
+            <g:product_type>{GOOGLE_PRODUCT_TYPE}</g:product_type>
+            <g:google_product_category>{GOOGLE_CATEGORY}</g:google_product_category>    
         </item>"""
             xml_output.append(item_xml)
 
