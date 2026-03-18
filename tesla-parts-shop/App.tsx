@@ -10,8 +10,9 @@ import ProductPage from './components/ProductPage';
 import StaticPage from './components/StaticPage';
 import { Product, Currency, CartItem, Category, Subcategory, StaticSeoRecord, Page } from './types';
 import { api } from './services/api';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Instagram, Send } from 'lucide-react';
 import TeslaPartsCenterLogo from './components/ShopLogo';
+import ViberIcon from './components/ViberIcon';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from './constants';
 import SeoHead from './components/SeoHead';
 import { slugify } from './utils/slugify';
@@ -467,12 +468,26 @@ const App: React.FC = () => {
             <p className="text-sm mb-2">
               {contactInfo.email || 'info@teslaparts.ua'}
             </p>
-            <div className="flex gap-4 mt-4">
+            <div className="flex gap-4 mt-4 text-white">
               {socialLinks.instagram && (
-                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">IG</a>
+                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">
+                  <Instagram size={18} />
+                </a>
               )}
               {socialLinks.telegram && (
-                <a href={socialLinks.telegram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">TG</a>
+                <a href={socialLinks.telegram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">
+                  <Send size={18} />
+                </a>
+              )}
+              {socialLinks.viber && (
+                <a 
+                  href={`viber://chat?number=${encodeURIComponent(socialLinks.viber)}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer"
+                >
+                  <ViberIcon size={18} color="currentColor" />
+                </a>
               )}
             </div>
           </div>
