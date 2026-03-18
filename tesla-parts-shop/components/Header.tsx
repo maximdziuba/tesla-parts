@@ -5,6 +5,7 @@ import TeslaPartsCenterLogo from './ShopLogo';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../utils/currency';
 import { slugify } from '../utils/slugify';
+import ViberIcon from './ViberIcon';
 
 interface HeaderProps {
   cartCount: number;
@@ -18,6 +19,7 @@ interface HeaderProps {
   socialLinks: {
     instagram: string;
     telegram: string;
+    viber: string;
   };
   phoneNumber: string;
   searchQuery: string;
@@ -139,10 +141,20 @@ const Header: React.FC<HeaderProps> = ({
             )}
             <div className="flex items-center gap-2">
               {socialLinks.instagram && (
-                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-tesla-red tra nsition"><Instagram size={16} /></a>
+                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-tesla-red transition"><Instagram size={16} /></a>
               )}
               {socialLinks.telegram && (
                 <a href={socialLinks.telegram} target="_blank" rel="noopener noreferrer" className="hover:text-tesla-red transition"><Send size={16} /></a>
+              )}
+              {socialLinks.viber && (
+                <a 
+                  href={`viber://chat?number=${encodeURIComponent(socialLinks.viber)}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="hover:text-tesla-red transition"
+                >
+                  <ViberIcon size={16} color="currentColor" />
+                </a>
               )}
             </div>
             <div className="border-l border-gray-700 pl-4 flex gap-2">

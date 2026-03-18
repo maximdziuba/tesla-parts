@@ -8,6 +8,7 @@ export const SettingsPage: React.FC = () => {
     const [savingRate, setSavingRate] = useState(false);
     const [instagram, setInstagram] = useState('');
     const [telegram, setTelegram] = useState('');
+    const [viber, setViber] = useState('');
     const [savingSocial, setSavingSocial] = useState(false);
     const [botToken, setBotToken] = useState('');
     const [chatId, setChatId] = useState('');
@@ -42,6 +43,7 @@ export const SettingsPage: React.FC = () => {
             const data = await ApiService.getSocialLinks();
             setInstagram(data.instagram);
             setTelegram(data.telegram);
+            setViber(data.viber || '');
         } catch (e) {
             console.error("Failed to load social links", e);
         }
@@ -101,7 +103,7 @@ export const SettingsPage: React.FC = () => {
         e.preventDefault();
         setSavingSocial(true);
         try {
-            await ApiService.updateSocialLinks({ instagram, telegram });
+            await ApiService.updateSocialLinks({ instagram, telegram, viber });
             alert('Посилання збережено!');
         } catch (e) {
             console.error("Failed to save social links", e);
@@ -209,6 +211,19 @@ export const SettingsPage: React.FC = () => {
                             value={telegram}
                             onChange={e => setTelegram(e.target.value)}
                             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Viber Phone Number
+                        </label>
+                        <input
+                            type="text"
+                            value={viber}
+                            onChange={e => setViber(e.target.value)}
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                            placeholder="+380991234567"
                         />
                     </div>
 

@@ -22,9 +22,11 @@ class SettingUpdate(BaseModel):
 def get_social_links(session: Session = Depends(get_session)):
     instagram_link = session.get(Settings, "instagram_link")
     telegram_link = session.get(Settings, "telegram_link")
+    viber_link = session.get(Settings, "viber_link")
     return SocialLinks(
         instagram=instagram_link.value if instagram_link else "",
-        telegram=telegram_link.value if telegram_link else ""
+        telegram=telegram_link.value if telegram_link else "",
+        viber=viber_link.value if viber_link else ""
     )
 
 @router.post("/social-links", dependencies=[Depends(get_current_admin)])
@@ -44,6 +46,14 @@ def update_social_links(links: SocialLinks, session: Session = Depends(get_sessi
     else:
         telegram_link.value = links.telegram or ""
         session.add(telegram_link)
+
+    viber_link = session.get(Settings, "viber_link")
+    if not viber_link:
+        viber_link = Settings(key="viber_link", value=links.viber or "")
+        session.add(viber_link)
+    else:
+        viber_link.value = links.viber or ""
+        session.add(viber_link)
 
     session.commit()
     return {"message": "Social links updated successfully"}

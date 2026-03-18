@@ -115,6 +115,7 @@ class ProductBulkDeleteRequest(BaseModel):
 class SocialLinks(BaseModel):
     instagram: str | None = None
     telegram: str | None = None
+    viber: str | None = None
 
 class StaticPageSEOBase(BaseModel):
     slug: str

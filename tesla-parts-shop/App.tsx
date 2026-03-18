@@ -153,7 +153,7 @@ const App: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>(Currency.UAH);
   const [uahPerUsd, setUahPerUsd] = useState(DEFAULT_EXCHANGE_RATE_UAH_PER_USD);
-  const [socialLinks, setSocialLinks] = useState({ instagram: '', telegram: '' });
+  const [socialLinks, setSocialLinks] = useState({ instagram: '', telegram: '', viber: '' });
   const [contactInfo, setContactInfo] = useState({
     email: '',
     phone: '',
