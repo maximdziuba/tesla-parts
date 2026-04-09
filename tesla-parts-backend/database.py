@@ -127,10 +127,13 @@ def _ensure_product_is_popular_column():
     if "is_popular" not in columns:
         print("Adding 'is_popular' column to 'product' table...")
         with engine.connect() as conn:
-            conn.execute(text("ALTER TABLE product ADD COLUMN is_popular BOOLEAN DEFAULT 0"))
+            # PostgreSQL is strict about boolean types, while SQLite handles 0/1
+            default_val = "0" if is_sqlite() else "FALSE"
+            conn.execute(text(f"ALTER TABLE product ADD COLUMN is_popular BOOLEAN DEFAULT {default_val}"))
             conn.commit()
-            # For existing records, SQLModel might expect True/False, SQLite uses 0/1
-            # We can also run an update if needed.
+            
+            # For existing records, ensure they are initialized correctly
             with engine.connect() as conn2:
-                conn2.execute(text("UPDATE product SET is_popular = 0 WHERE is_popular IS NULL"))
+                update_val = "0" if is_sqlite() else "FALSE"
+                conn2.execute(text(f"UPDATE product SET is_popular = {update_val} WHERE is_popular IS NULL"))
                 conn2.commit()
