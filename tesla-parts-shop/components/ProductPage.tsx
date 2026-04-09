@@ -5,7 +5,7 @@ import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 import SeoHead from './SeoHead';
 import { formatCurrency } from '../utils/currency';
 import { api } from '../services/api';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface ProductPageProps {
     product: Product;
@@ -16,6 +16,7 @@ interface ProductPageProps {
 }
 
 const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd, onAddToCart, backUrl }) => {
+    const navigate = useNavigate();
     // Combine main image with additional images and remove duplicates
     const allImages = useMemo(
         () => Array.from(new Set([product.image, ...(product.images || [])].filter(Boolean))),
@@ -93,13 +94,19 @@ const ProductPage: React.FC<ProductPageProps> = ({ product, currency, uahPerUsd,
                 availability={product.inStock}
                 deliveryInfo={deliveryInfo}
             />
-            <Link
-                to={backUrl}
+            <button
+                onClick={() => {
+                    if (window.history.length > 1) {
+                        navigate(-1);
+                    } else {
+                        navigate(backUrl);
+                    }
+                }}
                 className="flex items-center text-gray-600 hover:text-tesla-dark mb-6 transition-colors"
             >
                 <ArrowLeft size={20} className="mr-2" />
                 Назад
-            </Link>
+            </button>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="flex flex-col md:flex-row">

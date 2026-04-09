@@ -845,10 +845,18 @@ const CategoryView: React.FC<CategoryViewProps> = ({
           ← Назад до головної
         </Link>
         {selectedSubcategory && (
-          // ЗАМІНЕНО: button onClick -> Link (динамічний розрахунок URL)
-          <Link to={backLink} className="text-gray-500 hover:text-tesla-red transition">
+          <button 
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate(backLink);
+              }
+            }} 
+            className="text-gray-500 hover:text-tesla-red transition"
+          >
             ← Назад
-          </Link>
+          </button>
         )}
         <h1 className="text-3xl font-bold">{pageHeading}</h1>
       </div>
