@@ -90,6 +90,7 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
                 </div>
                 <button
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     onAddToCart(product);
                   }}

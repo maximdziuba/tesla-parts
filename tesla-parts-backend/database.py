@@ -31,6 +31,7 @@ def create_db_and_tables():
     _ensure_product_sort_order_column()
     _ensure_product_subcategory_id_column()
     _ensure_product_created_at_column()
+    _ensure_product_is_popular_column()
     
     with Session(engine) as session:
         # Check if admin user exists, if not, create it
@@ -119,3 +120,17 @@ def _ensure_product_created_at_column():
                  with engine.connect() as conn2:
                      conn2.execute(text(f"UPDATE product SET created_at = '{current_time}' WHERE created_at IS NULL"))
                      conn2.commit()
+
+def _ensure_product_is_popular_column():
+    inspector = inspect(engine)
+    columns = [c["name"] for c in inspector.get_columns("product")]
+    if "is_popular" not in columns:
+        print("Adding 'is_popular' column to 'product' table...")
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE product ADD COLUMN is_popular BOOLEAN DEFAULT 0"))
+            conn.commit()
+            # For existing records, SQLModel might expect True/False, SQLite uses 0/1
+            # We can also run an update if needed.
+            with engine.connect() as conn2:
+                conn2.execute(text("UPDATE product SET is_popular = 0 WHERE is_popular IS NULL"))
+                conn2.commit()

@@ -211,6 +211,9 @@ export const ApiService = {
     if (product.detail_number) {
       formData.append('detail_number', product.detail_number);
     }
+    if (product.is_popular !== undefined) {
+      formData.append('is_popular', product.is_popular.toString());
+    }
 
     const res = await _authenticatedFetch(`${API_URL}/products/`, {
       method: 'POST',
@@ -254,6 +257,9 @@ export const ApiService = {
     if (product.detail_number) {
       formData.append('detail_number', product.detail_number);
     }
+    if (product.is_popular !== undefined) {
+      formData.append('is_popular', product.is_popular.toString());
+    }
 
     if (product.kept_images !== undefined) {
       const keptList: string[] = Array.isArray(product.kept_images)
@@ -293,6 +299,15 @@ export const ApiService = {
       body: JSON.stringify({ product_ids: ids }),
     });
     if (!res.ok) throw new Error('Failed to delete products');
+    return res.json();
+  },
+
+  togglePopular: async (id: string): Promise<Product> => {
+    const res = await _authenticatedFetch(`${API_URL}/products/${id}/toggle-popular`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to toggle popular status');
     return res.json();
   },
 

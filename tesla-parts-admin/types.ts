@@ -38,6 +38,7 @@ export interface Product {
   cross_number: string;
   meta_title?: string;
   meta_description?: string;
+  is_popular: boolean;
   created_at?: string;
 }
 

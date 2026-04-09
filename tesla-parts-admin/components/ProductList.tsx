@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
 import { Product } from '../types';
-import { Search, Plus, Filter, Trash2, Pencil, ArrowUpDown } from 'lucide-react';
+import { Search, Plus, Filter, Trash2, Pencil, ArrowUpDown, Star } from 'lucide-react';
 
 import { Link } from 'react-router-dom';
 
@@ -83,6 +83,16 @@ export const ProductList: React.FC = () => {
       await ApiService.deleteProduct(id);
       setSelectedProducts(prev => prev.filter(pid => pid !== id));
       fetchProducts();
+    }
+  };
+
+  const handleTogglePopular = async (id: string) => {
+    try {
+      await ApiService.togglePopular(id);
+      fetchProducts();
+    } catch (e) {
+      console.error(e);
+      alert('Не вдалося змінити статус');
     }
   };
 
@@ -267,6 +277,17 @@ export const ProductList: React.FC = () => {
                   <td className="px-6 py-4 font-medium">{product.priceUSD} $</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => handleTogglePopular(product.id)}
+                        className={`p-1.5 rounded transition-colors ${
+                          product.is_popular 
+                            ? 'text-yellow-500 bg-yellow-50 hover:bg-yellow-100' 
+                            : 'text-gray-400 hover:bg-gray-50'
+                        }`}
+                        title={product.is_popular ? "Прибрати з популярних" : "Додати в популярні"}
+                      >
+                        <Star size={16} fill={product.is_popular ? "currentColor" : "none"} />
+                      </button>
                       <Link
                         to={`/products/edit/${product.id}`}
                         className="p-1.5 text-blue-500 hover:bg-blue-50 rounded"

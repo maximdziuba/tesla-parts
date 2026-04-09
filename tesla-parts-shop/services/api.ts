@@ -8,6 +8,7 @@ export interface ProductFilter {
   limit?: number;
   offset?: number;
   search?: string;
+  is_popular?: boolean;
 }
 
 export const api = {
@@ -18,6 +19,7 @@ export const api = {
         if (filters.limit) params.append('limit', filters.limit.toString());
         if (filters.offset) params.append('offset', filters.offset.toString());
         if (filters.search) params.append('search', filters.search);
+        if (filters.is_popular !== undefined) params.append('is_popular', filters.is_popular.toString());
 
         const res = await fetch(`${API_URL}/products/?${params.toString()}`);
         if (!res.ok) throw new Error('Failed to fetch products');

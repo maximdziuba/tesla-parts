@@ -16,6 +16,7 @@ class ProductBase(BaseModel):
     cross_number: str | None = None # Made optional
     meta_title: str | None = None
     meta_description: str | None = None
+    is_popular: bool = False
     created_at: datetime | None = None
 
 

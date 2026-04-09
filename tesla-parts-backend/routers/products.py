@@ -93,6 +93,7 @@ def read_products(
     category_slug: Optional[str] = None,
     subcategory_id: Optional[int] = None,
     search: Optional[str] = None,
+    is_popular: Optional[bool] = None,
     limit: int = 100,
     offset: int = 0,
     session: Session = Depends(get_session)
@@ -102,7 +103,9 @@ def read_products(
         selectinload(Product.linked_subcategories),
     )
 
-    # 1. Filter by Category Slug
+    # 0. Filter by Popularity
+    if is_popular is not None:
+        query = query.where(Product.is_popular == is_popular)
     # We need to find the category name from the slug to support legacy 'Product.category' field
     if category_slug:
         # Fetch all categories to match slug (since we don't have slug column)
@@ -211,6 +214,7 @@ async def create_product(
     cross_number: Optional[str] = Form(None),
     meta_title: Optional[str] = Form(None),
     meta_description: Optional[str] = Form(None),
+    is_popular: bool = Form(False),
     image: Optional[str] = Form(None),
     files: List[UploadFile] = File(None),
     session: Session = Depends(get_session)
@@ -273,6 +277,7 @@ async def create_product(
         cross_number=cross_number,
         meta_title=meta_title,
         meta_description=meta_description,
+        is_popular=is_popular,
         image=main_image
     )
     if priceUSD:
@@ -318,6 +323,7 @@ async def update_product(
     cross_number: Optional[str] = Form(None),
     meta_title: Optional[str] = Form(None),
     meta_description: Optional[str] = Form(None),
+    is_popular: bool = Form(False),
     image: Optional[str] = Form(None),
     files: List[UploadFile] = File(None),
     kept_images: List[str] = Form(None),
@@ -339,6 +345,7 @@ async def update_product(
     product.cross_number = cross_number
     product.meta_title = meta_title
     product.meta_description = meta_description
+    product.is_popular = is_popular
     
     # Update main image if provided
     if image:
@@ -456,3 +463,20 @@ def bulk_delete_products(
 
     session.commit()
     return {"deleted": len(products)}
+
+@router.post("/{product_id}/toggle-popular", dependencies=[Depends(get_current_admin)])
+def toggle_popular(
+    product_id: str,
+    session: Session = Depends(get_session)
+):
+    product = session.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    product.is_popular = not product.is_popular
+    session.add(product)
+    session.commit()
+    session.refresh(product)
+    
+    rate = get_exchange_rate(session)
+    return _build_product_response(product, rate)

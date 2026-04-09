@@ -264,7 +264,6 @@ const App: React.FC = () => {
       }
       return [...prev, { ...product, quantity: 1 }];
     });
-    setIsCartOpen(true);
   };
 
   const updateQuantity = (id: string, delta: number) => {
@@ -571,7 +570,7 @@ const HomeView: React.FC<HomeViewProps> = ({
   useEffect(() => {
     const fetchPopular = async () => {
       try {
-        const data = await api.getProducts({ limit: 8 });
+        const data = await api.getProducts({ is_popular: true, limit: 8 });
         setProducts(data);
       } catch (e) {
         console.error("Failed to load popular products", e);
@@ -603,15 +602,17 @@ const HomeView: React.FC<HomeViewProps> = ({
            <Hero />
         </div>
       )}
-      <div className="mt-8">
-        <ProductList
-          title="Популярні товари"
-          products={products}
-          currency={currency}
-          uahPerUsd={uahPerUsd}
-          onAddToCart={addToCart}
-        />
-      </div>
+      {products.length > 0 && (
+        <div className="mt-8">
+          <ProductList
+            title="Популярні товари"
+            products={products}
+            currency={currency}
+            uahPerUsd={uahPerUsd}
+            onAddToCart={addToCart}
+          />
+        </div>
+      )}
     </>
   );
 };
