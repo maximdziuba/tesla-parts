@@ -48,33 +48,33 @@ def resequence_all():
         session.commit()
 
         # 3. Resequence Products (within their groups)
-        # print("Resequencing Products...")
+        print("Resequencing Products...")
         
-        # # Subcategory level products
-        # subcategories = session.exec(select(Subcategory)).all()
-        # for sub in subcategories:
-        #     products = session.exec(
-        #         select(Product)
-        #         .where(Product.subcategory_id == sub.id)
-        #         .order_by(col(Product.sort_order).desc(), col(Product.name).asc())
-        #     ).all()
-        #     for i, p in enumerate(products):
-        #         p.sort_order = 1000 - (i * 10)
-        #         session.add(p)
+        # Subcategory level products
+        subcategories = session.exec(select(Subcategory)).all()
+        for sub in subcategories:
+            products = session.exec(
+                select(Product)
+                .where(Product.subcategory_id == sub.id)
+                .order_by(col(Product.sort_order).desc(), col(Product.name).asc())
+            ).all()
+            for i, p in enumerate(products):
+                p.sort_order = 1000 - (i * 10)
+                session.add(p)
         
-        # # Root category level products
-        # for cat in cats:
-        #     products = session.exec(
-        #         select(Product)
-        #         .where(col(Product.category).contains(cat.name))
-        #         .where(Product.subcategory_id == None)
-        #         .order_by(col(Product.sort_order).desc(), col(Product.name).asc())
-        #     ).all()
-        #     for i, p in enumerate(products):
-        #         p.sort_order = 1000 - (i * 10)
-        #         session.add(p)
+        # Root category level products
+        for cat in cats:
+            products = session.exec(
+                select(Product)
+                .where(col(Product.category).contains(cat.name))
+                .where(Product.subcategory_id == None)
+                .order_by(col(Product.sort_order).desc(), col(Product.name).asc())
+            ).all()
+            for i, p in enumerate(products):
+                p.sort_order = 1000 - (i * 10)
+                session.add(p)
 
-        # session.commit()
+        session.commit()
         print("Done!")
 
 if __name__ == "__main__":
