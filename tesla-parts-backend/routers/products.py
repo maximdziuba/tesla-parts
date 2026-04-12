@@ -156,8 +156,8 @@ def read_products(
             or_(
                 col(Product.name).ilike(search_term),
                 func.replace(Product.detail_number, "-", "").ilike(search_term_clean),
-                col(Product.cross_number).ilike(search_term),
-                col(Product.description).ilike(search_term)
+                col(Product.cross_number).ilike(search_term_clean),
+                col(Product.description).ilike(search_term_clean)
             )
         )
 
