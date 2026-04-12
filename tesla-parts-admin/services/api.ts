@@ -306,6 +306,16 @@ export const ApiService = {
     return res.json();
   },
 
+  reorderProducts: async (ids: string[]): Promise<{ message: string }> => {
+    const res = await _authenticatedFetch(`${API_URL}/products/reorder`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ product_ids: ids }),
+    });
+    if (!res.ok) throw new Error('Failed to reorder products');
+    return res.json();
+  },
+
   togglePopular: async (id: string): Promise<Product> => {
     const res = await _authenticatedFetch(`${API_URL}/products/${id}/toggle-popular`, {
       method: 'POST',

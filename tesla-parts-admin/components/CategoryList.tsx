@@ -30,7 +30,7 @@ interface SubcategoryItemProps {
     onEdit: (id: number, name: string, code: string, parentId?: number, file?: File, sortOrder?: number) => void;
     onTransfer: (id: number, targetCategoryId: number, targetParentId: number | undefined, mode: 'move' | 'copy') => Promise<void>;
     onDeleteProduct: (id: string) => Promise<void>;
-    onUpdateProductSort: (product: Product, newSortOrder: number) => Promise<void>;
+    onReorderProducts: (productIds: string[]) => Promise<void>;
     onUpdateSubcategorySort: (subcategory: Subcategory, newSortOrder: number) => Promise<void>;
 }
 
@@ -105,7 +105,7 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
     onEdit,
     onTransfer,
     onDeleteProduct,
-    onUpdateProductSort,
+    onReorderProducts,
     onUpdateSubcategorySort,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -510,7 +510,7 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                                         <tbody className="divide-y divide-gray-50">
                                             {(() => {
                                                 const sortedProducts = [...subcategory.products!]
-                                                    .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0) || a.name.localeCompare(b.name));
+                                                    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name));
                                                 
                                                 return sortedProducts.map((product, idx) => (
                                                     <tr key={product.id} className="hover:bg-gray-50">
@@ -520,8 +520,9 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                                                                     onClick={(e) => { 
                                                                         e.stopPropagation(); 
                                                                         if (idx > 0) {
-                                                                            const targetOrder = (sortedProducts[idx-1].sort_order ?? 0) + 1;
-                                                                            onUpdateProductSort(product, targetOrder);
+                                                                            const newArray = [...sortedProducts];
+                                                                            [newArray[idx - 1], newArray[idx]] = [newArray[idx], newArray[idx - 1]];
+                                                                            onReorderProducts(newArray.map(p => p.id));
                                                                         }
                                                                     }}
                                                                     disabled={idx === 0}
@@ -534,8 +535,9 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                                                                     onClick={(e) => { 
                                                                         e.stopPropagation(); 
                                                                         if (idx < sortedProducts.length - 1) {
-                                                                            const targetOrder = (sortedProducts[idx+1].sort_order ?? 0) - 1;
-                                                                            onUpdateProductSort(product, targetOrder);
+                                                                            const newArray = [...sortedProducts];
+                                                                            [newArray[idx + 1], newArray[idx]] = [newArray[idx], newArray[idx + 1]];
+                                                                            onReorderProducts(newArray.map(p => p.id));
                                                                         }
                                                                     }}
                                                                     disabled={idx === sortedProducts.length - 1}
@@ -831,16 +833,9 @@ const CategoryList: React.FC = () => {
         }
     };
 
-    const handleUpdateProductSort = async (product: Product, newSortOrder: number) => {
+    const handleReorderProducts = async (productIds: string[]) => {
         try {
-            await ApiService.updateProduct(product.id, {
-                ...product,
-                sort_order: newSortOrder,
-                // Ensure files is empty so we don't re-upload
-                files: [],
-                // Ensure kept_images includes existing images
-                kept_images: product.images && product.images.length > 0 ? product.images : [product.image]
-            });
+            await ApiService.reorderProducts(productIds);
             loadCategories();
         } catch (error) {
             console.error(error);
@@ -1125,7 +1120,7 @@ const CategoryList: React.FC = () => {
                                                 <tbody className="divide-y divide-gray-50">
                                                     {(() => {
                                                         const sortedCatProducts = [...category.products]
-                                                            .sort((a, b) => (b.sort_order ?? 0) - (a.sort_order ?? 0) || a.name.localeCompare(b.name));
+                                                            .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name));
                                                         
                                                         return sortedCatProducts.map((product, idx) => (
                                                             <tr key={product.id} className="hover:bg-gray-50">
@@ -1135,8 +1130,9 @@ const CategoryList: React.FC = () => {
                                                                             onClick={(e) => { 
                                                                                 e.stopPropagation(); 
                                                                                 if (idx > 0) {
-                                                                                    const targetOrder = (sortedCatProducts[idx-1].sort_order ?? 0) + 1;
-                                                                                    handleUpdateProductSort(product, targetOrder);
+                                                                                    const newArray = [...sortedCatProducts];
+                                                                                    [newArray[idx - 1], newArray[idx]] = [newArray[idx], newArray[idx - 1]];
+                                                                                    handleReorderProducts(newArray.map(p => p.id));
                                                                                 }
                                                                             }}
                                                                             disabled={idx === 0}
@@ -1149,8 +1145,9 @@ const CategoryList: React.FC = () => {
                                                                             onClick={(e) => { 
                                                                                 e.stopPropagation(); 
                                                                                 if (idx < sortedCatProducts.length - 1) {
-                                                                                    const targetOrder = (sortedCatProducts[idx+1].sort_order ?? 0) - 1;
-                                                                                    handleUpdateProductSort(product, targetOrder);
+                                                                                    const newArray = [...sortedCatProducts];
+                                                                                    [newArray[idx + 1], newArray[idx]] = [newArray[idx], newArray[idx + 1]];
+                                                                                    handleReorderProducts(newArray.map(p => p.id));
                                                                                 }
                                                                             }}
                                                                             disabled={idx < sortedCatProducts.length - 1 ? false : true}
@@ -1220,7 +1217,7 @@ const CategoryList: React.FC = () => {
                                             onEdit={handleUpdateSubcategory}
                                             onTransfer={handleTransferSubcategory}
                                             onDeleteProduct={handleDeleteProduct}
-                                            onUpdateProductSort={handleUpdateProductSort}
+                                            onReorderProducts={handleReorderProducts}
                                             onUpdateSubcategorySort={handleUpdateSubcategorySort}
                                         />
                                     ))}

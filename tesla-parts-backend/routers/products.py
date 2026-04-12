@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy import func
 from database import get_session
 from models import Product, ProductImage, ProductSubcategoryLink, Category
-from schemas import ProductCreate, ProductRead, ProductBulkDeleteRequest
+from schemas import ProductCreate, ProductRead, ProductBulkDeleteRequest, ProductReorderRequest
 from services.image_uploader import image_uploader
 from services.pricing import get_exchange_rate, compute_price_fields
 from dependencies import get_current_admin
@@ -164,7 +164,7 @@ def read_products(
     # 4. Sorting
     # Priority: Sort Order (DESC), In Stock (DESC), then Name (ASC)
     query = query.order_by(
-        col(Product.sort_order).desc(),
+        col(Product.sort_order).asc(),
         col(Product.inStock).desc(), 
         col(Product.name).asc()
     )
@@ -246,21 +246,20 @@ async def create_product(
     )
 
     if sort_order is None:
-        # Find current min sort_order within the group to place at bottom
+        # Find current max sort_order within the group to place at bottom
         if primary_subcategory_id:
-            query = select(func.min(Product.sort_order)).where(Product.subcategory_id == primary_subcategory_id)
+            query = select(func.max(Product.sort_order)).where(Product.subcategory_id == primary_subcategory_id)
         else:
             # For products directly in category name
             # We assume the first category name in the list is the primary one
             first_cat = _split_categories(category)[0] if category else None
             if first_cat:
-                query = select(func.min(Product.sort_order)).where(col(Product.category).contains(first_cat)).where(Product.subcategory_id == None)
+                query = select(func.max(Product.sort_order)).where(col(Product.category).contains(first_cat)).where(Product.subcategory_id == None)
             else:
-                query = select(func.min(Product.sort_order))
-        
-        min_val = session.exec(query).one()
-        sort_order = (min_val - 10) if min_val is not None else 1000
+                query = select(func.max(Product.sort_order))
 
+        max_val = session.exec(query).one()
+        sort_order = (max_val + 1) if max_val is not None else 0
     rate = get_exchange_rate(session)
 
     product_data = Product(
@@ -439,6 +438,25 @@ def delete_product(product_id: str, session: Session = Depends(get_session)):
     session.commit()
     return {"ok": True}
 
+
+@router.post("/reorder", dependencies=[Depends(get_current_admin)])
+def reorder_products(
+    request: ProductReorderRequest,
+    session: Session = Depends(get_session)
+):
+    products = session.exec(
+        select(Product).where(col(Product.id).in_(request.product_ids))
+    ).all()
+    
+    product_map = {p.id: p for p in products}
+    
+    for index, prod_id in enumerate(request.product_ids):
+        if prod_id in product_map:
+            product_map[prod_id].sort_order = index
+            session.add(product_map[prod_id])
+            
+    session.commit()
+    return {"message": "Successfully reordered"}
 
 @router.post("/bulk-delete", dependencies=[Depends(get_current_admin)])
 def bulk_delete_products(

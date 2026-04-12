@@ -113,6 +113,9 @@ class OrderRead(BaseModel):
 class ProductBulkDeleteRequest(BaseModel):
     product_ids: List[str]
 
+class ProductReorderRequest(BaseModel):
+    product_ids: List[str]
+
 class SocialLinks(BaseModel):
     instagram: str | None = None
     telegram: str | None = None

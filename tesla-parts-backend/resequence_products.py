@@ -56,10 +56,10 @@ def resequence_all():
             products = session.exec(
                 select(Product)
                 .where(Product.subcategory_id == sub.id)
-                .order_by(col(Product.sort_order).desc(), col(Product.name).asc())
+                .order_by(col(Product.sort_order).asc(), col(Product.name).asc())
             ).all()
             for i, p in enumerate(products):
-                p.sort_order = 1000 - (i * 10)
+                p.sort_order = i
                 session.add(p)
         
         # Root category level products
@@ -68,10 +68,10 @@ def resequence_all():
                 select(Product)
                 .where(col(Product.category).contains(cat.name))
                 .where(Product.subcategory_id == None)
-                .order_by(col(Product.sort_order).desc(), col(Product.name).asc())
+                .order_by(col(Product.sort_order).asc(), col(Product.name).asc())
             ).all()
             for i, p in enumerate(products):
-                p.sort_order = 1000 - (i * 10)
+                p.sort_order = i
                 session.add(p)
 
         session.commit()
