@@ -610,7 +610,7 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                                         onEdit={onEdit}
                                         onTransfer={onTransfer}
                                         onDeleteProduct={onDeleteProduct}
-                                        onUpdateProductSort={onUpdateProductSort}
+                                        onReorderProducts={onReorderProducts}
                                         onUpdateSubcategorySort={onUpdateSubcategorySort}
                                     />
                                 ))}
