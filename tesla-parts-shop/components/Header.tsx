@@ -101,6 +101,9 @@ const Header: React.FC<HeaderProps> = ({
       <div className="bg-tesla-dark text-gray-300 text-xs py-2 px-4 border-b border-gray-800">
         <div className="container mx-auto flex flex-row w-full justify-between items-center gap-2">
           <nav className="hidden md:flex flex-wrap gap-4 md:gap-6 justify-center md:justify-start">
+            <Link to="/reviews" className="hover:text-white transition">
+              Відгуки
+            </Link>
             {headerPages.filter(page => page.is_published).map((page) => (
               <Link 
                 key={page.slug} 
@@ -119,6 +122,13 @@ const Header: React.FC<HeaderProps> = ({
             </button>
             {isPagesDropdownOpen && (
               <div className="absolute left-0 top-full mt-2 w-48 bg-white shadow-lg rounded-md overflow-hidden z-20">
+                <Link
+                  to="/reviews"
+                  onClick={() => setIsPagesDropdownOpen(false)}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100"
+                >
+                  Відгуки
+                </Link>
                 {headerPages.filter(page => page.is_published).map((page) => (
                   <Link
                     key={page.slug}

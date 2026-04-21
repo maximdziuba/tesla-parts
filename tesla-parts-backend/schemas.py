@@ -156,3 +156,16 @@ class CategoryListSchema(BaseModel):
 
 class CategoryDetailSchema(CategoryListSchema):
     subcategories: List[SubcategoryNoProducts] = []
+
+class ReviewCreate(BaseModel):
+    image_url: str
+    sort_order: int | None = 0
+
+class ReviewRead(BaseModel):
+    id: int
+    image_url: str
+    created_at: datetime
+    sort_order: int
+
+class ReviewReorderRequest(BaseModel):
+    review_ids: List[int]

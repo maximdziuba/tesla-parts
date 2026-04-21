@@ -12,7 +12,8 @@ import {
   FileText,
   Key,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -52,6 +53,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       case '/products': return 'Товари';
       case '/orders': return 'Замовлення';
       case '/categories': return 'Категорії';
+      case '/reviews': return 'Відгуки';
       case '/settings': return 'Налаштування';
       case '/cms': return 'Контент';
       default: return 'Адмін Панель';
@@ -92,6 +94,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             icon={Layers}
             label="Категорії"
             active={location.pathname === '/categories'}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/reviews"
+            icon={MessageSquare}
+            label="Відгуки"
+            active={location.pathname === '/reviews'}
             collapsed={collapsed}
           />
           <SidebarItem

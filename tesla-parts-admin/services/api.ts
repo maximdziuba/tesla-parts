@@ -655,4 +655,43 @@ export const ApiService = {
     if (!res.ok) throw new Error('Failed to update SEO record');
     return res.json();
   },
+
+  // Reviews API
+  getReviews: async (): Promise<any[]> => {
+    const res = await _authenticatedFetch(`${API_URL}/reviews/`, { headers: getHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch reviews');
+    return res.json();
+  },
+
+  createReview: async (file: File, sortOrder: number = 0): Promise<any> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('sort_order', sortOrder.toString());
+
+    const res = await _authenticatedFetch(`${API_URL}/reviews/`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Failed to create review');
+    return res.json();
+  },
+
+  deleteReview: async (id: number): Promise<boolean> => {
+    const res = await _authenticatedFetch(`${API_URL}/reviews/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return res.ok;
+  },
+
+  reorderReviews: async (ids: number[]): Promise<{ message: string }> => {
+    const res = await _authenticatedFetch(`${API_URL}/reviews/reorder`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ review_ids: ids }),
+    });
+    if (!res.ok) throw new Error('Failed to reorder reviews');
+    return res.json();
+  },
 };

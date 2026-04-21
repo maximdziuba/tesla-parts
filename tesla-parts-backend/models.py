@@ -119,3 +119,9 @@ class StaticPageSEO(SQLModel, table=True):
     slug: str = Field(unique=True, index=True)
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
+
+class Review(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    image_url: str
+    created_at: datetime = Field(default_factory=get_kyiv_time)
+    sort_order: int = Field(default=0, index=True)

@@ -95,3 +95,8 @@ export interface Page {
   is_published: boolean;
   location: string;
 }
+
+export interface Review {
+  id: number;
+  image_url: string;
+}

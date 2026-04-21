@@ -1,5 +1,5 @@
-import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { ProductList } from './components/ProductList';
@@ -9,7 +9,8 @@ import { Login } from './components/Login';
 import CategoryList from './components/CategoryList';
 import { SettingsPage } from './pages/SettingsPage';
 import { CMSPage } from './pages/CMSPage';
-import { ResetPasswordPage } from './pages/ResetPassword'; // Import ResetPasswordPage
+import { ReviewManager } from './components/ReviewManager';
+import { ResetPasswordPage } from './pages/ResetPassword';
 import { useAuth } from './AuthContext'; // Import useAuth
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -26,9 +27,20 @@ const SettingsPlaceholder = () => (
   </div>
 );
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 const App: React.FC = () => {
   return (
     <HashRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
@@ -46,6 +58,7 @@ const App: React.FC = () => {
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/settings/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/cms" element={<CMSPage />} />
+                  <Route path="/reviews" element={<ReviewManager />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>

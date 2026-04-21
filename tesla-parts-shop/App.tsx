@@ -7,6 +7,7 @@ import CartDrawer from './components/CartDrawer';
 import Checkout from './components/Checkout';
 import SubcategoryCard from './components/SubcategoryCard';
 import ProductPage from './components/ProductPage';
+import { ReviewsPage } from './components/ReviewsPage';
 import StaticPage from './components/StaticPage';
 import { Product, Currency, CartItem, Category, Subcategory, StaticSeoRecord, Page } from './types';
 import { api } from './services/api';
@@ -132,6 +133,16 @@ const preloadImages = async (imageUrls: (string | undefined)[]) => {
     });
   });
   await Promise.all(promises);
+};
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
 };
 
 // --- Main App Component ---
@@ -340,6 +351,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-tesla-dark bg-[#f8fafc]">
+      <ScrollToTop />
       <Header
         cartCount={cartCount}
         cartTotalUSD={cartTotalUSD}
@@ -416,6 +428,10 @@ const App: React.FC = () => {
             element={<SuccessView />}
           />
           <Route
+            path="/reviews"
+            element={<ReviewsPage />}
+          />
+          <Route
             path="/info/:slug"
             element={<StaticPageRoute seoRecords={staticSeo} />}
           />
@@ -454,6 +470,7 @@ const App: React.FC = () => {
             <h3 className="text-white font-bold mb-4">Клієнтам</h3>
             <ul className="space-y-2 text-sm">
               {/* ЗАМІНЕНО: button -> Link для індексації */}
+              <li><Link to="/reviews" className="hover:text-white block">Відгуки</Link></li>
               <li><Link to="/info/delivery" className="hover:text-white block">Доставка та оплата</Link></li>
               <li><Link to="/info/returns" className="hover:text-white block">Повернення</Link></li>
               <li><Link to="/info/contacts" className="hover:text-white block">Контакти</Link></li>

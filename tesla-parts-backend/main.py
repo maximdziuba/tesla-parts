@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 from typing import List
 from database import create_db_and_tables, engine, get_session
-from routers import products, orders, categories, settings, pages, auth, feeds # Import auth and feeds routers
+from routers import products, orders, categories, settings, pages, auth, feeds, reviews # Import reviews router
 from contextlib import asynccontextmanager
 import os
 from models import Product, Category, StaticPageSEO
@@ -96,6 +96,7 @@ app.include_router(settings.router)
 app.include_router(pages.router)
 app.include_router(auth.router) # Include auth router
 app.include_router(feeds.router) # Include feeds router
+app.include_router(reviews.router) # Include reviews router
 
 @app.get("/")
 def read_root():

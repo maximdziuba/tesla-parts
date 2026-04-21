@@ -129,5 +129,11 @@ export const api = {
         const res = await fetch(`${API_URL}/seo/static`);
         if (!res.ok) throw new Error('Failed to fetch static SEO data');
         return res.json();
+    },
+
+    getReviews: async (): Promise<any[]> => {
+        const res = await fetch(`${API_URL}/reviews/`);
+        if (!res.ok) throw new Error('Failed to fetch reviews');
+        return res.json();
     }
 };
