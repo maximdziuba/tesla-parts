@@ -41,7 +41,8 @@ def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, ses
         delivery_branch=order_data.delivery.branch,
         payment_method=order_data.paymentMethod,
         totalUSD=round(total_usd, 2),
-        ttn=order_data.ttn # Add TTN here
+        ttn=order_data.ttn, # Add TTN here
+        note=order_data.note # Add note here
     )
     session.add(order)
     session.commit()

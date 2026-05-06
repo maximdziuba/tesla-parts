@@ -72,7 +72,8 @@ export const api = {
             totalUSD: orderData.totalUSD,
             customer: orderData.customer,
             delivery: orderData.delivery,
-            paymentMethod: orderData.paymentMethod
+            paymentMethod: orderData.paymentMethod,
+            note: orderData.note
         };
 
         const res = await fetch(`${API_URL}/orders/`, {

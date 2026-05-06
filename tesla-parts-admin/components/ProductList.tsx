@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
 import { Product } from '../types';
-import { Search, Plus, Filter, Trash2, Pencil, ArrowUpDown, Star } from 'lucide-react';
+import { Search, Plus, Filter, Trash2, Pencil, ArrowUpDown, Star, Copy } from 'lucide-react';
 
 import { Link } from 'react-router-dom';
 
@@ -94,6 +94,17 @@ export const ProductList: React.FC = () => {
     } catch (e) {
       console.error(e);
       alert('Не вдалося змінити статус');
+    }
+  };
+
+  const handleCopyProduct = async (id: string) => {
+    if (confirm('Ви впевнені, що хочете скопіювати цей товар?')) {
+      try {
+        await ApiService.copyProduct(id);
+        fetchProducts();
+      } catch (error) {
+        alert('Не вдалося скопіювати товар');
+      }
     }
   };
 
@@ -288,6 +299,13 @@ export const ProductList: React.FC = () => {
                         title={product.is_popular ? "Прибрати з популярних" : "Додати в популярні"}
                       >
                         <Star size={16} fill={product.is_popular ? "currentColor" : "none"} />
+                      </button>
+                      <button
+                        onClick={() => handleCopyProduct(product.id)}
+                        className="p-1.5 text-green-500 hover:bg-green-50 rounded"
+                        title="Копіювати"
+                      >
+                        <Copy size={16} />
                       </button>
                       <Link
                         to={`/products/edit/${product.id}`}

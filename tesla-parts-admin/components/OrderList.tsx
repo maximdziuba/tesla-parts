@@ -128,6 +128,11 @@ export const OrderList: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="font-medium">{order.customer_first_name} {order.customer_last_name}</div>
                     <div className="text-xs text-gray-500">{order.customer_phone}</div>
+                    {order.note && (
+                      <div className="text-xs text-gray-600 mt-1 italic border-l-2 border-gray-300 pl-2">
+                        {order.note}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 max-w-xs">
                     <div className="flex items-start gap-2">

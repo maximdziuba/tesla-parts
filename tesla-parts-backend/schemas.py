@@ -88,6 +88,7 @@ class OrderCreate(BaseModel):
     delivery: Delivery
     paymentMethod: str
     ttn: str | None = None # Added TTN field
+    note: str | None = None
 
 class OrderItemRead(BaseModel):
     product_id: str
@@ -106,6 +107,7 @@ class OrderRead(BaseModel):
     delivery_branch: str
     payment_method: str
     ttn: str | None = None # Added TTN field
+    note: str | None = None
     created_at: datetime
     items: List[OrderItemRead]
 

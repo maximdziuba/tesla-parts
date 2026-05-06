@@ -61,6 +61,7 @@ export interface Order {
   created_at: string;
   status: string;
   ttn?: string; // Added TTN field
+  note?: string; // Added note field
   items: OrderItem[];
 }
 

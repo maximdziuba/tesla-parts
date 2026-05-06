@@ -20,6 +20,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [note, setNote] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.IBAN);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   
@@ -118,6 +119,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
       },
       paymentMethod,
       createdAt: new Date().toISOString(),
+      note: note.trim() || undefined,
       // Optional: You can add deliveryRef to your OrderData type if you want to store the UUID
       // deliveryRef: deliveryData.ref 
     };
@@ -191,6 +193,16 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
                   {phoneError && (
                     <p className="text-sm text-red-600 mt-1">{phoneError}</p>
                   )}
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Коментар до замовлення</label>
+                  <textarea
+                    value={note}
+                    onChange={e => setNote(e.target.value)}
+                    rows={3}
+                    placeholder="Наприклад: прохання зателефонувати після 18:00, додаткові деталі доставки..."
+                    className="w-full border rounded-md p-2 focus:ring-2 focus:ring-tesla-red outline-none resize-none"
+                  ></textarea>
                 </div>
               </div>
             </section>

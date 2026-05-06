@@ -288,6 +288,15 @@ export const ApiService = {
     return res.json();
   },
 
+  copyProduct: async (id: string): Promise<Product> => {
+    const res = await _authenticatedFetch(`${API_URL}/products/${id}/copy`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to copy product');
+    return res.json();
+  },
+
   deleteProduct: async (id: string): Promise<boolean> => {
     const res = await _authenticatedFetch(`${API_URL}/products/${id}`, {
       method: 'DELETE',

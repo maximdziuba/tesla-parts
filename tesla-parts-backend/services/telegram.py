@@ -36,6 +36,8 @@ def send_telegram_notification(order: Order):
         message += f"<b>Сума</b>: {total_usd:.2f} USD ({total_uah} UAH)\n"
         message += f"<b>Доставка</b>: {order.delivery_city}, {order.delivery_branch}\n"
         message += f"<b>Оплата</b>: {order.payment_method}\n"
+        if order.note:
+            message += f"<b>Коментар</b>: {order.note}\n"
         message += "<b>Товари</b>:\n"
 
         for item in order.items:

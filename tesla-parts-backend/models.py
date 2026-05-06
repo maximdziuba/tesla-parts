@@ -83,6 +83,7 @@ class Order(SQLModel, table=True):
     created_at: datetime = Field(default_factory=get_kyiv_time)
     status: str = Field(default="new")
     ttn: Optional[str] = None # Added TTN field
+    note: Optional[str] = None # Added note field
     
     items: List["OrderItem"] = Relationship(back_populates="order")
 

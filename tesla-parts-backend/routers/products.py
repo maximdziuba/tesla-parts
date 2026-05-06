@@ -424,6 +424,59 @@ async def update_product(
     product.images = updated_images
     return _build_product_response(product, rate)
 
+@router.post("/{product_id}/copy", response_model=ProductRead, dependencies=[Depends(get_current_admin)])
+def copy_product(
+    product_id: str,
+    session: Session = Depends(get_session)
+):
+    product = session.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    new_id = f"prod-{os.urandom(4).hex()}"
+    rate = get_exchange_rate(session)
+    
+    new_product = Product(
+        id=new_id,
+        name=f"{product.name} (Копія)",
+        category=product.category,
+        subcategory_id=product.subcategory_id,
+        priceUAH=product.priceUAH,
+        priceUSD=product.priceUSD,
+        description=product.description,
+        inStock=product.inStock,
+        sort_order=product.sort_order,
+        detail_number=product.detail_number,
+        cross_number=product.cross_number,
+        meta_title=product.meta_title,
+        meta_description=product.meta_description,
+        is_popular=product.is_popular,
+        image=product.image,
+    )
+    session.add(new_product)
+    session.commit()
+    
+    links = session.exec(select(ProductSubcategoryLink).where(ProductSubcategoryLink.product_id == product_id)).all()
+    for link in links:
+        session.add(ProductSubcategoryLink(product_id=new_id, subcategory_id=link.subcategory_id))
+        
+    images = session.exec(select(ProductImage).where(ProductImage.product_id == product_id)).all()
+    for img in images:
+        session.add(ProductImage(product_id=new_id, url=img.url))
+        
+    session.commit()
+    
+    full_new_product = session.exec(
+        select(Product)
+        .where(Product.id == new_id)
+        .options(
+            selectinload(Product.images),
+            selectinload(Product.linked_subcategories),
+        )
+    ).first()
+    
+    return _build_product_response(full_new_product, rate)
+
 @router.delete("/{product_id}", dependencies=[Depends(get_current_admin)])
 def delete_product(product_id: str, session: Session = Depends(get_session)):
     product = session.get(Product, product_id)

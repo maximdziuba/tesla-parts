@@ -85,6 +85,7 @@ export interface OrderData {
   };
   paymentMethod: PaymentMethod;
   createdAt: string;
+  note?: string;
 }
 
 export interface Page {
