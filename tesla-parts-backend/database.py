@@ -32,6 +32,7 @@ def create_db_and_tables():
     _ensure_product_subcategory_id_column()
     _ensure_product_created_at_column()
     _ensure_product_is_popular_column()
+    _ensure_order_note_column()
     
     with Session(engine) as session:
         # Check if admin user exists, if not, create it
@@ -137,3 +138,15 @@ def _ensure_product_is_popular_column():
                 update_val = "0" if is_sqlite() else "FALSE"
                 conn2.execute(text(f"UPDATE product SET is_popular = {update_val} WHERE is_popular IS NULL"))
                 conn2.commit()
+
+def _ensure_order_note_column():
+    inspector = inspect(engine)
+    # The table name is "order", which is a reserved word. 
+    # inspect.get_columns("order") should work fine.
+    columns = [c["name"] for c in inspector.get_columns("order")]
+    if "note" not in columns:
+        print("Adding 'note' column to 'order' table...")
+        with engine.connect() as conn:
+            # Use double quotes for the table name "order"
+            conn.execute(text('ALTER TABLE "order" ADD COLUMN note VARCHAR'))
+            conn.commit()

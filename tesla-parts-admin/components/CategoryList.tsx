@@ -18,6 +18,7 @@ import {
     Package,
     ArrowUp,
     ArrowDown,
+    Copy,
 } from 'lucide-react';
 
 interface SubcategoryItemProps {
@@ -30,6 +31,7 @@ interface SubcategoryItemProps {
     onEdit: (id: number, name: string, code: string, parentId?: number, file?: File, sortOrder?: number) => void;
     onTransfer: (id: number, targetCategoryId: number, targetParentId: number | undefined, mode: 'move' | 'copy') => Promise<void>;
     onDeleteProduct: (id: string) => Promise<void>;
+    onCopyProduct: (id: string) => Promise<void>;
     onReorderProducts: (productIds: string[]) => Promise<void>;
     onUpdateSubcategorySort: (subcategory: Subcategory, newSortOrder: number) => Promise<void>;
 }
@@ -105,6 +107,7 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
     onEdit,
     onTransfer,
     onDeleteProduct,
+    onCopyProduct,
     onReorderProducts,
     onUpdateSubcategorySort,
 }) => {
@@ -565,6 +568,16 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                                                         </td>
                                                         <td className="px-3 py-2 text-right">
                                                             <div className="flex justify-end gap-1">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        onCopyProduct(product.id);
+                                                                    }}
+                                                                    className="p-1 text-green-500 hover:bg-green-50 rounded"
+                                                                    title="Копіювати"
+                                                                >
+                                                                    <Copy size={14} />
+                                                                </button>
                                                                 <Link
                                                                     to={`/products/edit/${product.id}`}
                                                                     className="p-1 text-blue-500 hover:bg-blue-50 rounded"
@@ -610,6 +623,7 @@ const SubcategoryItem: React.FC<SubcategoryItemProps> = ({
                                         onEdit={onEdit}
                                         onTransfer={onTransfer}
                                         onDeleteProduct={onDeleteProduct}
+                                        onCopyProduct={onCopyProduct}
                                         onReorderProducts={onReorderProducts}
                                         onUpdateSubcategorySort={onUpdateSubcategorySort}
                                     />
@@ -830,6 +844,16 @@ const CategoryList: React.FC = () => {
             loadCategories();
         } catch (error) {
             alert('Не вдалося видалити товар');
+        }
+    };
+
+    const handleCopyProduct = async (id: string) => {
+        if (!confirm('Ви впевнені, що хочете скопіювати цей товар?')) return;
+        try {
+            await ApiService.copyProduct(id);
+            loadCategories();
+        } catch (error) {
+            alert('Не вдалося скопіювати товар');
         }
     };
 
@@ -1175,6 +1199,13 @@ const CategoryList: React.FC = () => {
                                                                 </td>
                                                                 <td className="px-3 py-2 text-right">
                                                                     <div className="flex justify-end gap-1">
+                                                                        <button
+                                                                            onClick={() => handleCopyProduct(product.id)}
+                                                                            className="p-1 text-green-500 hover:bg-green-50 rounded"
+                                                                            title="Копіювати"
+                                                                        >
+                                                                            <Copy size={14} />
+                                                                        </button>
                                                                         <Link
                                                                             to={`/products/edit/${product.id}`}
                                                                             className="p-1 text-blue-500 hover:bg-blue-50 rounded"
@@ -1217,6 +1248,7 @@ const CategoryList: React.FC = () => {
                                             onEdit={handleUpdateSubcategory}
                                             onTransfer={handleTransferSubcategory}
                                             onDeleteProduct={handleDeleteProduct}
+                                            onCopyProduct={handleCopyProduct}
                                             onReorderProducts={handleReorderProducts}
                                             onUpdateSubcategorySort={handleUpdateSubcategorySort}
                                         />
