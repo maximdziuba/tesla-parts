@@ -41,23 +41,18 @@ def send_telegram_notification(order: Order):
         message += "<b>Товари</b>:\n"
 
         for item in order.items:
-            product = session.get(Product, item.product_id)
             usd_price = item.price_at_purchase or 0
             if legacy_mode:
                 usd_price = usd_price / rate if rate else usd_price
             uah_price = round(usd_price * rate, 2)
-            if product:
-                detail_number = product.detail_number or "N/A"
-                product_name = product.name
-                message += (
-                    f"- <b>{detail_number}</b> {product_name} <b>{item.quantity} шт.</b> "
-                    f"(<b>{usd_price:.2f} USD ({uah_price:.2f} UAH)</b>)\n"
-                )
-            else:
-                message += (
-                    f"- Product ID: {item.product_id} <b>{item.quantity} шт.</b> "
-                    f"(<b>{usd_price:.2f} USD ({uah_price:.2f} UAH)</b>)\n"
-                )
+            
+            detail_number = item.product_detail_number or "N/A"
+            product_name = item.product_name
+            
+            message += (
+                f"- <b>{detail_number}</b> {product_name} <b>{item.quantity} шт.</b> "
+                f"(<b>{usd_price:.2f} USD ({uah_price:.2f} UAH)</b>)\n"
+            )
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {

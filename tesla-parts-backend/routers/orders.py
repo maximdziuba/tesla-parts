@@ -53,6 +53,9 @@ def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, ses
         order_item = OrderItem(
             order_id=order.id,
             product_id=item.id,
+            product_name=item.name,
+            product_image=item.image,
+            product_detail_number=item.detail_number,
             quantity=item.quantity,
             price_at_purchase=round(price_usd, 2)
         )

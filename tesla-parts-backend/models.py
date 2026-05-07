@@ -1,5 +1,6 @@
 from typing import Optional, List
 from sqlmodel import Field, SQLModel, Relationship
+from sqlalchemy import Column, ForeignKey, String
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -90,7 +91,13 @@ class Order(SQLModel, table=True):
 class OrderItem(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     order_id: Optional[int] = Field(default=None, foreign_key="order.id")
-    product_id: str = Field(foreign_key="product.id")
+    product_id: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String, ForeignKey("product.id", ondelete="SET NULL"), nullable=True)
+    )
+    product_name: str = Field(default="Unknown Product")
+    product_image: Optional[str] = None
+    product_detail_number: Optional[str] = None
     quantity: int
     price_at_purchase: float
     

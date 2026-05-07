@@ -91,7 +91,10 @@ class OrderCreate(BaseModel):
     note: str | None = None
 
 class OrderItemRead(BaseModel):
-    product_id: str
+    product_id: str | None = None
+    product_name: str | None = None
+    product_image: str | None = None
+    product_detail_number: str | None = None
     quantity: int
     price_at_purchase: float
 
