@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
-import { Plus, Trash2, Loader2, Image as ImageIcon, Move, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Loader2, Image as ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Review {
   id: number;
@@ -40,7 +40,8 @@ export const ReviewManager: React.FC = () => {
     setUploading(true);
     try {
       for (let i = 0; i < files.length; i++) {
-        await ApiService.createReview(files[i], reviews.length + i);
+        // Use 0 to place new reviews at the beginning (newest first)
+        await ApiService.createReview(files[i], 0);
       }
       await fetchReviews();
     } catch (err) {
@@ -149,32 +150,36 @@ export const ReviewManager: React.FC = () => {
                 />
               </div>
               
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none">
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                {/* Delete button in center */}
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDelete(review.id); }}
-                  className="p-2 bg-white text-red-600 rounded-full hover:bg-red-50 transition-colors pointer-events-auto"
+                  className="p-3 bg-white text-red-600 rounded-full hover:bg-red-50 transition-colors shadow-lg pointer-events-auto"
                   title="Видалити"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-6 h-6" />
                 </button>
-                <div className="flex flex-col gap-1 pointer-events-auto">
-                    {index > 0 && (
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); moveReview(index, index - 1); }}
-                            className="p-1 bg-white text-gray-600 rounded hover:bg-gray-50"
-                        >
-                            <Move className="w-4 h-4 rotate-180" />
-                        </button>
-                    )}
-                    {index < reviews.length - 1 && (
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); moveReview(index, index + 1); }}
-                            className="p-1 bg-white text-gray-600 rounded hover:bg-gray-50"
-                        >
-                            <Move className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
+
+                {/* Reordering buttons - Left/Right only */}
+                {index > 0 && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); moveReview(index, index - 1); }}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 text-gray-800 rounded-full hover:bg-white shadow-sm pointer-events-auto transition-all hover:scale-110"
+                    title="Перемістити ліворуч"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                )}
+                
+                {index < reviews.length - 1 && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); moveReview(index, index + 1); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-white/90 text-gray-800 rounded-full hover:bg-white shadow-sm pointer-events-auto transition-all hover:scale-110"
+                    title="Перемістити праворуч"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
               </div>
               
               <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
