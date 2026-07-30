@@ -291,8 +291,10 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, currency, uahPerUsd, onS
                 <span>{formatAmount(totalDisplayAmount)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
-                <span>Доставка</span>
-                <span className="text-xs">(за тарифами перевізника)</span>
+                <div className="flex flex-col">
+                  <span>Доставка</span>
+                  <span className="text-xs">(за тарифами перевізника)</span>
+                </div>
               </div>
               <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t mt-2">
                 <span>Разом</span>

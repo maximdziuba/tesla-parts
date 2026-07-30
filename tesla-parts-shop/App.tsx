@@ -879,8 +879,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
       </div>
 
       {subcategoriesToShow.length > 0 && (
-        // FIX: Адаптивна сітка (grid-cols-1 -> md:grid-cols-2 -> xl:grid-cols-3)
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 mb-8">
           {subcategoriesToShow.map(sub => (
             <SubcategoryCard
               key={sub.id}

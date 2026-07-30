@@ -38,7 +38,7 @@ const SubcategoryCard: React.FC<SubcategoryCardProps> = ({ subcategory, to }) =>
                     - xl:group-hover:text-tesla-red (червоний при наведенні ТІЛЬКИ на ПК)
                     - active:text-tesla-red (червоний при натисканні на мобільному)
                 */}
-                <h3 className="font-bold text-sm sm:text-lg text-gray-900 active:text-tesla-red xl:group-hover:text-tesla-red transition-colors break-words pr-2 leading-tight">
+                <h3 className="font-bold text-sm sm:text-lg text-gray-900 active:text-tesla-red xl:group-hover:text-tesla-red transition-colors pr-2 leading-tight">
                     {subcategory.name}
                 </h3>
                 {subcategory.code && (

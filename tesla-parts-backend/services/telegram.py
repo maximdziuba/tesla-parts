@@ -33,8 +33,8 @@ def send_telegram_notification(order: Order):
         total_uah = round(total_usd * rate, 2)
         message += f"<b>Покупець</b>: {order.customer_first_name} {order.customer_last_name}\n"
         message += f"<b>Телефон</b>: {order.customer_phone}\n"
-        message += f"<b>Сума</b>: {total_usd:.2f} USD ({total_uah} UAH)\n"
         message += f"<b>Доставка</b>: {order.delivery_city}, {order.delivery_branch}\n"
+        message += f"<b>Сума</b>: {total_usd:.2f} USD ({total_uah} UAH)\n"
         message += f"<b>Оплата</b>: {order.payment_method}\n"
         if order.note:
             message += f"<b>Коментар</b>: {order.note}\n"
@@ -49,9 +49,16 @@ def send_telegram_notification(order: Order):
             detail_number = item.product_detail_number or "N/A"
             product_name = item.product_name
             
+            if item.quantity > 1:
+                item_total_usd = usd_price * item.quantity
+                item_total_uah = uah_price * item.quantity
+                price_str = f"{item_total_usd:.2f} USD ({item_total_uah:.2f} UAH)"
+            else:
+                price_str = f"{usd_price:.2f} USD ({uah_price:.2f} UAH)"
+            
             message += (
                 f"- <b>{detail_number}</b> {product_name} <b>{item.quantity} шт.</b> "
-                f"(<b>{usd_price:.2f} USD ({uah_price:.2f} UAH)</b>)\n"
+                f"(<b>{price_str}</b>)\n"
             )
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
