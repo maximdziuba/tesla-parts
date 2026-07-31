@@ -247,6 +247,10 @@ class EmailListCreate(BaseModel):
     name: str
     customer_ids: List[int] = []
 
+class EmailListUpdate(BaseModel):
+    name: str | None = None
+    customer_ids: List[int] | None = None
+
 class CustomerBasicRead(BaseModel):
     id: int
     email: str

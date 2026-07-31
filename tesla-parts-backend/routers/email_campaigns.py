@@ -4,7 +4,7 @@ from typing import List
 from database import get_session
 from dependencies import get_current_admin
 from models import EmailList, CustomerEmailListLink, Customer
-from schemas import EmailListCreate, EmailListRead, EmailCampaignSendRequest, DirectEmailCampaignRequest, CustomerBasicRead
+from schemas import EmailListCreate, EmailListRead, EmailCampaignSendRequest, DirectEmailCampaignRequest, CustomerBasicRead, EmailListUpdate
 from services.crypto import decrypt_value
 from services.email import send_bulk_emails
 
@@ -54,6 +54,47 @@ def create_email_list(
             customers.append(CustomerBasicRead(id=c.id, email=email, first_name=first_name, last_name=last_name))
             
     return EmailListRead(id=new_list.id, name=new_list.name, created_at=new_list.created_at, customers=customers)
+
+@router.put("/lists/{list_id}", response_model=EmailListRead)
+def update_email_list(
+    list_id: int,
+    data: EmailListUpdate,
+    session: Session = Depends(get_session),
+    _: dict = Depends(get_current_admin)
+):
+    l = session.get(EmailList, list_id)
+    if not l:
+        raise HTTPException(status_code=404, detail="List not found")
+        
+    if data.name is not None:
+        l.name = data.name
+        
+    if data.customer_ids is not None:
+        # Clear existing links
+        links = session.exec(select(CustomerEmailListLink).where(CustomerEmailListLink.email_list_id == list_id)).all()
+        for link in links:
+            session.delete(link)
+            
+        # Add new links
+        for cid in data.customer_ids:
+            customer = session.get(Customer, cid)
+            if customer:
+                link = CustomerEmailListLink(customer_id=cid, email_list_id=l.id)
+                session.add(link)
+                
+    session.add(l)
+    session.commit()
+    session.refresh(l)
+
+    customers = []
+    for c in l.customers:
+        email = decrypt_value(c.encrypted_email)
+        if email:
+            first_name = decrypt_value(c.encrypted_first_name) if c.encrypted_first_name else None
+            last_name = decrypt_value(c.encrypted_last_name) if c.encrypted_last_name else None
+            customers.append(CustomerBasicRead(id=c.id, email=email, first_name=first_name, last_name=last_name))
+            
+    return EmailListRead(id=l.id, name=l.name, created_at=l.created_at, customers=customers)
 
 @router.delete("/lists/{list_id}")
 def delete_email_list(

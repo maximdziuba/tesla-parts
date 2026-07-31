@@ -932,6 +932,16 @@ export const ApiService = {
     return res.json();
   },
 
+  updateEmailList: async (id: number, data: { name?: string; customer_ids?: number[] }): Promise<any> => {
+    const res = await _authenticatedFetch(`${API_URL}/email-campaigns/lists/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update email list');
+    return res.json();
+  },
+
   deleteEmailList: async (id: number): Promise<void> => {
     const res = await _authenticatedFetch(`${API_URL}/email-campaigns/lists/${id}`, {
       method: 'DELETE',

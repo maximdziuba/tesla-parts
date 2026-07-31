@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
-import { Mail, Plus, Trash2, Send, X, Users, Search, AlertCircle } from 'lucide-react';
+import { Mail, Plus, Trash2, Send, X, Users, Search, AlertCircle, Pencil } from 'lucide-react';
 
 export const EmailCampaigns: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'lists' | 'direct'>('lists');
@@ -12,6 +12,7 @@ export const EmailCampaigns: React.FC = () => {
 
   // List Management State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingListId, setEditingListId] = useState<number | null>(null);
   const [newListName, setNewListName] = useState('');
   const [selectedCustomers, setSelectedCustomers] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,17 +71,23 @@ export const EmailCampaigns: React.FC = () => {
     }
   };
 
-  const handleCreateList = async () => {
+  const handleCreateOrUpdateList = async () => {
     if (!newListName) return;
     try {
-      await ApiService.createEmailList({ name: newListName, customer_ids: selectedCustomers });
+      if (editingListId) {
+        await ApiService.updateEmailList(editingListId, { name: newListName, customer_ids: selectedCustomers });
+        showSuccess('Список успішно оновлено!');
+      } else {
+        await ApiService.createEmailList({ name: newListName, customer_ids: selectedCustomers });
+        showSuccess('Список успішно створено!');
+      }
       setIsCreateModalOpen(false);
+      setEditingListId(null);
       setNewListName('');
       setSelectedCustomers([]);
       fetchData();
-      showSuccess('Список успішно створено!');
     } catch (err: any) {
-      setError(err.message || 'Не вдалося створити список');
+      setError(err.message || 'Не вдалося зберегти список');
     }
   };
 
@@ -222,7 +229,12 @@ export const EmailCampaigns: React.FC = () => {
             <div>
               <div className="flex justify-end mb-4">
                 <button
-                  onClick={() => setIsCreateModalOpen(true)}
+                  onClick={() => {
+                    setEditingListId(null);
+                    setNewListName('');
+                    setSelectedCustomers([]);
+                    setIsCreateModalOpen(true);
+                  }}
                   className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-700 transition"
                 >
                   <Plus className="w-4 h-4" /> Створити список
@@ -239,9 +251,23 @@ export const EmailCampaigns: React.FC = () => {
                     <div key={list.id} className="border border-gray-100 rounded-lg p-4 hover:shadow-md transition">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-semibold text-lg">{list.name}</h3>
-                        <button onClick={() => handleDeleteList(list.id)} className="text-gray-400 hover:text-red-600">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => {
+                              setEditingListId(list.id);
+                              setNewListName(list.name);
+                              setSelectedCustomers(list.customers.map((c: any) => c.id));
+                              setIsCreateModalOpen(true);
+                            }} 
+                            className="text-gray-400 hover:text-blue-600"
+                            title="Редагувати"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDeleteList(list.id)} className="text-gray-400 hover:text-red-600" title="Видалити">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                       <p className="text-sm text-gray-500 mb-4 flex items-center gap-1">
                         <Users className="w-4 h-4" /> {list.customers?.length || 0} користувачів
@@ -341,8 +367,8 @@ export const EmailCampaigns: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Створити список розсилки</h2>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+              <h2 className="text-xl font-bold">{editingListId ? 'Редагувати список' : 'Створити список розсилки'}</h2>
+              <button onClick={() => { setIsCreateModalOpen(false); setEditingListId(null); }} className="text-gray-500 hover:text-gray-700">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -407,13 +433,13 @@ export const EmailCampaigns: React.FC = () => {
 
             <div className="flex gap-2 mt-6 justify-end">
               <button
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={() => { setIsCreateModalOpen(false); setEditingListId(null); }}
                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
               >
                 Скасувати
               </button>
               <button
-                onClick={handleCreateList}
+                onClick={handleCreateOrUpdateList}
                 disabled={!newListName}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
               >
