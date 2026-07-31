@@ -243,3 +243,29 @@ class PromoCodeValidateResponse(BaseModel):
     discount_value: float | None = None
     message: str | None = None
 
+class EmailListCreate(BaseModel):
+    name: str
+    customer_ids: List[int] = []
+
+class CustomerBasicRead(BaseModel):
+    id: int
+    email: str
+    first_name: str | None = None
+    last_name: str | None = None
+
+class EmailListRead(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
+    customers: List[CustomerBasicRead] = []
+
+class EmailCampaignSendRequest(BaseModel):
+    subject: str
+    body: str
+
+class DirectEmailCampaignRequest(BaseModel):
+    subject: str
+    body: str
+    customer_ids: List[int] = []
+    emails: List[str] = []
+

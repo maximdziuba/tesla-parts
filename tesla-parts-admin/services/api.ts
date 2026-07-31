@@ -912,4 +912,57 @@ export const ApiService = {
     if (!res.ok) throw new Error('Failed to reorder reviews');
     return res.json();
   },
+
+  // --- Email Campaigns API ---
+  getEmailLists: async (): Promise<any[]> => {
+    const res = await _authenticatedFetch(`${API_URL}/email-campaigns/lists`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch email lists');
+    return res.json();
+  },
+
+  createEmailList: async (data: { name: string; customer_ids: number[] }): Promise<any> => {
+    const res = await _authenticatedFetch(`${API_URL}/email-campaigns/lists`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to create email list');
+    return res.json();
+  },
+
+  deleteEmailList: async (id: number): Promise<void> => {
+    const res = await _authenticatedFetch(`${API_URL}/email-campaigns/lists/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to delete email list');
+  },
+
+  sendCampaignToList: async (id: number, data: { subject: string; body: string }): Promise<{ message: string }> => {
+    const res = await _authenticatedFetch(`${API_URL}/email-campaigns/lists/${id}/send`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail || 'Failed to send campaign');
+    }
+    return res.json();
+  },
+
+  sendDirectCampaign: async (data: { subject: string; body: string; customer_ids: number[]; emails: string[] }): Promise<{ message: string }> => {
+    const res = await _authenticatedFetch(`${API_URL}/email-campaigns/send-direct`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail || 'Failed to send direct campaign');
+    }
+    return res.json();
+  },
 };

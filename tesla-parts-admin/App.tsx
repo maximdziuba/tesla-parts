@@ -19,6 +19,7 @@ import { ReviewManager } from './components/ReviewManager';
 import { CustomerList } from './components/CustomerList';
 import { CustomerProfile } from './components/CustomerProfile';
 import { PromoCodeList } from './components/PromoCodeList';
+import { EmailCampaigns } from './components/EmailCampaigns';
 import { ResetPasswordPage } from './pages/ResetPassword';
 import { useAuth } from './AuthContext'; // Import useAuth
 
@@ -74,6 +75,7 @@ const App: React.FC = () => {
                   <Route path="/customers" element={<CustomerList />} />
                   <Route path="/customers/:id" element={<CustomerProfile />} />
                   <Route path="/promocodes" element={<PromoCodeList />} />
+                  <Route path="/email-campaigns" element={<EmailCampaigns />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>

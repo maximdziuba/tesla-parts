@@ -14,10 +14,11 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageSquare,
-  FolderTree,
-  Star,
+  Mail,
   Users,
   Ticket,
+  FolderTree,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -88,6 +89,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         return 'Клієнти';
       case '/promocodes':
         return 'Промокоди';
+      case '/email-campaigns':
+        return 'Розсилки';
       default:
         return 'Адмін Панель';
     }
@@ -183,6 +186,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             icon={Ticket}
             label="Промокоди"
             active={location.pathname === '/promocodes'}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/email-campaigns"
+            icon={Mail}
+            label="Розсилки"
+            active={location.pathname === '/email-campaigns'}
             collapsed={collapsed}
           />
         </nav>

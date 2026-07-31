@@ -139,6 +139,19 @@ class CustomerPromoCodeLink(SQLModel, table=True):
     customer_id: int = Field(foreign_key="customer.id", primary_key=True)
     promocode_id: int = Field(foreign_key="promocode.id", primary_key=True)
 
+class CustomerEmailListLink(SQLModel, table=True):
+    customer_id: int = Field(foreign_key="customer.id", primary_key=True)
+    email_list_id: int = Field(foreign_key="emaillist.id", primary_key=True)
+
+class EmailList(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    created_at: datetime = Field(default_factory=get_kyiv_time)
+
+    customers: List["Customer"] = Relationship(
+        back_populates="email_lists", link_model=CustomerEmailListLink
+    )
+
 class Customer(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email_hash: str = Field(unique=True, index=True)
@@ -160,6 +173,9 @@ class Customer(SQLModel, table=True):
 
     promocodes: List["PromoCode"] = Relationship(
         back_populates="customers", link_model=CustomerPromoCodeLink
+    )
+    email_lists: List["EmailList"] = Relationship(
+        back_populates="customers", link_model=CustomerEmailListLink
     )
 
 class PromoCode(SQLModel, table=True):
