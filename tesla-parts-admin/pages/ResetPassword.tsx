@@ -25,32 +25,39 @@ export const ResetPasswordPage: React.FC = () => {
       setError('Новий пароль та підтвердження пароля не співпадають.');
       return;
     }
-    if (newPassword.length < 6) { // Example: minimum password length
+    if (newPassword.length < 6) {
+      // Example: minimum password length
       setError('Новий пароль повинен бути щонайменше 6 символів.');
       return;
     }
 
     try {
       await ApiService.resetPassword(oldPassword, newPassword);
-      setMessage('Пароль успішно змінено! Будь ласка, увійдіть з новим паролем.');
+      setMessage(
+        'Пароль успішно змінено! Будь ласка, увійдіть з новим паролем.'
+      );
       setTimeout(() => {
         logout(); // Log out after successful password reset
         navigate('/login');
       }, 3000);
     } catch (err: any) {
-      console.error("Password reset failed:", err);
+      console.error('Password reset failed:', err);
       setError(err.message || 'Помилка при зміні пароля.');
     }
   };
 
   return (
     <div className="max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900">Змінити Пароль Адміністратора</h1>
+      <h1 className="text-2xl font-bold mb-6 text-gray-900">
+        Змінити Пароль Адміністратора
+      </h1>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
         <form onSubmit={handleResetPassword} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Поточний Пароль</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Поточний Пароль
+            </label>
             <div className="relative">
               <input
                 type={showOldPassword ? 'text' : 'password'}
@@ -70,7 +77,9 @@ export const ResetPasswordPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Новий Пароль</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Новий Пароль
+            </label>
             <div className="relative">
               <input
                 type={showNewPassword ? 'text' : 'password'}
@@ -90,7 +99,9 @@ export const ResetPasswordPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Підтвердіть Новий Пароль</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Підтвердіть Новий Пароль
+            </label>
             <div className="relative">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
@@ -109,7 +120,9 @@ export const ResetPasswordPage: React.FC = () => {
             </div>
           </div>
 
-          {message && <div className="text-green-600 text-center">{message}</div>}
+          {message && (
+            <div className="text-green-600 text-center">{message}</div>
+          )}
           {error && <div className="text-red-600 text-center">{error}</div>}
 
           <button

@@ -13,7 +13,11 @@ import {
   Key,
   ChevronLeft,
   ChevronRight,
-  MessageSquare
+  MessageSquare,
+  FolderTree,
+  Star,
+  Users,
+  Ticket,
 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 
@@ -21,17 +25,34 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const SidebarItem = ({ to, icon: Icon, label, active, collapsed }: { to: string, icon: any, label: string, active: boolean, collapsed: boolean }) => (
+const SidebarItem = ({
+  to,
+  icon: Icon,
+  label,
+  active,
+  collapsed,
+}: {
+  to: string;
+  icon: any;
+  label: string;
+  active: boolean;
+  collapsed: boolean;
+}) => (
   <Link
     to={to}
     title={collapsed ? label : undefined}
-    className={`flex items-center rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-4 py-3'} ${active
-      ? 'bg-red-600 text-white'
-      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-      }`}
+    className={`flex items-center rounded-lg transition-all duration-200 ${collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-4 py-3'} ${
+      active
+        ? 'bg-red-600 text-white'
+        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+    }`}
   >
     <Icon size={20} className="shrink-0" />
-    {!collapsed && <span className="font-medium whitespace-nowrap overflow-hidden transition-all duration-200">{label}</span>}
+    {!collapsed && (
+      <span className="font-medium whitespace-nowrap overflow-hidden transition-all duration-200">
+        {label}
+      </span>
+    )}
   </Link>
 );
 
@@ -49,14 +70,26 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const getPageTitle = (path: string) => {
     switch (path) {
-      case '/': return 'Огляд';
-      case '/products': return 'Товари';
-      case '/orders': return 'Замовлення';
-      case '/categories': return 'Категорії';
-      case '/reviews': return 'Відгуки';
-      case '/settings': return 'Налаштування';
-      case '/cms': return 'Контент';
-      default: return 'Адмін Панель';
+      case '/':
+        return 'Огляд';
+      case '/products':
+        return 'Товари';
+      case '/orders':
+        return 'Замовлення';
+      case '/categories':
+        return 'Категорії';
+      case '/reviews':
+        return 'Відгуки';
+      case '/settings':
+        return 'Налаштування';
+      case '/cms':
+        return 'Контент';
+      case '/customers':
+        return 'Клієнти';
+      case '/promocodes':
+        return 'Промокоди';
+      default:
+        return 'Адмін Панель';
     }
   };
 
@@ -64,14 +97,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-gray-900 text-white transform transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          } ${collapsed ? 'lg:w-20' : 'lg:w-64'} w-64`}
+        className={`fixed inset-y-0 left-0 z-50 bg-gray-900 text-white transform transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${collapsed ? 'lg:w-20' : 'lg:w-64'} w-64`}
       >
-        <div className={`flex items-center border-b border-gray-800 transition-all duration-300 ${collapsed ? 'justify-center p-4' : 'gap-2 p-6'}`}>
+        <div
+          className={`flex items-center border-b border-gray-800 transition-all duration-300 ${collapsed ? 'justify-center p-4' : 'gap-2 p-6'}`}
+        >
           <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center shrink-0">
             <span className="font-bold text-white text-lg">T</span>
           </div>
-          {!collapsed && <span className="text-xl font-bold tracking-tight whitespace-nowrap overflow-hidden transition-all duration-300">Tesla Admin</span>}
+          {!collapsed && (
+            <span className="text-xl font-bold tracking-tight whitespace-nowrap overflow-hidden transition-all duration-300">
+              Tesla Admin
+            </span>
+          )}
         </div>
 
         <nav className="p-4 space-y-2">
@@ -131,16 +171,32 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             active={location.pathname === '/cms'}
             collapsed={collapsed}
           />
+          <SidebarItem
+            to="/customers"
+            icon={Users}
+            label="Клієнти"
+            active={location.pathname === '/customers'}
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            to="/promocodes"
+            icon={Ticket}
+            label="Промокоди"
+            active={location.pathname === '/promocodes'}
+            collapsed={collapsed}
+          />
         </nav>
 
         <div className="absolute bottom-0 w-full p-4 border-t border-gray-800">
           <button
             onClick={handleLogout}
-            title={collapsed ? "Вийти" : undefined}
+            title={collapsed ? 'Вийти' : undefined}
             className={`flex items-center rounded-lg text-gray-400 hover:text-white transition-all duration-200 w-full ${collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-4 py-3'}`}
           >
             <LogOut size={20} className="shrink-0" />
-            {!collapsed && <span className="whitespace-nowrap overflow-hidden">Вийти</span>}
+            {!collapsed && (
+              <span className="whitespace-nowrap overflow-hidden">Вийти</span>
+            )}
           </button>
         </div>
       </aside>
@@ -176,9 +232,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>
 
       {/* Overlay for mobile */}

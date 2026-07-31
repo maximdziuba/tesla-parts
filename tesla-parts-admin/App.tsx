@@ -1,5 +1,11 @@
 import React, { useEffect } from 'react';
-import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import {
+  HashRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { ProductList } from './components/ProductList';
@@ -10,6 +16,9 @@ import CategoryList from './components/CategoryList';
 import { SettingsPage } from './pages/SettingsPage';
 import { CMSPage } from './pages/CMSPage';
 import { ReviewManager } from './components/ReviewManager';
+import { CustomerList } from './components/CustomerList';
+import { CustomerProfile } from './components/CustomerProfile';
+import { PromoCodeList } from './components/PromoCodeList';
 import { ResetPasswordPage } from './pages/ResetPassword';
 import { useAuth } from './AuthContext'; // Import useAuth
 
@@ -56,9 +65,15 @@ const App: React.FC = () => {
                   <Route path="/orders" element={<OrderList />} />
                   <Route path="/categories" element={<CategoryList />} />
                   <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/settings/reset-password" element={<ResetPasswordPage />} />
+                  <Route
+                    path="/settings/reset-password"
+                    element={<ResetPasswordPage />}
+                  />
                   <Route path="/cms" element={<CMSPage />} />
                   <Route path="/reviews" element={<ReviewManager />} />
+                  <Route path="/customers" element={<CustomerList />} />
+                  <Route path="/customers/:id" element={<CustomerProfile />} />
+                  <Route path="/promocodes" element={<PromoCodeList />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>

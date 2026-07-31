@@ -11,13 +11,16 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
 } from 'recharts';
 import { DollarSign, ShoppingBag, Package, AlertTriangle } from 'lucide-react';
 
 const getProductCategories = (value?: string) => {
   if (!value) return [];
-  return value.split(',').map(item => item.trim()).filter(Boolean);
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
 const StatCard = ({ title, value, icon: Icon, color, subtext }: any) => (
@@ -46,24 +49,33 @@ export const Dashboard: React.FC = () => {
       try {
         const [ordersData, productsData] = await Promise.all([
           ApiService.getOrders(),
-          ApiService.getProducts()
+          ApiService.getProducts(),
         ]);
 
-        const totalRevenue = ordersData.reduce((acc, order) => acc + (order.totalUAH ?? 0), 0);
-        const pending = ordersData.filter(o => o.status === 'new').length;
+        const totalRevenue = ordersData.reduce(
+          (acc, order) => acc + (order.totalUAH ?? 0),
+          0
+        );
+        const pending = ordersData.filter((o) => o.status === 'new').length;
         // Mock stock logic since backend doesn't track quantity yet, assume inStock=true is > 0
-        const lowStock = productsData.filter(p => !p.inStock).length;
+        const lowStock = productsData.filter((p) => !p.inStock).length;
 
         setStats({
           totalRevenue,
           totalOrders: ordersData.length,
           pendingOrders: pending,
-          lowStockItems: lowStock
+          lowStockItems: lowStock,
         });
-        setOrders(ordersData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+        setOrders(
+          ordersData.sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+          )
+        );
         setProducts(productsData);
       } catch (error) {
-        console.error("Failed to load dashboard data");
+        console.error('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
@@ -80,12 +92,16 @@ export const Dashboard: React.FC = () => {
   }
 
   // Calculate Sales by Category
-  const salesByCategories = Array.from(new Set(products.flatMap(p => getProductCategories(p.category)))).map((categoryName: string) => {
+  const salesByCategories = Array.from(
+    new Set(products.flatMap((p) => getProductCategories(p.category)))
+  ).map((categoryName: string) => {
     const categoryProducts = products
-      .filter(p => getProductCategories(p.category).includes(categoryName))
-      .map(p => p.id);
+      .filter((p) => getProductCategories(p.category).includes(categoryName))
+      .map((p) => p.id);
     const count = orders.reduce((acc, order) => {
-      const categoryItems = order.items.filter(item => categoryProducts.includes(item.product_id));
+      const categoryItems = order.items.filter((item) =>
+        categoryProducts.includes(item.product_id)
+      );
       return acc + categoryItems.reduce((sum, item) => sum + item.quantity, 0);
     }, 0);
     return { name: categoryName, value: count };
@@ -128,7 +144,9 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart 1: Sales by Category */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Продажі за категоріями (шт)</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4">
+            Продажі за категоріями (шт)
+          </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={salesByCategories}>
@@ -136,10 +154,19 @@ export const Dashboard: React.FC = () => {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} />
                 <YAxis axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb',
+                  }}
                   itemStyle={{ color: '#374151' }}
                 />
-                <Bar dataKey="value" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={50} />
+                <Bar
+                  dataKey="value"
+                  fill="#ef4444"
+                  radius={[4, 4, 0, 0]}
+                  barSize={50}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -147,14 +174,19 @@ export const Dashboard: React.FC = () => {
 
         {/* Chart 2: Order Status Distribution */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Статус Замовлень</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-4">
+            Статус Замовлень
+          </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={[
                     { name: 'Нові', value: stats.pendingOrders },
-                    { name: 'Завершені', value: stats.totalOrders - stats.pendingOrders },
+                    {
+                      name: 'Завершені',
+                      value: stats.totalOrders - stats.pendingOrders,
+                    },
                   ]}
                   cx="50%"
                   cy="50%"

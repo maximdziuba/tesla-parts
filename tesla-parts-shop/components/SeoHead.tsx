@@ -10,14 +10,15 @@ interface SeoHeadProps {
 
   // Нові пропси для Schema.org
   type?: 'website' | 'product'; // Тип сторінки
-  price?: number;               // Ціна (для товарів)
-  currency?: string;            // Валюта (за замовчуванням UAH)
-  availability?: boolean;       // Чи є в наявності
+  price?: number; // Ціна (для товарів)
+  currency?: string; // Валюта (за замовчуванням UAH)
+  availability?: boolean; // Чи є в наявності
   deliveryInfo?: string | null; // Інформація про доставку
 }
 
 const DEFAULT_TITLE = 'Tesla Parts Center';
-const DEFAULT_DESCRIPTION = 'Tesla Parts Center пропонує запчастини та аксесуари для вашого електромобіля.';
+const DEFAULT_DESCRIPTION =
+  'Tesla Parts Center пропонує запчастини та аксесуари для вашого електромобіля.';
 const URL = 'https://teslapartscenter.com.ua';
 
 const SeoHead: React.FC<SeoHeadProps> = ({
@@ -30,17 +31,26 @@ const SeoHead: React.FC<SeoHeadProps> = ({
   price,
   currency = 'UAH',
   availability = true,
-  deliveryInfo
+  deliveryInfo,
 }) => {
   const safeTitle = title?.trim() || fallbackTitle?.trim() || DEFAULT_TITLE;
-  let safeDescription = description?.trim() || fallbackDescription?.trim() || DEFAULT_DESCRIPTION;
+  let safeDescription =
+    description?.trim() || fallbackDescription?.trim() || DEFAULT_DESCRIPTION;
 
   if (type === 'product' && deliveryInfo) {
     // Append delivery info summary if available
-    const deliverySummary = deliveryInfo.split('\n').filter(l => l.trim().length > 0).slice(0, 3).join('. ');
-    const truncatedDelivery = deliverySummary.length > 150 ? deliverySummary.slice(0, 147) + '...' : deliverySummary;
-    if (!safeDescription.includes(truncatedDelivery.slice(0, 20))) { // Avoid duplication
-        safeDescription = `${safeDescription} ${truncatedDelivery}`;
+    const deliverySummary = deliveryInfo
+      .split('\n')
+      .filter((l) => l.trim().length > 0)
+      .slice(0, 3)
+      .join('. ');
+    const truncatedDelivery =
+      deliverySummary.length > 150
+        ? deliverySummary.slice(0, 147) + '...'
+        : deliverySummary;
+    if (!safeDescription.includes(truncatedDelivery.slice(0, 20))) {
+      // Avoid duplication
+      safeDescription = `${safeDescription} ${truncatedDelivery}`;
     }
   }
 
@@ -55,25 +65,27 @@ const SeoHead: React.FC<SeoHeadProps> = ({
 
   if (type === 'product') {
     structuredData = {
-      "@context": "https://schema.org/",
-      "@type": "Product",
-      "name": safeTitle,
-      "image": image ? [image] : [],
-      "description": safeDescription,
-      "brand": {
-        "@type": "Brand",
-        "name": "Tesla" // Можна змінити на динамічний бренд, якщо є різні
+      '@context': 'https://schema.org/',
+      '@type': 'Product',
+      name: safeTitle,
+      image: image ? [image] : [],
+      description: safeDescription,
+      brand: {
+        '@type': 'Brand',
+        name: 'Tesla', // Можна змінити на динамічний бренд, якщо є різні
       },
-      "offers": {
-        "@type": "Offer",
-        "url": currentUrl,
-        "priceCurrency": currency,
-        "priceValidUntil": priceValidUntil,
+      offers: {
+        '@type': 'Offer',
+        url: currentUrl,
+        priceCurrency: currency,
+        priceValidUntil: priceValidUntil,
 
-        "price": price, // Google вимагає цифру
-        "availability": availability ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-        "itemCondition": "https://schema.org/UsedCondition" // Можна змінювати на NewCondition
-      }
+        price: price, // Google вимагає цифру
+        availability: availability
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+        itemCondition: 'https://schema.org/UsedCondition', // Можна змінювати на NewCondition
+      },
     };
   }
 
@@ -86,7 +98,10 @@ const SeoHead: React.FC<SeoHeadProps> = ({
       {/* Open Graph (Facebook, Viber, Telegram) */}
       <meta property="og:title" content={safeTitle} />
       <meta property="og:description" content={safeDescription} />
-      <meta property="og:type" content={type === 'product' ? 'product' : 'website'} />
+      <meta
+        property="og:type"
+        content={type === 'product' ? 'product' : 'website'}
+      />
       {image && <meta property="og:image" content={image} />}
       <meta property="og:url" content={currentUrl} />
 

@@ -10,6 +10,7 @@ vercel
 ```
 
 Or use the Vercel dashboard:
+
 1. Go to [vercel.com](https://vercel.com)
 2. Click **New Project**
 3. Import your Git repository
@@ -23,21 +24,21 @@ Or use the Vercel dashboard:
 
 Add in Vercel Dashboard → Settings → Environment Variables:
 
-| Variable | Value | Example |
-|----------|-------|---------|
+| Variable       | Value            | Example                                |
+| -------------- | ---------------- | -------------------------------------- |
 | `VITE_API_URL` | Your backend URL | `https://tesla-parts-api.onrender.com` |
 
 **Important**: Don't include trailing slash in the URL.
 
 ### Vercel Settings
 
-| Setting | Value |
-|---------|-------|
-| **Framework Preset** | Vite |
-| **Build Command** | `npm run build` |
-| **Output Directory** | `dist` |
-| **Install Command** | `npm install` |
-| **Root Directory** | `tesla-parts-admin` |
+| Setting              | Value               |
+| -------------------- | ------------------- |
+| **Framework Preset** | Vite                |
+| **Build Command**    | `npm run build`     |
+| **Output Directory** | `dist`              |
+| **Install Command**  | `npm install`       |
+| **Root Directory**   | `tesla-parts-admin` |
 
 ---
 
@@ -121,15 +122,18 @@ vercel
 ### Common Issues
 
 **CORS Error**:
+
 - Add your Vercel URL to backend CORS origins
 - Redeploy backend after adding
 
 **API URL Not Set**:
+
 - Check environment variable in Vercel dashboard
 - Variable must be named exactly `VITE_API_URL`
 - Redeploy after adding variable
 
 **404 on Refresh**:
+
 - Ensure `vercel.json` is present with rewrites
 - Redeploy if needed
 
@@ -138,11 +142,13 @@ vercel
 ## 🔐 Production Considerations
 
 ### Security
+
 - ✅ Admin secret stored in localStorage (client-side)
 - ✅ HTTPS enforced by Vercel
 - ⚠️ Consider implementing proper JWT authentication
 
 ### Performance
+
 - ✅ Vite optimizes bundle size
 - ✅ Vercel CDN for fast global delivery
 - ✅ Automatic code splitting
@@ -152,11 +158,14 @@ vercel
 ## 🔄 Updating Deployment
 
 ### Automatic (Recommended)
+
 Connect your Git repository to Vercel:
+
 - Every push to main branch auto-deploys
 - Preview deployments for pull requests
 
 ### Manual
+
 ```bash
 vercel --prod
 ```
@@ -166,6 +175,7 @@ vercel --prod
 ## 📊 Monitoring
 
 Access in Vercel Dashboard:
+
 - **Deployments**: See all deployments and logs
 - **Analytics**: Page views and performance
 - **Logs**: Real-time function logs
@@ -218,12 +228,12 @@ Then redeploy backend.
 
 ## 🆘 Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Build fails | Check build logs, ensure dependencies installed |
-| Can't login | Verify admin secret, check network tab |
-| CORS errors | Add Vercel URL to backend CORS |
-| Images not loading | Check static file serving on backend |
-| Blank page | Check console, verify API_URL is set |
+| Issue              | Solution                                        |
+| ------------------ | ----------------------------------------------- |
+| Build fails        | Check build logs, ensure dependencies installed |
+| Can't login        | Verify admin secret, check network tab          |
+| CORS errors        | Add Vercel URL to backend CORS                  |
+| Images not loading | Check static file serving on backend            |
+| Blank page         | Check console, verify API_URL is set            |
 
 **Need help?** Check Vercel logs in dashboard for detailed error messages.

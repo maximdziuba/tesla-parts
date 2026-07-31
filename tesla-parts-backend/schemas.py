@@ -89,6 +89,7 @@ class OrderCreate(BaseModel):
     paymentMethod: str
     ttn: str | None = None # Added TTN field
     note: str | None = None
+    promocode: str | None = None
 
 class OrderItemRead(BaseModel):
     product_id: str | None = None
@@ -174,3 +175,71 @@ class ReviewRead(BaseModel):
 
 class ReviewReorderRequest(BaseModel):
     review_ids: List[int]
+
+class CustomerRegisterRequest(BaseModel):
+    email: str
+
+class CustomerVerifyRequest(BaseModel):
+    verification_token: str
+    password: str
+    confirm_password: str
+
+class CustomerLoginRequest(BaseModel):
+    email: str
+    password: str
+
+class CustomerProfileUpdate(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+    default_address: str | None = None
+    cart_data: str | None = None
+
+class CustomerProfileRead(BaseModel):
+    email: str
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+    default_address: str | None = None
+    discount_type: str | None = None
+    discount_value: float | None = None
+    cart_data: str | None = None
+
+class CustomerForgotPasswordRequest(BaseModel):
+    email: str
+
+class CustomerResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+class AdminDiscountUpdateRequest(BaseModel):
+    discount_type: str | None = None
+    discount_value: float | None = None
+
+class PromoCodeCreate(BaseModel):
+    code: str
+    discount_type: str
+    discount_value: float
+    scope: str
+    is_active: bool = True
+    customer_ids: List[int] | None = None
+
+class PromoCodeRead(BaseModel):
+    id: int
+    code: str
+    discount_type: str
+    discount_value: float
+    scope: str
+    is_active: bool
+    created_at: datetime
+    customer_ids: List[int] = []
+
+class PromoCodeValidateRequest(BaseModel):
+    code: str
+
+class PromoCodeValidateResponse(BaseModel):
+    valid: bool
+    discount_type: str | None = None
+    discount_value: float | None = None
+    message: str | None = None
+

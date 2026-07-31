@@ -1,5 +1,5 @@
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from models import User
@@ -30,7 +30,7 @@ class RefreshTokenRequest(BaseModel):
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)
+    response: Response, form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)
 ):
     user = session.exec(select(User).where(User.username == form_data.username)).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -50,6 +50,23 @@ async def login_for_access_token(
     session.add(user)
     session.commit()
     session.refresh(user)
+
+    response.set_cookie(
+        key="accessToken",
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+    response.set_cookie(
+        key="refreshToken",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+    )
 
     return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
@@ -74,7 +91,7 @@ async def reset_admin_password(
 
 @router.post("/refresh-token", response_model=Token)
 async def refresh_access_token(
-    request: RefreshTokenRequest, session: Session = Depends(get_session)
+    request: RefreshTokenRequest, response: Response, session: Session = Depends(get_session)
 ):
     user = session.exec(select(User).where(User.refresh_token == request.refresh_token)).first()
 
@@ -98,4 +115,35 @@ async def refresh_access_token(
     session.commit()
     session.refresh(user)
 
+    response.set_cookie(
+        key="accessToken",
+        value=new_access_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+    response.set_cookie(
+        key="refreshToken",
+        value=new_refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+    )
+
     return {"access_token": new_access_token, "token_type": "bearer", "refresh_token": new_refresh_token}
+
+@router.post("/logout")
+async def logout(response: Response, request: Request, session: Session = Depends(get_session)):
+    refresh_token = request.cookies.get("refreshToken")
+    if refresh_token:
+        user = session.exec(select(User).where(User.refresh_token == refresh_token)).first()
+        if user:
+            user.refresh_token = None
+            session.add(user)
+            session.commit()
+
+    response.delete_cookie("accessToken")
+    response.delete_cookie("refreshToken")
+    return {"message": "Logged out successfully"}

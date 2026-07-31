@@ -8,10 +8,13 @@ export const MOCK_CITIES: City[] = [
     name: 'Київ',
     branches: [
       { id: '1', description: 'Відділення №1: вул. Пирогівський шлях, 135' },
-      { id: '5', description: 'Відділення №5: вул. Федорова, 32 (метро Олімпійська)' },
+      {
+        id: '5',
+        description: 'Відділення №5: вул. Федорова, 32 (метро Олімпійська)',
+      },
       { id: '12', description: 'Відділення №12: вул. Зелена, 14' },
       { id: '250', description: 'Поштомат №250: вул. Хрещатик, 22' },
-    ]
+    ],
   },
   {
     id: 'lviv',
@@ -20,7 +23,7 @@ export const MOCK_CITIES: City[] = [
       { id: '1', description: 'Відділення №1: вул. Городоцька, 355' },
       { id: '2', description: 'Відділення №2: вул. Пластова, 7' },
       { id: '55', description: 'Відділення №55: просп. Свободи, 10' },
-    ]
+    ],
   },
   {
     id: 'odesa',
@@ -28,16 +31,19 @@ export const MOCK_CITIES: City[] = [
     branches: [
       { id: '1', description: 'Відділення №1: Київське шосе, 27' },
       { id: '15', description: 'Відділення №15: вул. Тираспольська, 19' },
-    ]
+    ],
   },
   {
     id: 'dnipro',
     name: 'Дніпро',
     branches: [
-      { id: '1', description: 'Відділення №1: вул. Маршала Малиновського, 98а' },
+      {
+        id: '1',
+        description: 'Відділення №1: вул. Маршала Малиновського, 98а',
+      },
       { id: '3', description: 'Відділення №3: вул. Тітова, 21' },
-    ]
-  }
+    ],
+  },
 ];
 
 export const MOCK_PRODUCTS: Product[] = [
@@ -47,7 +53,8 @@ export const MOCK_PRODUCTS: Product[] = [
     category: 'Model 3',
     priceUAH: 12500,
     image: 'https://picsum.photos/400/300?random=1',
-    description: 'Оригінальний передній бампер під фарбування. Підходить для моделей 2017-2023.',
+    description:
+      'Оригінальний передній бампер під фарбування. Підходить для моделей 2017-2023.',
     inStock: true,
   },
   {
@@ -56,7 +63,8 @@ export const MOCK_PRODUCTS: Product[] = [
     category: 'Model 3',
     priceUAH: 18400,
     image: 'https://picsum.photos/400/300?random=2',
-    description: 'Матрична фара європейського зразка. Повністю справна, гарантія 1 рік.',
+    description:
+      'Матрична фара європейського зразка. Повністю справна, гарантія 1 рік.',
     inStock: true,
   },
   {
@@ -65,7 +73,8 @@ export const MOCK_PRODUCTS: Product[] = [
     category: 'Model 3',
     priceUAH: 1200,
     image: 'https://picsum.photos/400/300?random=3',
-    description: 'Вугільний фільтр для очищення повітря в салоні. Рекомендована заміна кожні 15 тис. км.',
+    description:
+      'Вугільний фільтр для очищення повітря в салоні. Рекомендована заміна кожні 15 тис. км.',
     inStock: true,
   },
   {

@@ -85,6 +85,7 @@ class Order(SQLModel, table=True):
     status: str = Field(default="new")
     ttn: Optional[str] = None # Added TTN field
     note: Optional[str] = None # Added note field
+    customer_id: Optional[int] = Field(default=None, foreign_key="customer.id")
     
     items: List["OrderItem"] = Relationship(back_populates="order")
 
@@ -133,3 +134,44 @@ class Review(SQLModel, table=True):
     image_url: str
     created_at: datetime = Field(default_factory=get_kyiv_time)
     sort_order: int = Field(default=0, index=True)
+
+class CustomerPromoCodeLink(SQLModel, table=True):
+    customer_id: int = Field(foreign_key="customer.id", primary_key=True)
+    promocode_id: int = Field(foreign_key="promocode.id", primary_key=True)
+
+class Customer(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email_hash: str = Field(unique=True, index=True)
+    encrypted_email: str
+    encrypted_first_name: Optional[str] = None
+    encrypted_last_name: Optional[str] = None
+    encrypted_phone: Optional[str] = None
+    encrypted_default_address: Optional[str] = None
+    hashed_password: Optional[str] = None
+    is_verified: bool = Field(default=False)
+    verification_token: Optional[str] = None
+    token_expires_at: Optional[datetime] = None
+    reset_token_hash: Optional[str] = None
+    reset_token_expires: Optional[datetime] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
+    cart_data: Optional[str] = None
+    created_at: datetime = Field(default_factory=get_kyiv_time)
+
+    promocodes: List["PromoCode"] = Relationship(
+        back_populates="customers", link_model=CustomerPromoCodeLink
+    )
+
+class PromoCode(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    code: str = Field(unique=True, index=True)
+    discount_type: str # 'percent', 'usd', 'uah'
+    discount_value: float
+    scope: str # 'everyone', 'selected'
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=get_kyiv_time)
+
+    customers: List[Customer] = Relationship(
+        back_populates="promocodes", link_model=CustomerPromoCodeLink
+    )
+

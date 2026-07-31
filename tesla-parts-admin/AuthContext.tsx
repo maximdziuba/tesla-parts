@@ -1,4 +1,10 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { ApiService, setUnauthorizedCallback } from './services/api'; // Import setUnauthorizedCallback
 
 interface AuthContextType {
@@ -16,7 +22,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [accessToken, setAccessToken] = useState<string | null>(
     localStorage.getItem('accessToken')
   );
@@ -78,14 +86,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refreshAccessToken = async () => {
     if (!refreshToken) {
       handleLogoutError(); // No refresh token, trigger error logout
-      throw new Error("No refresh token available");
+      throw new Error('No refresh token available');
     }
     try {
       const response = await ApiService.refreshToken(refreshToken);
       setAccessToken(response.access_token);
       setRefreshToken(response.refresh_token);
     } catch (err: any) {
-      console.error("Failed to refresh token:", err);
+      console.error('Failed to refresh token:', err);
       handleLogoutError(); // Refresh failed, trigger error logout
       throw err;
     }
@@ -98,7 +106,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isAuthenticated = !!accessToken;
 
   return (
-    <AuthContext.Provider value={{ accessToken, refreshToken, login, logout, isAuthenticated, error, resetError, refreshAccessToken, showSessionExpiredModal, setShowSessionExpiredModal }}>
+    <AuthContext.Provider
+      value={{
+        accessToken,
+        refreshToken,
+        login,
+        logout,
+        isAuthenticated,
+        error,
+        resetError,
+        refreshAccessToken,
+        showSessionExpiredModal,
+        setShowSessionExpiredModal,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

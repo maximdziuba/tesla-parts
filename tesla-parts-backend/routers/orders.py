@@ -7,7 +7,7 @@ from models import Order, OrderItem
 from schemas import OrderCreate, OrderRead
 from services.telegram import send_telegram_notification
 from services.pricing import get_exchange_rate
-from dependencies import get_current_admin # Import for authentication
+from dependencies import get_current_admin, get_optional_customer # Import for authentication
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -19,7 +19,12 @@ class UpdateStatusRequest(BaseModel):
     status: str
 
 @router.post("/")
-def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
+def create_order(
+    order_data: OrderCreate,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+    customer = Depends(get_optional_customer)
+):
     rate = get_exchange_rate(session)
 
     def _item_price_usd(item):
@@ -33,6 +38,34 @@ def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, ses
     if total_usd is None or total_usd <= 0:
         total_usd = sum(_item_price_usd(item) * item.quantity for item in order_data.items)
 
+    if order_data.promocode:
+        from models import PromoCode, CustomerPromoCodeLink
+        promocode_str = order_data.promocode.upper().strip()
+        promocode_obj = session.exec(select(PromoCode).where(PromoCode.code == promocode_str)).first()
+        
+        if promocode_obj and promocode_obj.is_active:
+            valid = True
+            if promocode_obj.scope == "selected":
+                if not customer:
+                    valid = False
+                else:
+                    link = session.exec(select(CustomerPromoCodeLink).where(
+                        (CustomerPromoCodeLink.promocode_id == promocode_obj.id) & 
+                        (CustomerPromoCodeLink.customer_id == customer.id)
+                    )).first()
+                    if not link:
+                        valid = False
+            
+            if valid:
+                if promocode_obj.discount_type == "percent":
+                    total_usd = total_usd * (1.0 - promocode_obj.discount_value / 100.0)
+                elif promocode_obj.discount_type == "usd":
+                    total_usd = max(0.0, total_usd - promocode_obj.discount_value)
+                elif promocode_obj.discount_type == "uah":
+                    if rate:
+                        discount_usd = promocode_obj.discount_value / rate
+                        total_usd = max(0.0, total_usd - discount_usd)
+
     order = Order(
         customer_first_name=order_data.customer.firstName,
         customer_last_name=order_data.customer.lastName,
@@ -42,7 +75,8 @@ def create_order(order_data: OrderCreate, background_tasks: BackgroundTasks, ses
         payment_method=order_data.paymentMethod,
         totalUSD=round(total_usd, 2),
         ttn=order_data.ttn, # Add TTN here
-        note=order_data.note # Add note here
+        note=order_data.note, # Add note here
+        customer_id=customer.id if customer else None
     )
     session.add(order)
     session.commit()

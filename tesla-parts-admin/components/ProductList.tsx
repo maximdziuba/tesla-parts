@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { ApiService } from '../services/api';
 import { Product } from '../types';
-import { Search, Plus, Filter, Trash2, Pencil, ArrowUpDown, Star, Copy } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Filter,
+  Trash2,
+  Pencil,
+  ArrowUpDown,
+  Star,
+  Copy,
+} from 'lucide-react';
 
 import { Link } from 'react-router-dom';
 
 const extractCategories = (value?: string) => {
   if (!value) return [];
-  return value.split(',').map(cat => cat.trim()).filter(Boolean);
+  return value
+    .split(',')
+    .map((cat) => cat.trim())
+    .filter(Boolean);
 };
 
 export const ProductList: React.FC = () => {
@@ -38,16 +50,24 @@ export const ProductList: React.FC = () => {
   useEffect(() => {
     let result = [...products];
     if (categoryFilter !== 'Всі') {
-      result = result.filter(p => extractCategories(p.category).includes(categoryFilter));
+      result = result.filter((p) =>
+        extractCategories(p.category).includes(categoryFilter)
+      );
     }
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
       const cleanSearch = lower.replace(/-/g, '');
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(lower) ||
-        (p.detail_number && p.detail_number.toLowerCase().replace(/-/g, '').includes(cleanSearch)) ||
-        (p.cross_number && p.cross_number.toLowerCase().includes(cleanSearch)) ||
-        (p.description && p.description.toLowerCase().includes(cleanSearch))
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(lower) ||
+          (p.detail_number &&
+            p.detail_number
+              .toLowerCase()
+              .replace(/-/g, '')
+              .includes(cleanSearch)) ||
+          (p.cross_number &&
+            p.cross_number.toLowerCase().includes(cleanSearch)) ||
+          (p.description && p.description.toLowerCase().includes(cleanSearch))
       );
     }
 
@@ -67,9 +87,15 @@ export const ProductList: React.FC = () => {
         case 'cross-desc':
           return (b.cross_number || '').localeCompare(a.cross_number || '');
         case 'date-newest':
-          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+          return (
+            new Date(b.created_at || 0).getTime() -
+            new Date(a.created_at || 0).getTime()
+          );
         case 'date-oldest':
-          return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+          return (
+            new Date(a.created_at || 0).getTime() -
+            new Date(b.created_at || 0).getTime()
+          );
         default:
           // Backend default or preserved order
           return 0;
@@ -82,7 +108,7 @@ export const ProductList: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (confirm('Ви впевнені, що хочете видалити цей товар?')) {
       await ApiService.deleteProduct(id);
-      setSelectedProducts(prev => prev.filter(pid => pid !== id));
+      setSelectedProducts((prev) => prev.filter((pid) => pid !== id));
       fetchProducts();
     }
   };
@@ -109,26 +135,31 @@ export const ProductList: React.FC = () => {
   };
 
   const toggleSelect = (id: string) => {
-    setSelectedProducts(prev =>
-      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+    setSelectedProducts((prev) =>
+      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
     );
   };
 
   useEffect(() => {
-    setSelectedProducts(prev =>
-      prev.filter(pid => products.some(product => product.id === pid))
+    setSelectedProducts((prev) =>
+      prev.filter((pid) => products.some((product) => product.id === pid))
     );
   }, [products]);
 
-  const allVisibleIds = filteredProducts.map(p => p.id);
+  const allVisibleIds = filteredProducts.map((p) => p.id);
   const isAllSelected =
-    allVisibleIds.length > 0 && allVisibleIds.every(id => selectedProducts.includes(id));
+    allVisibleIds.length > 0 &&
+    allVisibleIds.every((id) => selectedProducts.includes(id));
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
-      setSelectedProducts(prev => prev.filter(id => !allVisibleIds.includes(id)));
+      setSelectedProducts((prev) =>
+        prev.filter((id) => !allVisibleIds.includes(id))
+      );
     } else {
-      setSelectedProducts(prev => Array.from(new Set([...prev, ...allVisibleIds])));
+      setSelectedProducts((prev) =>
+        Array.from(new Set([...prev, ...allVisibleIds]))
+      );
     }
   };
 
@@ -146,14 +177,22 @@ export const ProductList: React.FC = () => {
 
   if (loading) return <div className="p-8 text-center">Завантаження...</div>;
 
-  const categories = ['Всі', ...Array.from(new Set(products.flatMap(p => extractCategories(p.category))))];
+  const categories = [
+    'Всі',
+    ...Array.from(
+      new Set(products.flatMap((p) => extractCategories(p.category)))
+    ),
+  ];
 
   return (
     <div className="space-y-6">
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div className="relative w-full md:w-80 lg:w-96">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            size={20}
+          />
           <input
             type="text"
             placeholder="Пошук..."
@@ -181,18 +220,23 @@ export const ProductList: React.FC = () => {
               </span>
             )}
           </button>
-          
+
           <div className="relative flex-1 sm:flex-none">
             <select
               className="w-full appearance-none pl-10 pr-8 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <Filter
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={16}
+            />
           </div>
 
           <div className="relative flex-1 sm:flex-none">
@@ -211,10 +255,16 @@ export const ProductList: React.FC = () => {
               <option value="date-newest">Спочатку нові</option>
               <option value="date-oldest">Спочатку старі</option>
             </select>
-            <ArrowUpDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <ArrowUpDown
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={16}
+            />
           </div>
 
-          <Link to="/products/new" className="flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex-1 sm:flex-none">
+          <Link
+            to="/products/new"
+            className="flex items-center justify-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex-1 sm:flex-none"
+          >
             <Plus size={20} />
             <span className="whitespace-nowrap">Додати Товар</span>
           </Link>
@@ -222,12 +272,19 @@ export const ProductList: React.FC = () => {
       </div>
 
       <div className="px-2">
-          <span className="text-sm text-gray-500">
-              Всього товарів: <span className="font-medium text-gray-900">{products.length}</span>
-              {filteredProducts.length !== products.length && (
-                  <> • Знайдено: <span className="font-medium text-gray-900">{filteredProducts.length}</span></>
-              )}
-          </span>
+        <span className="text-sm text-gray-500">
+          Всього товарів:{' '}
+          <span className="font-medium text-gray-900">{products.length}</span>
+          {filteredProducts.length !== products.length && (
+            <>
+              {' '}
+              • Знайдено:{' '}
+              <span className="font-medium text-gray-900">
+                {filteredProducts.length}
+              </span>
+            </>
+          )}
+        </span>
       </div>
 
       {/* Table */}
@@ -265,13 +322,23 @@ export const ProductList: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded bg-gray-100 overflow-hidden">
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900">{product.name}</div>
-                        <div className="text-xs text-gray-400 truncate max-w-[200px]">{product.description}</div>
+                        <div className="font-medium text-gray-900">
+                          {product.name}
+                        </div>
+                        <div className="text-xs text-gray-400 truncate max-w-[200px]">
+                          {product.description}
+                        </div>
                         {product.cross_number && (
-                          <div className="text-xs text-gray-500 mt-1">Cross: {product.cross_number}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Cross: {product.cross_number}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -282,23 +349,34 @@ export const ProductList: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`${product.inStock ? 'text-green-600' : 'text-red-600 font-bold'}`}>
+                    <span
+                      className={`${product.inStock ? 'text-green-600' : 'text-red-600 font-bold'}`}
+                    >
                       {product.inStock ? 'В наявності' : 'Немає'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-medium">{product.priceUSD} $</td>
+                  <td className="px-6 py-4 font-medium">
+                    {product.priceUSD} $
+                  </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => handleTogglePopular(product.id)}
                         className={`p-1.5 rounded transition-colors ${
-                          product.is_popular 
-                            ? 'text-yellow-500 bg-yellow-50 hover:bg-yellow-100' 
+                          product.is_popular
+                            ? 'text-yellow-500 bg-yellow-50 hover:bg-yellow-100'
                             : 'text-gray-400 hover:bg-gray-50'
                         }`}
-                        title={product.is_popular ? "Прибрати з популярних" : "Додати в популярні"}
+                        title={
+                          product.is_popular
+                            ? 'Прибрати з популярних'
+                            : 'Додати в популярні'
+                        }
                       >
-                        <Star size={16} fill={product.is_popular ? "currentColor" : "none"} />
+                        <Star
+                          size={16}
+                          fill={product.is_popular ? 'currentColor' : 'none'}
+                        />
                       </button>
                       <button
                         onClick={() => handleCopyProduct(product.id)}

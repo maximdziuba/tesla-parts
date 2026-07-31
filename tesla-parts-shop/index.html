@@ -1,78 +1,89 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Tesla Parts Center</title>
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Tesla Parts Center",
-      "url": "https://teslapartscenter.com.ua"
-    }
-  </script>
-  <link rel="icon" type="image/png" href="https://teslapartscenter.com.ua/tesla-favicon.png" />
+    <title>Tesla Parts Center</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Tesla Parts Center",
+        "url": "https://teslapartscenter.com.ua"
+      }
+    </script>
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://teslapartscenter.com.ua/tesla-favicon.png"
+    />
 
-  <meta property="og:site_name" content="Tesla Parts Center">
-  <meta property="og:title" content="Tesla Parts Center" />
-  <meta property="og:description" content="Купуйте оригінальні та перевірені запчастини для Tesla з доставкою по Україні." />
-  <meta property="og:image" content="https://teslapartscenter.com.ua/tesla_parts_logo.jpg" />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://teslapartscenter.com.ua" />
+    <meta property="og:site_name" content="Tesla Parts Center" />
+    <meta property="og:title" content="Tesla Parts Center" />
+    <meta
+      property="og:description"
+      content="Купуйте оригінальні та перевірені запчастини для Tesla з доставкою по Україні."
+    />
+    <meta
+      property="og:image"
+      content="https://teslapartscenter.com.ua/tesla_parts_logo.jpg"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://teslapartscenter.com.ua" />
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            tesla: ['TESLA', 'sans-serif'],
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              tesla: ['TESLA', 'sans-serif'],
+            },
+            colors: {
+              tesla: {
+                red: '#e82127',
+                dark: '#171a20',
+                gray: '#393c41',
+                light: '#f4f4f4',
+              },
+            },
           },
-          colors: {
-            tesla: {
-              red: '#e82127',
-              dark: '#171a20',
-              gray: '#393c41',
-              light: '#f4f4f4'
-            }
-          }
+        },
+      };
+    </script>
+    <style>
+      @font-face {
+        font-family: 'TESLA';
+        src: url('/fonts/TESLA.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+      }
+      body {
+        background-color: #f8fafc;
+        color: #171a20;
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+          "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+          "react/": "https://esm.sh/react@^19.2.3/",
+          "react": "https://esm.sh/react@^19.2.3"
         }
       }
-    }
-  </script>
-  <style>
-    @font-face {
-      font-family: 'TESLA';
-      src: url('/fonts/TESLA.ttf') format('truetype');
-      font-weight: normal;
-      font-style: normal;
-    }
-    body {
-      background-color: #f8fafc;
-      color: #171a20;
-    }
-  </style>
-  <script type="importmap">
-{
-  "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3"
-  }
-}
-</script>
-  <link rel="stylesheet" href="/index.css">
-</head>
+    </script>
+    <link rel="stylesheet" href="/index.css" />
+  </head>
 
-<body>
-  <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
-
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

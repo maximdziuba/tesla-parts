@@ -14,14 +14,16 @@ const getHeaders = (isMultipart: boolean = false) => {
   if (!isMultipart) {
     headers['Content-Type'] = 'application/json';
   }
-  
+
   return headers;
 };
 
 // Define a temporary function to be replaced by the actual AuthContext logout
 // This prevents a circular dependency with AuthContext importing ApiService, and ApiService needing AuthContext for logout.
 // The real logout will be passed as a setter by AuthContext later.
-let onUnauthorized: () => void = () => { console.warn("onUnauthorized callback not set in ApiService"); };
+let onUnauthorized: () => void = () => {
+  console.warn('onUnauthorized callback not set in ApiService');
+};
 
 export const setUnauthorizedCallback = (callback: () => void) => {
   onUnauthorized = callback;
@@ -32,7 +34,7 @@ const isTokenExpired = (token: string | null): boolean => {
   if (!token) return true;
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.exp * 1000 < Date.now() + (5 * 60 * 1000); // Consider expired 5 mins before actual expiry
+    return payload.exp * 1000 < Date.now() + 5 * 60 * 1000; // Consider expired 5 mins before actual expiry
   } catch (e) {
     return true; // Malformed token
   }
@@ -72,19 +74,23 @@ const isTokenExpired = (token: string | null): boolean => {
 // }
 
 // Generic authenticated fetch wrapper with refresh token logic
-async function _authenticatedFetch(url: string, options: RequestInit = {}, isMultipart: boolean = false): Promise<Response> {
+async function _authenticatedFetch(
+  url: string,
+  options: RequestInit = {},
+  isMultipart: boolean = false
+): Promise<Response> {
   const accessToken = localStorage.getItem('accessToken');
   const refreshToken = localStorage.getItem('refreshToken');
 
   if (isTokenExpired(accessToken) && refreshToken) {
-        try {
+    try {
       const refreshResponse = await ApiService.refreshToken(refreshToken);
       localStorage.setItem('accessToken', refreshResponse.access_token);
       localStorage.setItem('refreshToken', refreshResponse.refresh_token);
     } catch (refreshError) {
-      console.error("Token refresh failed:", refreshError);
+      console.error('Token refresh failed:', refreshError);
       onUnauthorized(); // Refresh failed, log out
-      throw new Error("Unauthorized: Token refresh failed.");
+      throw new Error('Unauthorized: Token refresh failed.');
     }
   }
 
@@ -94,31 +100,33 @@ async function _authenticatedFetch(url: string, options: RequestInit = {}, isMul
   if (options.body instanceof FormData) {
     // Якщо ми бачимо, що body - це FormData, ми МУСИМО видалити Content-Type.
     // Це дозволить браузеру самому встановити 'multipart/form-data; boundary=...'
-    
+
     // TypeScript трюк для видалення ключа з HeadersInit
     if (options.headers && 'Content-Type' in options.headers) {
-        delete (options.headers as any)['Content-Type'];
+      delete (options.headers as any)['Content-Type'];
     }
-    
+
     // Якщо headers - це об'єкт класу Headers (рідше, але буває)
     if (options.headers instanceof Headers) {
-        options.headers.delete('Content-Type');
+      options.headers.delete('Content-Type');
     }
-}
+  }
 
   let response = await fetch(url, options);
 
   if (response.status === 401 && !url.includes('/auth/')) {
     onUnauthorized();
-    throw new Error("Unauthorized: Invalid credentials or session expired.");
+    throw new Error('Unauthorized: Invalid credentials or session expired.');
   }
 
   return response;
 }
 
-
 export const ApiService = {
-  login: async (username: string, password: string): Promise<{ access_token: string; refresh_token: string }> => {
+  login: async (
+    username: string,
+    password: string
+  ): Promise<{ access_token: string; refresh_token: string }> => {
     const formData = new URLSearchParams();
     formData.append('username', username);
     formData.append('password', password);
@@ -137,7 +145,9 @@ export const ApiService = {
     return res.json();
   },
 
-  refreshToken: async (token: string): Promise<{ access_token: string; refresh_token: string }> => {
+  refreshToken: async (
+    token: string
+  ): Promise<{ access_token: string; refresh_token: string }> => {
     const res = await fetch(`${API_URL}/auth/refresh-token`, {
       method: 'POST',
       headers: {
@@ -152,11 +162,17 @@ export const ApiService = {
     return res.json();
   },
 
-  resetPassword: async (oldPassword: string, newPassword: string): Promise<{ message: string }> => {
+  resetPassword: async (
+    oldPassword: string,
+    newPassword: string
+  ): Promise<{ message: string }> => {
     const res = await _authenticatedFetch(`${API_URL}/auth/reset-password`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+      body: JSON.stringify({
+        old_password: oldPassword,
+        new_password: newPassword,
+      }),
     });
     if (!res.ok) {
       const errorData = await res.json();
@@ -166,13 +182,17 @@ export const ApiService = {
   },
 
   getProducts: async (): Promise<Product[]> => {
-    const res = await _authenticatedFetch(`${API_URL}/products/?limit=10000`, { headers: getHeaders() });
+    const res = await _authenticatedFetch(`${API_URL}/products/?limit=10000`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch products');
     return res.json();
   },
 
   getProduct: async (id: string): Promise<Product> => {
-    const res = await _authenticatedFetch(`${API_URL}/products/${id}`, { headers: getHeaders() });
+    const res = await _authenticatedFetch(`${API_URL}/products/${id}`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch product');
     return res.json();
   },
@@ -326,16 +346,21 @@ export const ApiService = {
   },
 
   togglePopular: async (id: string): Promise<Product> => {
-    const res = await _authenticatedFetch(`${API_URL}/products/${id}/toggle-popular`, {
-      method: 'POST',
-      headers: getHeaders(),
-    });
+    const res = await _authenticatedFetch(
+      `${API_URL}/products/${id}/toggle-popular`,
+      {
+        method: 'POST',
+        headers: getHeaders(),
+      }
+    );
     if (!res.ok) throw new Error('Failed to toggle popular status');
     return res.json();
   },
 
   getOrders: async (): Promise<Order[]> => {
-    const res = await _authenticatedFetch(`${API_URL}/orders/`, { headers: getHeaders() });
+    const res = await _authenticatedFetch(`${API_URL}/orders/`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch orders');
     return res.json();
   },
@@ -350,71 +375,90 @@ export const ApiService = {
   },
 
   updateOrderStatus: async (orderId: number, status: string): Promise<void> => {
-    const res = await _authenticatedFetch(`${API_URL}/orders/${orderId}/status`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify({ status }),
-    });
+    const res = await _authenticatedFetch(
+      `${API_URL}/orders/${orderId}/status`,
+      {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ status }),
+      }
+    );
     if (!res.ok) throw new Error('Failed to update order status');
   },
 
   getCategories: async (): Promise<Category[]> => {
     // 1. Fetch basic list to get IDs
-    const res = await _authenticatedFetch(`${API_URL}/categories/`, { headers: getHeaders() });
+    const res = await _authenticatedFetch(`${API_URL}/categories/`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch categories');
     const basicCategories: Category[] = await res.json();
 
     // 2. Fetch full structure for each category (to get subcategories)
     // AND Fetch all products to populate counts
-    const productsRes = await _authenticatedFetch(`${API_URL}/products/?limit=10000`, { headers: getHeaders() });
-    const allProducts: Product[] = productsRes.ok ? await productsRes.json() : [];
+    const productsRes = await _authenticatedFetch(
+      `${API_URL}/products/?limit=10000`,
+      { headers: getHeaders() }
+    );
+    const allProducts: Product[] = productsRes.ok
+      ? await productsRes.json()
+      : [];
 
     const categoriesDetails: Category[] = await Promise.all(
-        basicCategories.map(c => 
-            _authenticatedFetch(`${API_URL}/categories/${c.id}`, { headers: getHeaders() })
-                .then(r => r.ok ? r.json() : c)
-        )
+      basicCategories.map((c) =>
+        _authenticatedFetch(`${API_URL}/categories/${c.id}`, {
+          headers: getHeaders(),
+        }).then((r) => (r.ok ? r.json() : c))
+      )
     );
 
     // 3. Map products to subcategories
     const attachProductsToTree = (subs: Subcategory[]) => {
-        subs.forEach(sub => {
-            // Find products for this subcategory (direct and linked)
-            sub.products = allProducts.filter(p => 
-                p.subcategory_id === sub.id || 
-                (p.subcategory_ids && p.subcategory_ids.includes(sub.id))
-            );
-            
-            if (sub.subcategories) {
-                attachProductsToTree(sub.subcategories);
-            }
-        });
+      subs.forEach((sub) => {
+        // Find products for this subcategory (direct and linked)
+        sub.products = allProducts.filter(
+          (p) =>
+            p.subcategory_id === sub.id ||
+            (p.subcategory_ids && p.subcategory_ids.includes(sub.id))
+        );
+
+        if (sub.subcategories) {
+          attachProductsToTree(sub.subcategories);
+        }
+      });
     };
 
     const finalCategories = categoriesDetails.map((catDetail) => {
-         if (catDetail.subcategories) {
-             attachProductsToTree(catDetail.subcategories);
-         }
-         // Find products that belong to this category name but have NO subcategory assigned
-         catDetail.products = allProducts.filter(p => 
-            p.category.includes(catDetail.name) && 
-            !p.subcategory_id && 
-            (!p.subcategory_ids || p.subcategory_ids.length === 0)
-         );
-         return catDetail;
+      if (catDetail.subcategories) {
+        attachProductsToTree(catDetail.subcategories);
+      }
+      // Find products that belong to this category name but have NO subcategory assigned
+      catDetail.products = allProducts.filter(
+        (p) =>
+          p.category.includes(catDetail.name) &&
+          !p.subcategory_id &&
+          (!p.subcategory_ids || p.subcategory_ids.length === 0)
+      );
+      return catDetail;
     });
 
     return finalCategories;
   },
 
-  createCategory: async (name: string, file?: File, sort_order?: number, meta_title?: string, meta_description?: string): Promise<Category> => {
+  createCategory: async (
+    name: string,
+    file?: File,
+    sort_order?: number,
+    meta_title?: string,
+    meta_description?: string
+  ): Promise<Category> => {
     const formData = new FormData();
     formData.append('name', name);
-    
+
     if (file) {
       formData.append('file', file);
     }
-    
+
     if (sort_order !== undefined && sort_order !== null) {
       formData.append('sort_order', sort_order.toString());
     }
@@ -430,14 +474,21 @@ export const ApiService = {
     return res.json();
   },
 
-  updateCategory: async (id: number, name: string, file?: File, sort_order?: number, meta_title?: string, meta_description?: string): Promise<Category> => {
+  updateCategory: async (
+    id: number,
+    name: string,
+    file?: File,
+    sort_order?: number,
+    meta_title?: string,
+    meta_description?: string
+  ): Promise<Category> => {
     const formData = new FormData();
     formData.append('name', name);
-    
+
     if (file) {
       formData.append('file', file);
     }
-    
+
     if (sort_order !== undefined && sort_order !== null) {
       formData.append('sort_order', sort_order.toString());
     }
@@ -468,7 +519,7 @@ export const ApiService = {
     if (parentId !== undefined && parentId !== null) {
       formData.append('parent_id', parentId.toString());
     }
-    
+
     if (file) {
       formData.append('file', file);
     }
@@ -476,11 +527,14 @@ export const ApiService = {
       formData.append('sort_order', sortOrder.toString());
     }
 
-    const res = await _authenticatedFetch(`${API_URL}/categories/${categoryId}/subcategories/`, {
-      method: 'POST',
-      headers: getHeaders(true), // Pass true for multipart
-      body: formData,
-    });
+    const res = await _authenticatedFetch(
+      `${API_URL}/categories/${categoryId}/subcategories/`,
+      {
+        method: 'POST',
+        headers: getHeaders(true), // Pass true for multipart
+        body: formData,
+      }
+    );
     if (!res.ok) throw new Error('Failed to create subcategory');
     return res.json();
   },
@@ -499,7 +553,7 @@ export const ApiService = {
     if (parentId !== undefined && parentId !== null) {
       formData.append('parent_id', parentId.toString());
     }
-    
+
     if (file) {
       formData.append('file', file);
     }
@@ -507,37 +561,54 @@ export const ApiService = {
       formData.append('sort_order', sortOrder.toString());
     }
 
-    const res = await _authenticatedFetch(`${API_URL}/categories/subcategories/${id}`, {
-      method: 'PUT',
-      headers: getHeaders(true), // Pass true for multipart
-      body: formData,
-    });
+    const res = await _authenticatedFetch(
+      `${API_URL}/categories/subcategories/${id}`,
+      {
+        method: 'PUT',
+        headers: getHeaders(true), // Pass true for multipart
+        body: formData,
+      }
+    );
     if (!res.ok) throw new Error('Failed to update subcategory');
     return res.json();
   },
 
-  moveSubcategory: async (id: number, targetCategoryId: number, targetParentId?: number | null): Promise<Subcategory> => {
-    const res = await _authenticatedFetch(`${API_URL}/categories/subcategories/${id}/move`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({
-        target_category_id: targetCategoryId,
-        target_parent_id: targetParentId ?? null,
-      }),
-    });
+  moveSubcategory: async (
+    id: number,
+    targetCategoryId: number,
+    targetParentId?: number | null
+  ): Promise<Subcategory> => {
+    const res = await _authenticatedFetch(
+      `${API_URL}/categories/subcategories/${id}/move`,
+      {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          target_category_id: targetCategoryId,
+          target_parent_id: targetParentId ?? null,
+        }),
+      }
+    );
     if (!res.ok) throw new Error('Failed to move subcategory');
     return res.json();
   },
 
-  copySubcategory: async (id: number, targetCategoryId: number, targetParentId?: number | null): Promise<Subcategory> => {
-    const res = await _authenticatedFetch(`${API_URL}/categories/subcategories/${id}/copy`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({
-        target_category_id: targetCategoryId,
-        target_parent_id: targetParentId ?? null,
-      }),
-    });
+  copySubcategory: async (
+    id: number,
+    targetCategoryId: number,
+    targetParentId?: number | null
+  ): Promise<Subcategory> => {
+    const res = await _authenticatedFetch(
+      `${API_URL}/categories/subcategories/${id}/copy`,
+      {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          target_category_id: targetCategoryId,
+          target_parent_id: targetParentId ?? null,
+        }),
+      }
+    );
     if (!res.ok) throw new Error('Failed to copy subcategory');
     return res.json();
   },
@@ -555,10 +626,13 @@ export const ApiService = {
   },
 
   deleteSubcategory: async (id: number): Promise<boolean> => {
-    const res = await _authenticatedFetch(`${API_URL}/categories/subcategories/${id}`, {
-      method: 'DELETE',
-      headers: getHeaders(),
-    });
+    const res = await _authenticatedFetch(
+      `${API_URL}/categories/subcategories/${id}`,
+      {
+        method: 'DELETE',
+        headers: getHeaders(),
+      }
+    );
     if (!res.ok) {
       const errorData = await res.json();
       throw new Error(errorData.detail || 'Failed to delete subcategory');
@@ -571,12 +645,17 @@ export const ApiService = {
   },
 
   getSetting: async (key: string): Promise<{ key: string; value: string }> => {
-    const res = await _authenticatedFetch(`${API_URL}/settings/${key}`, { headers: getHeaders() });
+    const res = await _authenticatedFetch(`${API_URL}/settings/${key}`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch setting');
     return res.json();
   },
 
-  updateSetting: async (key: string, value: string): Promise<{ key: string; value: string }> => {
+  updateSetting: async (
+    key: string,
+    value: string
+  ): Promise<{ key: string; value: string }> => {
     const res = await _authenticatedFetch(`${API_URL}/settings/${key}`, {
       method: 'POST',
       headers: getHeaders(),
@@ -587,25 +666,37 @@ export const ApiService = {
   },
 
   getSettings: async (): Promise<{ key: string; value: string }[]> => {
-    const res = await _authenticatedFetch(`${API_URL}/settings/`, { headers: getHeaders() });
+    const res = await _authenticatedFetch(`${API_URL}/settings/`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch settings');
     return res.json();
   },
 
   // Pages API
   getPages: async (): Promise<any[]> => {
-    const res = await _authenticatedFetch(`${API_URL}/pages/`, { headers: getHeaders() });
+    const res = await _authenticatedFetch(`${API_URL}/pages/`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch pages');
     return res.json();
   },
 
   getPage: async (slugOrId: string): Promise<any> => {
-    const res = await _authenticatedFetch(`${API_URL}/pages/${slugOrId}`, { headers: getHeaders() });
+    const res = await _authenticatedFetch(`${API_URL}/pages/${slugOrId}`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch page');
     return res.json();
   },
 
-  createPage: async (page: { slug: string; title: string; content: string; is_published?: boolean; location?: string }): Promise<any> => {
+  createPage: async (page: {
+    slug: string;
+    title: string;
+    content: string;
+    is_published?: boolean;
+    location?: string;
+  }): Promise<any> => {
     const res = await _authenticatedFetch(`${API_URL}/pages/`, {
       method: 'POST',
       headers: getHeaders(),
@@ -615,7 +706,16 @@ export const ApiService = {
     return res.json();
   },
 
-  updatePage: async (id: number, page: { slug?: string; title?: string; content?: string; is_published?: boolean; location?: string }): Promise<any> => {
+  updatePage: async (
+    id: number,
+    page: {
+      slug?: string;
+      title?: string;
+      content?: string;
+      is_published?: boolean;
+      location?: string;
+    }
+  ): Promise<any> => {
     const res = await _authenticatedFetch(`${API_URL}/pages/${id}`, {
       method: 'PUT',
       headers: getHeaders(),
@@ -633,13 +733,23 @@ export const ApiService = {
     return res.ok;
   },
 
-  getSocialLinks: async (): Promise<{ instagram: string; telegram: string; viber: string }> => {
-    const res = await _authenticatedFetch(`${API_URL}/settings/social-links`, { headers: getHeaders() });
+  getSocialLinks: async (): Promise<{
+    instagram: string;
+    telegram: string;
+    viber: string;
+  }> => {
+    const res = await _authenticatedFetch(`${API_URL}/settings/social-links`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch social links');
     return res.json();
   },
 
-  updateSocialLinks: async (links: { instagram: string; telegram: string; viber: string }): Promise<any> => {
+  updateSocialLinks: async (links: {
+    instagram: string;
+    telegram: string;
+    viber: string;
+  }): Promise<any> => {
     const res = await _authenticatedFetch(`${API_URL}/settings/social-links`, {
       method: 'POST',
       headers: getHeaders(),
@@ -649,13 +759,30 @@ export const ApiService = {
     return res.json();
   },
 
-  getStaticSeo: async (): Promise<Array<{ id: number; slug: string; meta_title: string; meta_description: string }>> => {
-    const res = await _authenticatedFetch(`${API_URL}/seo/static`, { headers: getHeaders() });
+  getStaticSeo: async (): Promise<
+    Array<{
+      id: number;
+      slug: string;
+      meta_title: string;
+      meta_description: string;
+    }>
+  > => {
+    const res = await _authenticatedFetch(`${API_URL}/seo/static`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch SEO records');
     return res.json();
   },
 
-  updateStaticSeo: async (slug: string, payload: { meta_title?: string; meta_description?: string }): Promise<{ id: number; slug: string; meta_title: string; meta_description: string }> => {
+  updateStaticSeo: async (
+    slug: string,
+    payload: { meta_title?: string; meta_description?: string }
+  ): Promise<{
+    id: number;
+    slug: string;
+    meta_title: string;
+    meta_description: string;
+  }> => {
     const res = await _authenticatedFetch(`${API_URL}/seo/static/${slug}`, {
       method: 'PUT',
       headers: getHeaders(),
@@ -667,7 +794,9 @@ export const ApiService = {
 
   // Reviews API
   getReviews: async (): Promise<any[]> => {
-    const res = await _authenticatedFetch(`${API_URL}/reviews/`, { headers: getHeaders() });
+    const res = await _authenticatedFetch(`${API_URL}/reviews/`, {
+      headers: getHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to fetch reviews');
     return res.json();
   },
@@ -686,12 +815,92 @@ export const ApiService = {
     return res.json();
   },
 
-  deleteReview: async (id: number): Promise<boolean> => {
-    const res = await _authenticatedFetch(`${API_URL}/reviews/${id}`, {
+  deleteReview: async (id: number): Promise<void> => {
+    await _authenticatedFetch(`${API_URL}/reviews/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // --- Customers API ---
+  getCustomers: async (): Promise<any[]> => {
+    const res = await _authenticatedFetch(`${API_URL}/customers/`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch customers');
+    return res.json();
+  },
+
+  getCustomer: async (id: number): Promise<any> => {
+    const res = await _authenticatedFetch(`${API_URL}/customers/${id}`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch customer');
+    return res.json();
+  },
+
+  getCustomerOrders: async (id: number): Promise<Order[]> => {
+    const res = await _authenticatedFetch(`${API_URL}/customers/${id}/orders`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch customer orders');
+    return res.json();
+  },
+
+  updateCustomerDiscount: async (
+    id: number,
+    discountType: string | null,
+    discountValue: number | null
+  ): Promise<any> => {
+    const res = await _authenticatedFetch(
+      `${API_URL}/customers/${id}/discount`,
+      {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          discount_type: discountType,
+          discount_value: discountValue,
+        }),
+      }
+    );
+    if (!res.ok) throw new Error('Failed to update discount');
+    return res.json();
+  },
+
+  // --- PromoCodes API ---
+  getPromoCodes: async (): Promise<any[]> => {
+    const res = await _authenticatedFetch(`${API_URL}/promocodes/`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch promocodes');
+    return res.json();
+  },
+
+  createPromoCode: async (data: any): Promise<any> => {
+    const res = await _authenticatedFetch(`${API_URL}/promocodes/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to create promocode');
+    return res.json();
+  },
+
+  updatePromoCode: async (id: number, data: any): Promise<any> => {
+    const res = await _authenticatedFetch(`${API_URL}/promocodes/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update promocode');
+    return res.json();
+  },
+
+  deletePromoCode: async (id: number): Promise<void> => {
+    const res = await _authenticatedFetch(`${API_URL}/promocodes/${id}`, {
       method: 'DELETE',
       headers: getHeaders(),
     });
-    return res.ok;
+    if (!res.ok) throw new Error('Failed to delete promocode');
   },
 
   reorderReviews: async (ids: number[]): Promise<{ message: string }> => {

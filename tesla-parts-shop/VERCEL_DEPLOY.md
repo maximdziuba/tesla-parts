@@ -10,6 +10,7 @@ vercel
 ```
 
 Or use the Vercel dashboard:
+
 1. Go to [vercel.com](https://vercel.com)
 2. Click **New Project**
 3. Import your Git repository
@@ -23,21 +24,21 @@ Or use the Vercel dashboard:
 
 Add in Vercel Dashboard → Settings → Environment Variables:
 
-| Variable | Value | Example |
-|----------|-------|---------|
+| Variable       | Value            | Example                                |
+| -------------- | ---------------- | -------------------------------------- |
 | `VITE_API_URL` | Your backend URL | `https://tesla-parts-api.onrender.com` |
 
 **Important**: Don't include trailing slash in the URL.
 
 ### Vercel Settings
 
-| Setting | Value |
-|---------|-------|
-| **Framework Preset** | Vite |
-| **Build Command** | `npm run build` |
-| **Output Directory** | `dist` |
-| **Install Command** | `npm install` |
-| **Root Directory** | `tesla-parts-shop` |
+| Setting              | Value              |
+| -------------------- | ------------------ |
+| **Framework Preset** | Vite               |
+| **Build Command**    | `npm run build`    |
+| **Output Directory** | `dist`             |
+| **Install Command**  | `npm install`      |
+| **Root Directory**   | `tesla-parts-shop` |
 
 ---
 
@@ -123,15 +124,18 @@ vercel
 ### Common Issues
 
 **CORS Error**:
+
 - Add your Vercel URL to backend CORS origins
 - Redeploy backend after adding
 
 **Products Not Loading**:
+
 - Check VITE_API_URL is set correctly
 - Verify backend is running
 - Check network tab in browser
 
 **404 on Page Refresh**:
+
 - Ensure `vercel.json` is present with rewrites
 - Redeploy if needed
 
@@ -140,12 +144,14 @@ vercel
 ## 🎨 Production Optimizations
 
 ### Performance
+
 - ✅ Vite optimizes and minifies code
 - ✅ Vercel Edge Network for global CDN
 - ✅ Automatic image optimization
 - ✅ HTTP/2 and compression
 
 ### SEO
+
 - ✅ Meta tags in index.html
 - ✅ Semantic HTML structure
 - ✅ Fast loading times
@@ -156,12 +162,15 @@ vercel
 ## 🔄 Updating Deployment
 
 ### Automatic (Recommended)
+
 Connect your Git repository to Vercel:
+
 - Every push to main branch auto-deploys
 - Preview deployments for pull requests
 - Branch previews for testing
 
 ### Manual
+
 ```bash
 vercel --prod
 ```
@@ -171,6 +180,7 @@ vercel --prod
 ## 📊 Monitoring
 
 Access in Vercel Dashboard:
+
 - **Deployments**: See all deployments and logs
 - **Analytics**: Visitor insights
 - **Speed Insights**: Core Web Vitals
@@ -258,16 +268,17 @@ Then redeploy backend on Render.
 
 ## 🆘 Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Build fails | Check package.json, install dependencies locally |
-| Blank page | Verify API_URL env variable is set |
-| CORS errors | Add Vercel URL to backend CORS origins |
-| Slow loading | Check backend response times, optimize images |
-| Cart not working | Check localStorage support, verify API calls |
-| Static pages empty | Ensure pages seeded in backend database |
+| Issue              | Solution                                         |
+| ------------------ | ------------------------------------------------ |
+| Build fails        | Check package.json, install dependencies locally |
+| Blank page         | Verify API_URL env variable is set               |
+| CORS errors        | Add Vercel URL to backend CORS origins           |
+| Slow loading       | Check backend response times, optimize images    |
+| Cart not working   | Check localStorage support, verify API calls     |
+| Static pages empty | Ensure pages seeded in backend database          |
 
 **Debug Steps**:
+
 1. Check browser console for errors
 2. Verify network requests in DevTools
 3. Test backend API directly

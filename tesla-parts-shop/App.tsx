@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Routes, Route, useNavigate, useLocation, useMatch, useParams, Navigate, Link } from 'react-router-dom';
+import {
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+  useMatch,
+  useParams,
+  Navigate,
+  Link,
+} from 'react-router-dom';
+import { useAuth } from './context/AppContext';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import ProductList from './components/ProductList';
@@ -9,7 +19,21 @@ import SubcategoryCard from './components/SubcategoryCard';
 import ProductPage from './components/ProductPage';
 import { ReviewsPage } from './components/ReviewsPage';
 import StaticPage from './components/StaticPage';
-import { Product, Currency, CartItem, Category, Subcategory, StaticSeoRecord, Page } from './types';
+import { Login } from './components/Login';
+import { Register } from './components/Register';
+import { Verify } from './components/Verify';
+import { Profile } from './components/Profile';
+import { ForgotPassword } from './components/ForgotPassword';
+import { ResetPassword } from './components/ResetPassword';
+import {
+  Product,
+  Currency,
+  CartItem,
+  Category,
+  Subcategory,
+  StaticSeoRecord,
+  Page,
+} from './types';
 import { api } from './services/api';
 import { CheckCircle, Instagram, Send } from 'lucide-react';
 import TeslaPartsCenterLogo from './components/ShopLogo';
@@ -24,7 +48,10 @@ const CART_STORAGE_KEY = 'tesla-parts-cart';
 
 const parseProductCategories = (value?: string | null) => {
   if (!value) return [];
-  return value.split(',').map(item => item.trim()).filter(Boolean);
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
 const productMatchesCategory = (product: Product, categoryName: string) => {
@@ -44,22 +71,37 @@ const getProductSubcategoryIds = (product: Product): number[] => {
   return product.subcategory_id ? [product.subcategory_id] : [];
 };
 
-const STATIC_PAGE_SLUGS = new Set(['about', 'delivery', 'returns', 'faq', 'contacts']);
+const STATIC_PAGE_SLUGS = new Set([
+  'about',
+  'delivery',
+  'returns',
+  'faq',
+  'contacts',
+]);
 
-const categoryContainsSubcategory = (subs: Subcategory[] | undefined, targetId: number): boolean => {
+const categoryContainsSubcategory = (
+  subs: Subcategory[] | undefined,
+  targetId: number
+): boolean => {
   if (!subs) return false;
   for (const sub of subs) {
     if (sub.id === targetId) {
       return true;
     }
-    if (sub.subcategories && categoryContainsSubcategory(sub.subcategories, targetId)) {
+    if (
+      sub.subcategories &&
+      categoryContainsSubcategory(sub.subcategories, targetId)
+    ) {
       return true;
     }
   }
   return false;
 };
 
-const findCategorySlugForSubcategory = (categories: Category[], targetId: number): string | null => {
+const findCategorySlugForSubcategory = (
+  categories: Category[],
+  targetId: number
+): string | null => {
   for (const category of categories) {
     if (categoryContainsSubcategory(category.subcategories, targetId)) {
       return slugify(category.name);
@@ -68,7 +110,12 @@ const findCategorySlugForSubcategory = (categories: Category[], targetId: number
   return null;
 };
 
-const compareBySortOrder = <T extends { sort_order?: number | null; id?: number }>(a: T, b: T) => {
+const compareBySortOrder = <
+  T extends { sort_order?: number | null; id?: number },
+>(
+  a: T,
+  b: T
+) => {
   const orderDiff = (b.sort_order ?? 0) - (a.sort_order ?? 0);
   if (orderDiff !== 0) return orderDiff;
   if (a.id !== undefined && b.id !== undefined) {
@@ -79,21 +126,17 @@ const compareBySortOrder = <T extends { sort_order?: number | null; id?: number 
 
 const sortSubcategoryTreeData = (subs?: Subcategory[]): Subcategory[] => {
   if (!subs) return [];
-  return [...subs]
-    .sort(compareBySortOrder)
-    .map(sub => ({
-      ...sub,
-      subcategories: sortSubcategoryTreeData(sub.subcategories),
-    }));
+  return [...subs].sort(compareBySortOrder).map((sub) => ({
+    ...sub,
+    subcategories: sortSubcategoryTreeData(sub.subcategories),
+  }));
 };
 
 const sortCategoryTreeData = (cats: Category[]): Category[] => {
-  return [...cats]
-    .sort(compareBySortOrder)
-    .map(cat => ({
-      ...cat,
-      subcategories: sortSubcategoryTreeData(cat.subcategories),
-    }));
+  return [...cats].sort(compareBySortOrder).map((cat) => ({
+    ...cat,
+    subcategories: sortSubcategoryTreeData(cat.subcategories),
+  }));
 };
 
 const getInitialCart = (): CartItem[] => {
@@ -129,7 +172,7 @@ const preloadImages = async (imageUrls: (string | undefined)[]) => {
       const img = new Image();
       img.src = src!;
       img.onload = resolve;
-      img.onerror = resolve; 
+      img.onerror = resolve;
     });
   });
   await Promise.all(promises);
@@ -165,27 +208,79 @@ const App: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [currency, setCurrency] = useState<Currency>(Currency.UAH);
   const [uahPerUsd, setUahPerUsd] = useState(DEFAULT_EXCHANGE_RATE_UAH_PER_USD);
-  const [socialLinks, setSocialLinks] = useState({ instagram: '', telegram: '', viber: '' });
+  const [socialLinks, setSocialLinks] = useState({
+    instagram: '',
+    telegram: '',
+    viber: '',
+  });
   const [contactInfo, setContactInfo] = useState({
     email: '',
     phone: '',
     footerDescription: '',
     footerText: '',
   });
-  const [staticSeo, setStaticSeo] = useState<Record<string, StaticSeoRecord>>({});
+  const [staticSeo, setStaticSeo] = useState<Record<string, StaticSeoRecord>>(
+    {}
+  );
+
+  const { isCustomerLoggedIn, customerProfile } = useAuth();
+  const [hasMergedCart, setHasMergedCart] = useState(false);
+
+  useEffect(() => {
+    if (isCustomerLoggedIn && customerProfile && !hasMergedCart) {
+      const serverCartStr = customerProfile.cart_data;
+      if (serverCartStr) {
+        try {
+          const serverCart = JSON.parse(serverCartStr);
+          setCart((prev) => {
+            const merged = [...prev];
+            serverCart.forEach((serverItem: CartItem) => {
+              const existing = merged.find((i) => i.id === serverItem.id);
+              if (existing) {
+                existing.quantity += serverItem.quantity;
+              } else {
+                merged.push(serverItem);
+              }
+            });
+            return merged;
+          });
+        } catch (e) {}
+      }
+      setHasMergedCart(true);
+    }
+    if (!isCustomerLoggedIn) {
+      setHasMergedCart(false);
+    }
+  }, [isCustomerLoggedIn, customerProfile, hasMergedCart]);
 
   useEffect(() => {
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+      if (isCustomerLoggedIn && hasMergedCart) {
+        const timer = setTimeout(() => {
+          api
+            .updateProfile({ cart_data: JSON.stringify(cart) })
+            .catch(() => {});
+        }, 500);
+        return () => clearTimeout(timer);
+      }
     } catch (err) {
       console.warn('Failed to persist cart', err);
     }
-  }, [cart]);
+  }, [cart, isCustomerLoggedIn, hasMergedCart]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const headerPageSlugs = ['about', 'delivery', 'returns', 'contacts', 'faq', 'terms-of-service', 'privacy-policy'];
+        const headerPageSlugs = [
+          'about',
+          'delivery',
+          'returns',
+          'contacts',
+          'faq',
+          'terms-of-service',
+          'privacy-policy',
+        ];
         const [categoriesData, socialLinksData, pagesData] = await Promise.all([
           api.getCategories(),
           api.getSocialLinks(),
@@ -198,11 +293,10 @@ const App: React.FC = () => {
         setHeaderPages(pagesData);
 
         // Preload critical images
-        const heroImages = sortedCats.slice(0, 4).map(c => c.image);
+        const heroImages = sortedCats.slice(0, 4).map((c) => c.image);
         await preloadImages(heroImages);
-
       } catch (e) {
-        console.error("Failed to load data", e);
+        console.error('Failed to load data', e);
       } finally {
         setLoading(false);
       }
@@ -219,7 +313,7 @@ const App: React.FC = () => {
           setUahPerUsd(parsed);
         }
       } catch (e) {
-        console.error("Failed to load exchange rate", e);
+        console.error('Failed to load exchange rate', e);
       }
     };
     fetchRate();
@@ -256,51 +350,61 @@ const App: React.FC = () => {
       try {
         const records = await api.getStaticSeo();
         const map: Record<string, StaticSeoRecord> = {};
-        records.forEach(record => {
+        records.forEach((record) => {
           map[record.slug] = record;
         });
         setStaticSeo(map);
       } catch (e) {
-        console.error("Failed to load SEO metadata", e);
+        console.error('Failed to load SEO metadata', e);
       }
     };
     loadStaticSeo();
   }, []);
 
   const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
       if (existing) {
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+        return prev.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
       }
       return [...prev, { ...product, quantity: 1 }];
     });
   };
 
   const updateQuantity = (id: string, delta: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.id === id) {
-        return { ...item, quantity: Math.max(1, item.quantity + delta) };
-      }
-      return item;
-    }));
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          return { ...item, quantity: Math.max(1, item.quantity + delta) };
+        }
+        return item;
+      })
+    );
   };
 
   const removeItem = (id: string) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+    setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
   const clearCart = () => setCart([]);
 
   const cartTotalUSD = useMemo(() => {
-    const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
+    const effectiveRate =
+      uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
     return cart.reduce((sum, item) => {
       const priceUSD = getProductUsdPrice(item, effectiveRate);
       return sum + priceUSD * item.quantity;
     }, 0);
   }, [cart, uahPerUsd]);
 
-  const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
+  const cartCount = useMemo(
+    () => cart.reduce((sum, item) => sum + item.quantity, 0),
+    [cart]
+  );
 
   const previousPathRef = React.useRef<string | null>(null);
   const lastPathRef = React.useRef(location.pathname + location.search);
@@ -328,12 +432,17 @@ const App: React.FC = () => {
     navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
-  const sortedCategories = useMemo(() => [...categories].sort(compareBySortOrder), [categories]);
+  const sortedCategories = useMemo(
+    () => [...categories].sort(compareBySortOrder),
+    [categories]
+  );
 
   const currentCategorySlug = categoryMatch?.params?.slug;
   const currentCategory = useMemo(() => {
     if (!currentCategorySlug) return undefined;
-    return sortedCategories.find(c => slugify(c.name) === currentCategorySlug);
+    return sortedCategories.find(
+      (c) => slugify(c.name) === currentCategorySlug
+    );
   }, [sortedCategories, currentCategorySlug]);
 
   const categoryRouteElement = currentCategory ? (
@@ -395,7 +504,10 @@ const App: React.FC = () => {
             }
           />
           <Route path="/category/:slug" element={categoryRouteElement} />
-          <Route path="/category/:slug/sub/:subId" element={categoryRouteElement} />
+          <Route
+            path="/category/:slug/sub/:subId"
+            element={categoryRouteElement}
+          />
           <Route
             path="/product/:productId"
             element={
@@ -423,18 +535,18 @@ const App: React.FC = () => {
               />
             }
           />
-          <Route
-            path="/success"
-            element={<SuccessView />}
-          />
-          <Route
-            path="/reviews"
-            element={<ReviewsPage />}
-          />
+          <Route path="/success" element={<SuccessView />} />
+          <Route path="/reviews" element={<ReviewsPage />} />
           <Route
             path="/info/:slug"
             element={<StaticPageRoute seoRecords={staticSeo} />}
           />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/verify" element={<Verify />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -447,17 +559,18 @@ const App: React.FC = () => {
               <TeslaPartsCenterLogo />
             </div>
             <p className="text-sm">
-              {contactInfo.footerDescription || 'Ваш надійний партнер у світі запчастин для електромобілів.'}
+              {contactInfo.footerDescription ||
+                'Ваш надійний партнер у світі запчастин для електромобілів.'}
             </p>
           </div>
           <div>
             <h3 className="text-white font-bold mb-4">Навігація</h3>
             <ul className="space-y-2 text-sm">
-              {sortedCategories.slice(0, 4).map(cat => (
+              {sortedCategories.slice(0, 4).map((cat) => (
                 <li key={cat.id}>
                   {/* ЗАМІНЕНО: button -> Link для індексації */}
-                  <Link 
-                    to={`/category/${slugify(cat.name)}`} 
+                  <Link
+                    to={`/category/${slugify(cat.name)}`}
                     className="hover:text-white block"
                   >
                     {cat.name}
@@ -470,10 +583,26 @@ const App: React.FC = () => {
             <h3 className="text-white font-bold mb-4">Клієнтам</h3>
             <ul className="space-y-2 text-sm">
               {/* ЗАМІНЕНО: button -> Link для індексації */}
-              <li><Link to="/reviews" className="hover:text-white block">Відгуки</Link></li>
-              <li><Link to="/info/delivery" className="hover:text-white block">Доставка та оплата</Link></li>
-              <li><Link to="/info/returns" className="hover:text-white block">Повернення</Link></li>
-              <li><Link to="/info/contacts" className="hover:text-white block">Контакти</Link></li>
+              <li>
+                <Link to="/reviews" className="hover:text-white block">
+                  Відгуки
+                </Link>
+              </li>
+              <li>
+                <Link to="/info/delivery" className="hover:text-white block">
+                  Доставка та оплата
+                </Link>
+              </li>
+              <li>
+                <Link to="/info/returns" className="hover:text-white block">
+                  Повернення
+                </Link>
+              </li>
+              <li>
+                <Link to="/info/contacts" className="hover:text-white block">
+                  Контакти
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -486,20 +615,30 @@ const App: React.FC = () => {
             </p>
             <div className="flex gap-4 mt-4 text-white">
               {socialLinks.instagram && (
-                <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">
+                <a
+                  href={socialLinks.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer"
+                >
                   <Instagram size={18} />
                 </a>
               )}
               {socialLinks.telegram && (
-                <a href={socialLinks.telegram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer">
+                <a
+                  href={socialLinks.telegram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer"
+                >
                   <Send size={18} />
                 </a>
               )}
               {socialLinks.viber && (
-                <a 
-                  href={`viber://chat?number=${encodeURIComponent(socialLinks.viber)}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  href={`viber://chat?number=${encodeURIComponent(socialLinks.viber)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center hover:bg-tesla-red transition cursor-pointer"
                 >
                   <ViberIcon size={18} color="currentColor" />
@@ -509,7 +648,8 @@ const App: React.FC = () => {
           </div>
         </div>
         <div className="container mx-auto px-4 mt-8 pt-8 border-t border-gray-800 text-center text-xs">
-          {contactInfo.footerText || '© 2024 Tesla Parts Center. Всі права захищені.'}
+          {contactInfo.footerText ||
+            '© 2024 Tesla Parts Center. Всі права захищені.'}
         </div>
       </footer>
 
@@ -538,8 +678,7 @@ const LoadingSpinner = () => (
   </div>
 );
 
-interface SuccessViewProps {
-}
+interface SuccessViewProps {}
 
 const SuccessView: React.FC<SuccessViewProps> = () => {
   useEffect(() => {
@@ -551,9 +690,12 @@ const SuccessView: React.FC<SuccessViewProps> = () => {
       <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mb-6">
         <CheckCircle size={40} />
       </div>
-      <h1 className="text-3xl font-bold text-center mb-4">Замовлення успішно оформлено!</h1>
+      <h1 className="text-3xl font-bold text-center mb-4">
+        Замовлення успішно оформлено!
+      </h1>
       <p className="text-gray-600 mb-8 text-center max-w-md">
-        Дякуємо за покупку. Наш менеджер зв'яжеться з вами найближчим часом для підтвердження деталей.
+        Дякуємо за покупку. Наш менеджер зв'яжеться з вами найближчим часом для
+        підтвердження деталей.
       </p>
       {/* ЗАМІНЕНО: button -> Link */}
       <Link
@@ -563,7 +705,7 @@ const SuccessView: React.FC<SuccessViewProps> = () => {
         На головну
       </Link>
     </div>
-  )
+  );
 };
 
 interface HomeViewProps {
@@ -590,7 +732,7 @@ const HomeView: React.FC<HomeViewProps> = ({
         const data = await api.getProducts({ is_popular: true, limit: 8 });
         setProducts(data);
       } catch (e) {
-        console.error("Failed to load popular products", e);
+        console.error('Failed to load popular products', e);
       } finally {
         setLoading(false);
       }
@@ -599,7 +741,8 @@ const HomeView: React.FC<HomeViewProps> = ({
   }, []);
 
   const fallbackTitle = 'Tesla Parts Center | Магазин запчастин для Tesla';
-  const fallbackDescription = 'Популярні запчастини Tesla з гарантією якості та швидкою доставкою по Україні.';
+  const fallbackDescription =
+    'Популярні запчастини Tesla з гарантією якості та швидкою доставкою по Україні.';
 
   // FIX: Весь контент чекає на завантаження, щоб уникнути миготіння
   if (loading) {
@@ -616,7 +759,7 @@ const HomeView: React.FC<HomeViewProps> = ({
       />
       {showHero && (
         <div className="w-full min-h-[280px] md:min-h-[400px] lg:min-h-[500px]">
-           <Hero />
+          <Hero />
         </div>
       )}
       {products.length > 0 && (
@@ -663,12 +806,12 @@ const SearchView: React.FC<SearchViewProps> = ({
         const data = await api.getProducts({ search: searchQuery });
         setProducts(data);
       } catch (e) {
-        console.error("Search failed", e);
+        console.error('Search failed', e);
       } finally {
         setLoading(false);
       }
     };
-    
+
     // Debounce could be added here, but simple fetch for now
     const timer = setTimeout(fetchResults, 300);
     return () => clearTimeout(timer);
@@ -686,7 +829,9 @@ const SearchView: React.FC<SearchViewProps> = ({
         fallbackDescription={fallbackDescription}
       />
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Результати пошуку: "{searchQuery}"</h1>
+        <h1 className="text-2xl font-bold">
+          Результати пошуку: "{searchQuery}"
+        </h1>
       </div>
       {loading ? (
         <LoadingSpinner />
@@ -697,7 +842,6 @@ const SearchView: React.FC<SearchViewProps> = ({
           uahPerUsd={uahPerUsd}
           onAddToCart={addToCart}
         />
-
       )}
     </div>
   );
@@ -723,7 +867,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  
+
   // State for the full category tree (with subcategories)
   const [detailedCategory, setDetailedCategory] = useState<Category>(category);
   const [loadingCategory, setLoadingCategory] = useState(false);
@@ -736,12 +880,12 @@ const CategoryView: React.FC<CategoryViewProps> = ({
         const fullData = await api.getCategory(category.id);
         // Sort the tree immediately
         const sorted = {
-            ...fullData,
-            subcategories: sortSubcategoryTreeData(fullData.subcategories)
+          ...fullData,
+          subcategories: sortSubcategoryTreeData(fullData.subcategories),
         };
         setDetailedCategory(sorted);
       } catch (e) {
-        console.error("Failed to fetch category details", e);
+        console.error('Failed to fetch category details', e);
       } finally {
         setLoadingCategory(false);
       }
@@ -760,7 +904,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
         const data = await api.getProducts(filters);
         setProducts(data);
       } catch (e) {
-        console.error("Failed to fetch category products", e);
+        console.error('Failed to fetch category products', e);
       } finally {
         setLoadingProducts(false);
       }
@@ -768,8 +912,10 @@ const CategoryView: React.FC<CategoryViewProps> = ({
     fetchProducts();
   }, [categorySlug, selectedSubcategory]);
 
-
-  const findSubcategory = (subs: Subcategory[], targetId: number): Subcategory | null => {
+  const findSubcategory = (
+    subs: Subcategory[],
+    targetId: number
+  ): Subcategory | null => {
     if (!subs) return null;
     for (const sub of subs) {
       if (sub.id === targetId) {
@@ -790,15 +936,31 @@ const CategoryView: React.FC<CategoryViewProps> = ({
   useEffect(() => {
     window.scrollTo(0, 0);
     // Only redirect if we have finished loading the category structure and still can't find the subcategory
-    if (!loadingCategory && selectedSubcategory && !currentSubcategory && detailedCategory.subcategories?.length > 0) {
+    if (
+      !loadingCategory &&
+      selectedSubcategory &&
+      !currentSubcategory &&
+      detailedCategory.subcategories?.length > 0
+    ) {
       navigate(`/category/${categorySlug}`, { replace: true });
     }
-  }, [selectedSubcategory, currentSubcategory, navigate, categorySlug, loadingCategory, detailedCategory]);
+  }, [
+    selectedSubcategory,
+    currentSubcategory,
+    navigate,
+    categorySlug,
+    loadingCategory,
+    detailedCategory,
+  ]);
 
   const getBackLink = (): string => {
     if (!selectedSubcategory) return '/';
-    
-    const findParent = (subs: Subcategory[], target: number, parent: number | null = null): number | null => {
+
+    const findParent = (
+      subs: Subcategory[],
+      target: number,
+      parent: number | null = null
+    ): number | null => {
       if (!subs) return null;
       for (const sub of subs) {
         if (sub.id === target) {
@@ -813,8 +975,12 @@ const CategoryView: React.FC<CategoryViewProps> = ({
       }
       return null;
     };
-    
-    const parentId = findParent(detailedCategory.subcategories, selectedSubcategory, null);
+
+    const parentId = findParent(
+      detailedCategory.subcategories,
+      selectedSubcategory,
+      null
+    );
     if (parentId) {
       return `/category/${categorySlug}/sub/${parentId}`;
     } else {
@@ -824,19 +990,27 @@ const CategoryView: React.FC<CategoryViewProps> = ({
 
   const getSelectedSubcategoryName = () => {
     if (!selectedSubcategory) return category.name;
-    const found = findSubcategory(detailedCategory.subcategories, selectedSubcategory);
+    const found = findSubcategory(
+      detailedCategory.subcategories,
+      selectedSubcategory
+    );
     return found?.name || category.name;
   };
 
   const subcategoriesToShow = useMemo(() => {
     // If loading, show nothing yet to avoid flicker
     if (loadingCategory) return [];
-    
+
     const base = selectedSubcategory
       ? currentSubcategory?.subcategories || []
       : detailedCategory.subcategories;
     return sortSubcategoryTreeData(base);
-  }, [selectedSubcategory, currentSubcategory, detailedCategory, loadingCategory]);
+  }, [
+    selectedSubcategory,
+    currentSubcategory,
+    detailedCategory,
+    loadingCategory,
+  ]);
 
   const pageHeading = getSelectedSubcategoryName();
   const fallbackTitle = `${pageHeading} | Tesla Parts Center`;
@@ -862,14 +1036,14 @@ const CategoryView: React.FC<CategoryViewProps> = ({
           ← Назад до головної
         </Link>
         {selectedSubcategory && (
-          <button 
+          <button
             onClick={() => {
               if (window.history.length > 1) {
                 navigate(-1);
               } else {
                 navigate(backLink);
               }
-            }} 
+            }}
             className="text-gray-500 hover:text-tesla-red transition"
           >
             ← Назад
@@ -880,7 +1054,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
 
       {subcategoriesToShow.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 mb-8">
-          {subcategoriesToShow.map(sub => (
+          {subcategoriesToShow.map((sub) => (
             <SubcategoryCard
               key={sub.id}
               subcategory={sub}
@@ -895,7 +1069,7 @@ const CategoryView: React.FC<CategoryViewProps> = ({
       ) : (
         products.length > 0 && (
           <ProductList
-            title={subcategoriesToShow.length > 0 ? "Товари" : undefined}
+            title={subcategoriesToShow.length > 0 ? 'Товари' : undefined}
             products={products}
             currency={currency}
             uahPerUsd={uahPerUsd}
@@ -904,14 +1078,22 @@ const CategoryView: React.FC<CategoryViewProps> = ({
         )
       )}
 
-      {!loading && subcategoriesToShow.length === 0 && products.length === 0 && (
-        <p className="text-gray-500 italic">В цій категорії поки немає товарів чи підкатегорій.</p>
-      )}
+      {!loading &&
+        subcategoriesToShow.length === 0 &&
+        products.length === 0 && (
+          <p className="text-gray-500 italic">
+            В цій категорії поки немає товарів чи підкатегорій.
+          </p>
+        )}
     </div>
   );
 };
 
-const getProductBackUrl = (product: Product, categories: Category[], previousPath: string | null): string => {
+const getProductBackUrl = (
+  product: Product,
+  categories: Category[],
+  previousPath: string | null
+): string => {
   if (previousPath) {
     return previousPath;
   }
@@ -919,7 +1101,10 @@ const getProductBackUrl = (product: Product, categories: Category[], previousPat
   const subcategoryIds = getProductSubcategoryIds(product);
   if (subcategoryIds.length > 0) {
     const targetSubId = subcategoryIds[0];
-    const categorySlug = findCategorySlugForSubcategory(categories, targetSubId);
+    const categorySlug = findCategorySlugForSubcategory(
+      categories,
+      targetSubId
+    );
     if (categorySlug) {
       return `/category/${categorySlug}/sub/${targetSubId}`;
     }
@@ -930,7 +1115,7 @@ const getProductBackUrl = (product: Product, categories: Category[], previousPat
     const slug = slugify(primaryCategory);
     return `/category/${slug}`;
   }
-  
+
   return '/';
 };
 
@@ -961,7 +1146,7 @@ const ProductDetailRoute: React.FC<ProductDetailRouteProps> = ({
         const data = await api.getProduct(productId);
         setProduct(data);
       } catch (e) {
-        console.error("Failed to fetch product", e);
+        console.error('Failed to fetch product', e);
         setProduct(null);
       } finally {
         setLoading(false);

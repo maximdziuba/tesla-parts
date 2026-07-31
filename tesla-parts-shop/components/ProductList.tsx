@@ -13,8 +13,15 @@ interface ProductListProps {
   title?: string;
 }
 
-const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd, onAddToCart, title }) => {
-  const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
+const ProductList: React.FC<ProductListProps> = ({
+  products,
+  currency,
+  uahPerUsd,
+  onAddToCart,
+  title,
+}) => {
+  const effectiveRate =
+    uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
 
   const getUsdPrice = (product: Product) => {
     if (product.priceUSD && product.priceUSD > 0) return product.priceUSD;
@@ -33,16 +40,26 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
   if (products.length === 0) {
     return (
       <div className="text-center py-20 bg-white rounded-lg shadow-sm">
-        <div className="text-gray-400 mb-4 flex justify-center"><AlertCircle size={48} /></div>
-        <h3 className="text-xl font-medium text-gray-900">Товарів не знайдено</h3>
-        <p className="text-gray-500 mt-2">Спробуйте змінити параметри пошуку або обрати іншу категорію.</p>
+        <div className="text-gray-400 mb-4 flex justify-center">
+          <AlertCircle size={48} />
+        </div>
+        <h3 className="text-xl font-medium text-gray-900">
+          Товарів не знайдено
+        </h3>
+        <p className="text-gray-500 mt-2">
+          Спробуйте змінити параметри пошуку або обрати іншу категорію.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="py-8">
-      {title && <h2 className="text-2xl font-bold mb-6 text-tesla-dark border-l-4 border-tesla-red pl-4">{title}</h2>}
+      {title && (
+        <h2 className="text-2xl font-bold mb-6 text-tesla-dark border-l-4 border-tesla-red pl-4">
+          {title}
+        </h2>
+      )}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 sm:gap-6">
         {products.map((product) => (
           <Link
@@ -69,14 +86,20 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
             </div>
 
             <div className="p-4 flex-1 flex flex-col">
-              <div className="text-xs text-gray-500 mb-1">{product.category}</div>
+              <div className="text-xs text-gray-500 mb-1">
+                {product.category}
+              </div>
               {product.detail_number && (
-                <div className="text-xs text-gray-500 mb-1">{product.detail_number}</div>
+                <div className="text-xs text-gray-500 mb-1">
+                  {product.detail_number}
+                </div>
               )}
               {product.cross_number && (
-                <div className="text-[11px] text-gray-400 mb-1">Cross: {product.cross_number}</div>
+                <div className="text-[11px] text-gray-400 mb-1">
+                  Cross: {product.cross_number}
+                </div>
               )}
-              
+
               {/* ЗМІНА 5: active:text-tesla-red (моб) та xl:group-hover:text-tesla-red (ПК) */}
               <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3rem] active:text-tesla-red xl:group-hover:text-tesla-red transition-colors">
                 {product.name}
@@ -96,10 +119,11 @@ const ProductList: React.FC<ProductListProps> = ({ products, currency, uahPerUsd
                   }}
                   disabled={!product.inStock}
                   // ЗМІНА 6: Те саме для кнопки - active для моб, hover для ПК
-                  className={`p-2 rounded-full transition ${product.inStock
-                    ? 'bg-tesla-light text-tesla-dark active:bg-tesla-red active:text-white xl:hover:bg-tesla-red xl:hover:text-white'
-                    : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                    }`}
+                  className={`p-2 rounded-full transition ${
+                    product.inStock
+                      ? 'bg-tesla-light text-tesla-dark active:bg-tesla-red active:text-white xl:hover:bg-tesla-red xl:hover:text-white'
+                      : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                  }`}
                   aria-label="Додати в кошик"
                 >
                   <ShoppingBag size={20} />

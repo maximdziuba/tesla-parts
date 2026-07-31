@@ -10,7 +10,8 @@ export const MOCK_PRODUCTS: Product[] = [
     stock: 12,
     category: CarModel.MODEL_3,
     image: 'https://picsum.photos/200',
-    description: 'Original OEM front bumper for Model 3 (2017-2023). Primed and ready for paint.',
+    description:
+      'Original OEM front bumper for Model 3 (2017-2023). Primed and ready for paint.',
   },
   {
     id: 'p2',
@@ -71,7 +72,12 @@ export const MOCK_ORDERS: Order[] = [
     total: 450,
     currency: 'USD',
     items: [
-      { productId: 'p1', productName: 'Front Bumper Assembly', quantity: 1, priceAtPurchase: 450 },
+      {
+        productId: 'p1',
+        productName: 'Front Bumper Assembly',
+        quantity: 1,
+        priceAtPurchase: 450,
+      },
     ],
   },
   {
@@ -86,8 +92,18 @@ export const MOCK_ORDERS: Order[] = [
     total: 165,
     currency: 'USD',
     items: [
-      { productId: 'p5', productName: 'Cabin Air Filter (HEPA)', quantity: 1, priceAtPurchase: 45 },
-      { productId: 'p2', productName: 'Falcon Wing Door Sensor', quantity: 1, priceAtPurchase: 120 },
+      {
+        productId: 'p5',
+        productName: 'Cabin Air Filter (HEPA)',
+        quantity: 1,
+        priceAtPurchase: 45,
+      },
+      {
+        productId: 'p2',
+        productName: 'Falcon Wing Door Sensor',
+        quantity: 1,
+        priceAtPurchase: 120,
+      },
     ],
   },
   {
@@ -102,7 +118,12 @@ export const MOCK_ORDERS: Order[] = [
     total: 1200,
     currency: 'USD',
     items: [
-      { productId: 'p3', productName: '17" Touchscreen Display', quantity: 1, priceAtPurchase: 1200 },
+      {
+        productId: 'p3',
+        productName: '17" Touchscreen Display',
+        quantity: 1,
+        priceAtPurchase: 1200,
+      },
     ],
   },
   {
@@ -117,7 +138,12 @@ export const MOCK_ORDERS: Order[] = [
     total: 220,
     currency: 'USD',
     items: [
-      { productId: 'p4', productName: 'Rear Tail Light (Left)', quantity: 1, priceAtPurchase: 220 },
+      {
+        productId: 'p4',
+        productName: 'Rear Tail Light (Left)',
+        quantity: 1,
+        priceAtPurchase: 220,
+      },
     ],
   },
 ];

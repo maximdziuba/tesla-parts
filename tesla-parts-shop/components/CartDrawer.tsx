@@ -23,9 +23,10 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
   uahPerUsd,
   onUpdateQuantity,
   onRemoveItem,
-  onCheckout
+  onCheckout,
 }) => {
-  const effectiveRate = uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
+  const effectiveRate =
+    uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
 
   const getItemUsdPrice = (item: CartItem) => {
     if (item.priceUSD && item.priceUSD > 0) return item.priceUSD;
@@ -41,30 +42,43 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
 
   const formatPrice = (item: CartItem, quantity = 1) => {
     const usdPrice = getItemUsdPrice(item) * quantity;
-    const amount = currency === Currency.USD ? usdPrice : usdPrice * effectiveRate;
+    const amount =
+      currency === Currency.USD ? usdPrice : usdPrice * effectiveRate;
     return formatAmount(amount);
   };
 
-  const totalUSD = items.reduce((sum, item) => sum + getItemUsdPrice(item) * item.quantity, 0);
-  const totalDisplay = currency === Currency.USD ? totalUSD : totalUSD * effectiveRate;
+  const totalUSD = items.reduce(
+    (sum, item) => sum + getItemUsdPrice(item) * item.quantity,
+    0
+  );
+  const totalDisplay =
+    currency === Currency.USD ? totalUSD : totalUSD * effectiveRate;
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[60] overflow-hidden">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       <div className="absolute inset-y-0 right-0 max-w-md w-full flex">
         <div className="flex-1 flex flex-col bg-white shadow-xl animate-slide-in">
-
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-6 border-b border-gray-100">
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
-            <div className="flex items-center justify-between">
-              <ArrowLeft size={24} className="text-gray-500"/>  Повернутись до покупок
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition"
+            >
+              <div className="flex items-center justify-between">
+                <ArrowLeft size={24} className="text-gray-500" /> Повернутись до
+                покупок
               </div>
             </button>
-            <h2 className="text-lg font-bold text-gray-900">Кошик ({items.length})</h2>
+            <h2 className="text-lg font-bold text-gray-900">
+              Кошик ({items.length})
+            </h2>
             {/* <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
               <X size={24} className="text-gray-500" />
             </button> */}
@@ -80,12 +94,20 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
               items.map((item) => (
                 <div key={item.id} className="flex gap-4">
                   <div className="w-20 h-20 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
-                      <h3 className="text-sm font-medium text-gray-900 line-clamp-2">{item.name}</h3>
-                      <p className="text-xs text-gray-500 mt-1">{item.category}</p>
+                      <h3 className="text-sm font-medium text-gray-900 line-clamp-2">
+                        {item.name}
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {item.category}
+                      </p>
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center border rounded-md">
@@ -96,7 +118,9 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                         >
                           <Minus size={14} />
                         </button>
-                        <span className="px-2 text-sm font-medium w-8 text-center">{item.quantity}</span>
+                        <span className="px-2 text-sm font-medium w-8 text-center">
+                          {item.quantity}
+                        </span>
                         <button
                           onClick={() => onUpdateQuantity(item.id, 1)}
                           className="p-1 hover:bg-gray-100 text-gray-600"
@@ -104,7 +128,9 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                           <Plus size={14} />
                         </button>
                       </div>
-                      <div className="text-sm font-bold">{formatPrice(item, item.quantity)}</div>
+                      <div className="text-sm font-bold">
+                        {formatPrice(item, item.quantity)}
+                      </div>
                     </div>
                   </div>
                   <button
@@ -116,7 +142,6 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                 </div>
               ))
             )}
-
           </div>
 
           {/* Footer */}
@@ -126,9 +151,14 @@ const CartDrawer: React.FC<CartDrawerProps> = ({
                 <span>Всього</span>
                 <span>{formatAmount(totalDisplay)}</span>
               </div>
-              <p className="text-xs text-gray-500 mb-4 text-center">Вартість доставки розраховується за тарифами перевізника</p>
+              <p className="text-xs text-gray-500 mb-4 text-center">
+                Вартість доставки розраховується за тарифами перевізника
+              </p>
               <button
-                onClick={() => { onClose(); onCheckout(); }}
+                onClick={() => {
+                  onClose();
+                  onCheckout();
+                }}
                 className="w-full bg-tesla-red text-white py-3 rounded-md font-bold hover:bg-red-700 transition shadow-md"
               >
                 Оформити замовлення
