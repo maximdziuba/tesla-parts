@@ -39,6 +39,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://tesla:teslapass@db:5432/tesladb
       - FRONTEND_URL=https://teslapartscenter.com.ua,https://admin.teslapartscenter.com.ua # Краще змінити на https
+      - WEBSITE_URL=https://teslapartscenter.com.ua
       - BACKEND_URL=https://api.teslapartscenter.com.ua # Краще змінити на https
       - JWT_SECRET_KEY=super-secret-jwt-key
     depends_on:

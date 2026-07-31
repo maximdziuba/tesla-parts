@@ -13,8 +13,6 @@ SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
 def send_verification_email(to_email: str, token: str):
-    print(SMTP_EMAIL)
-    print(SMTP_PASSWORD)
     verification_link = f"{FRONTEND_URL}/verify?token={token}"
     
     if not SMTP_EMAIL or not SMTP_PASSWORD:
