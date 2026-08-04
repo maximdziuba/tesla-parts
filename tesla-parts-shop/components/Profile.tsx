@@ -133,7 +133,7 @@ export const Profile: React.FC = () => {
       {/* Sidebar */}
       <div className="w-full md:w-1/4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="font-bold text-lg mb-4">{customerProfile.email}</div>
+          <div className="font-bold text-lg mb-4 break-all">{customerProfile.email}</div>
           <nav className="flex flex-col gap-2">
             <button
               onClick={() => setSearchParams({ tab: 'info' })}

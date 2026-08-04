@@ -14,6 +14,7 @@ import SeoHead from './SeoHead';
 import { formatCurrency } from '../utils/currency';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AppContext';
 
 interface ProductPageProps {
   product: Product;
@@ -86,6 +87,7 @@ const ProductPage: React.FC<ProductPageProps> = ({
     document.body.style.overflow = 'auto';
   };
 
+  const { customerProfile } = useAuth();
   const getDisplayPrice = () => {
     const priceUSD =
       product.priceUSD && product.priceUSD > 0
@@ -93,9 +95,26 @@ const ProductPage: React.FC<ProductPageProps> = ({
         : product.priceUAH && product.priceUAH > 0 && effectiveRate > 0
           ? product.priceUAH / effectiveRate
           : 0;
-    const amount =
+    const originalAmount =
       currency === Currency.USD ? priceUSD : priceUSD * effectiveRate;
-    return formatCurrency(amount, currency);
+      
+    let finalAmount = originalAmount;
+    const discountType = customerProfile?.discount_type;
+    const discountValue = customerProfile?.discount_value;
+
+    if (discountType && discountValue) {
+      if (discountType === 'percent') {
+        finalAmount = originalAmount * (1 - discountValue / 100);
+      } else if (discountType === 'usd') {
+        const discountInCurrent = currency === Currency.UAH ? discountValue * effectiveRate : discountValue;
+        finalAmount = Math.max(0, originalAmount - discountInCurrent);
+      } else if (discountType === 'uah') {
+        const discountInCurrent = currency === Currency.USD ? discountValue / effectiveRate : discountValue;
+        finalAmount = Math.max(0, originalAmount - discountInCurrent);
+      }
+    }
+
+    return { original: originalAmount, final: finalAmount };
   };
 
   return (
@@ -202,11 +221,11 @@ const ProductPage: React.FC<ProductPageProps> = ({
                   )}
                 </div>
                 {product.inStock ? (
-                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap flex-shrink-0">
                     В наявності
                   </span>
                 ) : (
-                  <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                  <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap flex-shrink-0">
                     Немає в наявності
                   </span>
                 )}
@@ -217,8 +236,15 @@ const ProductPage: React.FC<ProductPageProps> = ({
               </h1>
 
               <div className="mb-8">
-                <div className="text-3xl font-bold text-tesla-dark">
-                  {getDisplayPrice()}
+                <div className="flex flex-col">
+                  {getDisplayPrice().original > getDisplayPrice().final && (
+                    <span className="text-xl line-through text-gray-400">
+                      {formatCurrency(getDisplayPrice().original, currency)}
+                    </span>
+                  )}
+                  <span className="text-3xl font-bold text-tesla-dark">
+                    {formatCurrency(getDisplayPrice().final, currency)}
+                  </span>
                 </div>
               </div>
 

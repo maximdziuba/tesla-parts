@@ -3,7 +3,7 @@ import { Product, Currency } from '../types';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 import { formatCurrency } from '../utils/currency';
-import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AppContext';
 
 interface ProductListProps {
   products: Product[];
@@ -20,6 +20,7 @@ const ProductList: React.FC<ProductListProps> = ({
   onAddToCart,
   title,
 }) => {
+  const { customerProfile } = useAuth();
   const effectiveRate =
     uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD;
 
@@ -31,10 +32,26 @@ const ProductList: React.FC<ProductListProps> = ({
     return 0;
   };
 
-  const formatPrice = (product: Product) => {
+  const getDiscountedPriceInfo = (product: Product) => {
     const usd = getUsdPrice(product);
-    const amount = currency === Currency.USD ? usd : usd * effectiveRate;
-    return formatCurrency(amount, currency);
+    const originalAmount = currency === Currency.USD ? usd : usd * effectiveRate;
+    let finalAmount = originalAmount;
+
+    const discountType = customerProfile?.discount_type;
+    const discountValue = customerProfile?.discount_value;
+
+    if (discountType && discountValue) {
+      if (discountType === 'percent') {
+        finalAmount = originalAmount * (1 - discountValue / 100);
+      } else if (discountType === 'usd') {
+        const discountInCurrent = currency === Currency.UAH ? discountValue * effectiveRate : discountValue;
+        finalAmount = Math.max(0, originalAmount - discountInCurrent);
+      } else if (discountType === 'uah') {
+        const discountInCurrent = currency === Currency.USD ? discountValue / effectiveRate : discountValue;
+        finalAmount = Math.max(0, originalAmount - discountInCurrent);
+      }
+    }
+    return { original: originalAmount, final: finalAmount };
   };
 
   if (products.length === 0) {
@@ -61,56 +78,58 @@ const ProductList: React.FC<ProductListProps> = ({
         </h2>
       )}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 sm:gap-6">
-        {products.map((product) => (
-          <Link
-            key={product.id}
-            to={`/product/${product.id}`}
-            // ЗМІНА 1: hover:shadow-md -> xl:hover:shadow-md
-            // ЗМІНА 2: додано select-none
-            className="bg-white rounded-xl shadow-sm border border-gray-100 xl:hover:shadow-md transition overflow-hidden flex flex-col cursor-pointer group select-none"
-            // ЗМІНА 3: прибираємо синю підсвітку на мобільному
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            <div className="relative w-full pb-[100%] bg-gray-100">
-              <img
-                src={product.image}
-                alt={product.name}
-                // ЗМІНА 4: group-hover -> xl:group-hover (зум тільки на ПК)
-                className="absolute inset-0 w-full h-full object-cover xl:group-hover:scale-105 transition-transform duration-300"
-              />
-              {!product.inStock && (
-                <div className="absolute top-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded">
-                  Немає в наявності
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 flex-1 flex flex-col">
-              <div className="text-xs text-gray-500 mb-1">
-                {product.category}
+        {products.map((product) => {
+          const { original, final } = getDiscountedPriceInfo(product);
+          return (
+            <Link
+              key={product.id}
+              to={`/product/${product.id}`}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 xl:hover:shadow-md transition overflow-hidden flex flex-col cursor-pointer group select-none"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <div className="relative w-full pb-[100%] bg-gray-100">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="absolute inset-0 w-full h-full object-cover xl:group-hover:scale-105 transition-transform duration-300"
+                />
+                {!product.inStock && (
+                  <div className="absolute top-2 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded">
+                    Немає в наявності
+                  </div>
+                )}
               </div>
-              {product.detail_number && (
+
+              <div className="p-4 flex-1 flex flex-col">
                 <div className="text-xs text-gray-500 mb-1">
-                  {product.detail_number}
+                  {product.category}
                 </div>
-              )}
-              {product.cross_number && (
-                <div className="text-[11px] text-gray-400 mb-1">
-                  Cross: {product.cross_number}
-                </div>
-              )}
+                {product.detail_number && (
+                  <div className="text-xs text-gray-500 mb-1">
+                    {product.detail_number}
+                  </div>
+                )}
+                {product.cross_number && (
+                  <div className="text-[11px] text-gray-400 mb-1">
+                    Cross: {product.cross_number}
+                  </div>
+                )}
 
-              {/* ЗМІНА 5: active:text-tesla-red (моб) та xl:group-hover:text-tesla-red (ПК) */}
-              <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3rem] active:text-tesla-red xl:group-hover:text-tesla-red transition-colors">
-                {product.name}
-              </h3>
+                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[3rem] active:text-tesla-red xl:group-hover:text-tesla-red transition-colors">
+                  {product.name}
+                </h3>
 
-              <div className="mt-auto pt-4 flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-lg font-bold text-tesla-dark">
-                    {formatPrice(product)}
-                  </span>
-                </div>
+                <div className="mt-auto pt-4 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    {original > final && (
+                      <span className="text-sm line-through text-gray-400">
+                        {formatCurrency(original, currency)}
+                      </span>
+                    )}
+                    <span className="text-lg font-bold text-tesla-dark">
+                      {formatCurrency(final, currency)}
+                    </span>
+                  </div>
                 <button
                   onClick={(e) => {
                     e.preventDefault();

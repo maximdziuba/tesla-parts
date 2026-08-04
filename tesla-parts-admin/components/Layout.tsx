@@ -100,12 +100,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-gray-900 text-white transform transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-gray-900 text-white transform transition-all duration-300 ease-in-out lg:relative lg:translate-x-0 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         } ${collapsed ? 'lg:w-20' : 'lg:w-64'} w-64`}
       >
         <div
-          className={`flex items-center border-b border-gray-800 transition-all duration-300 ${collapsed ? 'justify-center p-4' : 'gap-2 p-6'}`}
+          className={`flex items-center border-b border-gray-800 transition-all duration-300 shrink-0 ${collapsed ? 'justify-center p-4' : 'gap-2 p-6'}`}
         >
           <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center shrink-0">
             <span className="font-bold text-white text-lg">T</span>
@@ -117,7 +117,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           )}
         </div>
 
-        <nav className="p-4 space-y-2">
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
           <SidebarItem
             to="/"
             icon={LayoutDashboard}
@@ -197,7 +197,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           />
         </nav>
 
-        <div className="absolute bottom-0 w-full p-4 border-t border-gray-800">
+        <div className="shrink-0 w-full p-4 border-t border-gray-800 bg-gray-900">
           <button
             onClick={handleLogout}
             title={collapsed ? 'Вийти' : undefined}

@@ -57,11 +57,21 @@ async def get_google_merchant_feed(session: Session = Depends(get_session)):
             p_title = saxutils.escape(product.name)
             p_description = saxutils.escape(product.description or product.name)
             p_link = f"{SHOP_BASE_URL}/product/{product.id}"
-            p_image_link = saxutils.escape(product.image)
+            p_image_link = saxutils.escape(product.image) if product.image else ""
             p_price = f"{price_uah:.2f} UAH"
             p_availability = "in_stock" if product.inStock else "out_of_stock"
             p_condition = "new" # Default for Tesla Parts shop
             p_brand = saxutils.escape("Tesla")
+
+            additional_images_xml = ""
+            if hasattr(product, "images") and product.images:
+                added_images = 0
+                for img in product.images:
+                    if added_images >= 10:
+                        break
+                    if img.url != product.image:
+                        additional_images_xml += f"\n            <g:additional_image_link>{saxutils.escape(img.url)}</g:additional_image_link>"
+                        added_images += 1
 
             # Construct item XML
             item_xml = f"""
@@ -70,7 +80,7 @@ async def get_google_merchant_feed(session: Session = Depends(get_session)):
             <g:title>{p_title}</g:title>
             <g:description>{p_description}</g:description>
             <g:link>{p_link}</g:link>
-            <g:image_link>{p_image_link}</g:image_link>
+            <g:image_link>{p_image_link}</g:image_link>{additional_images_xml}
             <g:condition>{p_condition}</g:condition>
             <g:availability>{p_availability}</g:availability>
             <g:price>{p_price}</g:price>

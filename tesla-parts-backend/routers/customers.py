@@ -35,6 +35,8 @@ async def get_all_customers(session: Session = Depends(get_session)):
             "first_name": decrypt_value(c.encrypted_first_name) if c.encrypted_first_name else None,
             "last_name": decrypt_value(c.encrypted_last_name) if c.encrypted_last_name else None,
             "phone": decrypt_value(c.encrypted_phone) if c.encrypted_phone else None,
+            "discount_type": c.discount_type,
+            "discount_value": c.discount_value,
         })
     return result
 
