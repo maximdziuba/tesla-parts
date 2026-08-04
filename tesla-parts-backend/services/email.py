@@ -11,10 +11,10 @@ load_dotenv()
 
 SMTP_EMAIL = os.getenv("SMTP_EMAIL")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
-FRONTEND_URL = os.environ.get("WEBSITE_URL", "http://localhost:3000")
-API_URL = os.environ.get("API_URL", "http://localhost:8000")
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+FRONTEND_URL = os.getenv("WEBSITE_URL", "http://localhost:3000")
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 def get_email_header():
     return f"""

@@ -4,6 +4,7 @@ import { ShoppingBag, AlertCircle } from 'lucide-react';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 import { formatCurrency } from '../utils/currency';
 import { useAuth } from '../context/AppContext';
+import { Link } from 'react-router-dom';
 
 interface ProductListProps {
   products: Product[];
