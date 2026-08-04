@@ -149,8 +149,9 @@ const ProductList: React.FC<ProductListProps> = ({
                 </button>
               </div>
             </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
