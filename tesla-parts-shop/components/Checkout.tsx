@@ -5,6 +5,7 @@ import { Truck, Building, Wallet } from 'lucide-react';
 import NovaPostWidget from '../components/NovaPostWidget'; // Ensure this path is correct
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from '../constants';
 import { formatCurrency } from '../utils/currency';
+import { trackPurchase } from '../utils/analytics';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AppContext';
 
@@ -181,7 +182,8 @@ const Checkout: React.FC<CheckoutProps> = ({
     };
 
     try {
-      await api.createOrder(order);
+      const created = await api.createOrder(order);
+      trackPurchase(created, order, effectiveRate);
       onSuccess();
     } catch (err) {
       console.error('Order failed', err);
