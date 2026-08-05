@@ -15,6 +15,7 @@ import { formatCurrency } from '../utils/currency';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AppContext';
+import { trackViewItem } from '../utils/analytics';
 
 interface ProductPageProps {
   product: Product;
@@ -56,6 +57,15 @@ const ProductPage: React.FC<ProductPageProps> = ({
     };
     fetchDeliveryInfo();
   }, []);
+
+  // GA4 view_item for Google Ads dynamic remarketing.
+  // Depends on product.id only: effectiveRate changes once when the exchange
+  // rate arrives from the API, and including it would fire a second view_item
+  // for the same page view.
+  useEffect(() => {
+    trackViewItem(product, effectiveRate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
 
   const handleAddToCart = () => {
     onAddToCart(product);

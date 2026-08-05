@@ -41,6 +41,7 @@ import ViberIcon from './components/ViberIcon';
 import { DEFAULT_EXCHANGE_RATE_UAH_PER_USD } from './constants';
 import SeoHead from './components/SeoHead';
 import { slugify } from './utils/slugify';
+import { trackAddToCart } from './utils/analytics';
 
 const CART_STORAGE_KEY = 'tesla-parts-cart';
 
@@ -362,6 +363,12 @@ const App: React.FC = () => {
   }, []);
 
   const addToCart = (product: Product) => {
+    // Deliberately before setCart and outside its callback: React may run an
+    // updater more than once, while an event handler runs once per click.
+    trackAddToCart(
+      product,
+      uahPerUsd > 0 ? uahPerUsd : DEFAULT_EXCHANGE_RATE_UAH_PER_USD
+    );
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
