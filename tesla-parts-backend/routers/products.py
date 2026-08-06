@@ -29,6 +29,12 @@ def _slugify(value: str) -> str:
     return re.sub(r'\s+', '-', value)
 
 
+def _split_categories(category_str: Optional[str]) -> List[str]:
+    if not category_str:
+        return []
+    return [c.strip() for c in category_str.split(",") if c.strip()]
+
+
 def _collect_subcategory_ids(product: Product) -> List[int]:
     ids: List[int] = []
     if product.subcategory_id:

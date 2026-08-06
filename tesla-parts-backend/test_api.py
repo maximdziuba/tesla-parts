@@ -1,10 +1,11 @@
 import pytest
 from fastapi.testclient import TestClient
 from main import app
-from models import Product, Order, OrderItem, Settings
+from models import Product, Order, OrderItem, Settings, User
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 from database import get_session
+from auth import create_access_token, get_password_hash
 
 # Use in-memory DB for tests
 sqlite_url = "sqlite:///:memory:"
@@ -25,8 +26,18 @@ client = TestClient(app)
 def session_fixture():
     create_db_and_tables()
     with Session(engine) as session:
+        admin_user = User(
+            username="admin",
+            hashed_password=get_password_hash("adminpassword")
+        )
+        session.add(admin_user)
+        session.commit()
         yield session
     SQLModel.metadata.drop_all(engine)
+
+def get_admin_headers():
+    token = create_access_token({"sub": "admin"})
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 def test_read_main():
     response = client.get("/")
@@ -35,19 +46,19 @@ def test_read_main():
 
 def test_create_product(session: Session):
     product_data = {
+        "id": "test-1",
         "name": "Test Product",
         "category": "Test",
-        "priceUAH": 400.0,
-        "priceUSD": 10.0,
+        "priceUAH": "400.0",
+        "priceUSD": "10.0",
         "image": "http://example.com/image.png",
         "description": "Test Description",
-        "inStock": True,
+        "inStock": "true",
         "cross_number": "",
         "detail_number": "123",
-        "subcategory_ids": [],
     }
-    headers = {"x-admin-secret": "secret", "Content-Type": "application/json"}
-    response = client.post("/products/", json=product_data, headers=headers)
+    headers = {"Authorization": get_admin_headers()["Authorization"]}
+    response = client.post("/products/", data=product_data, headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Test Product"
@@ -55,19 +66,19 @@ def test_create_product(session: Session):
 def test_create_order(session: Session):
     # First create a product
     product_data = {
+        "id": "test-1",
         "name": "Test Product",
         "category": "Test",
-        "priceUAH": 100.0,
-        "priceUSD": 0.0,
+        "priceUAH": "100.0",
+        "priceUSD": "0.0",
         "image": "http://example.com/image.png",
         "description": "Test Description",
-        "inStock": True,
+        "inStock": "true",
         "cross_number": "",
         "detail_number": "123",
-        "subcategory_ids": [],
     }
-    headers = {"x-admin-secret": "secret", "Content-Type": "application/json"}
-    response = client.post("/products/", json=product_data, headers=headers)
+    headers = {"Authorization": get_admin_headers()["Authorization"]}
+    response = client.post("/products/", data=product_data, headers=headers)
     product_id = response.json()["id"]
 
     order_data = {
@@ -95,9 +106,6 @@ def test_create_order(session: Session):
     assert "id" in data
 
 def test_create_product_with_image(session: Session):
-    # This test is tricky because it depends on file system and external service.
-    # We will mock the image uploader in a real scenario.
-    # For now, let's assume it works and just test the product creation logic without deep file checks.
     pass
 
 def test_get_social_links(session: Session):
@@ -120,8 +128,7 @@ def test_update_social_links(session: Session):
     assert response.status_code == 401
 
     # Test with auth
-    headers = {"x-admin-secret": "secret"}
-    response = client.post("/settings/social-links", json={"instagram": "new_insta", "telegram": "new_tele"}, headers=headers)
+    response = client.post("/settings/social-links", json={"instagram": "new_insta", "telegram": "new_tele"}, headers=get_admin_headers())
     assert response.status_code == 200
     assert response.json() == {"message": "Social links updated successfully"}
 

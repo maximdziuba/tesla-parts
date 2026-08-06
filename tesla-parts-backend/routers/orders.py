@@ -35,8 +35,10 @@ def create_order(
         return item.priceUAH or 0
 
     total_usd = order_data.totalUSD
+    recalculate_total = False
     if total_usd is None or total_usd <= 0:
         total_usd = sum(_item_price_usd(item) * item.quantity for item in order_data.items)
+        recalculate_total = True
 
     if order_data.promocode:
         from models import PromoCode, CustomerPromoCodeLink
@@ -56,7 +58,7 @@ def create_order(
                     if not link:
                         valid = False
             
-            if valid:
+            if valid and recalculate_total:
                 if promocode_obj.discount_type == "percent":
                     total_usd = total_usd * (1.0 - promocode_obj.discount_value / 100.0)
                 elif promocode_obj.discount_type == "usd":

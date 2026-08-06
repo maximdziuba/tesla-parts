@@ -38,8 +38,8 @@ export interface Product {
   inStock: boolean;
   sort_order?: number;
   detail_number?: string;
-  cross_number: string;
-  is_popular: boolean;
+  cross_number?: string;
+  is_popular?: boolean;
   meta_title?: string | null;
   meta_description?: string | null;
 }
